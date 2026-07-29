@@ -29,11 +29,12 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
 WEB_SEARCH_MODEL = "gpt-5.4-nano"
-WEB_MAX_TOKENS = 160
+WEB_MAX_TOKENS = 350
+WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.12"
+APP_VERSION = "1.0.13"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -59,6 +60,10 @@ WEB_SYSTEM_PROMPT = (
     "Turkce ve yalnizca duz metin cevap ver. En fazla 1-3 kisa cumle kullan. "
     "Kullaniciya kesinlikle soru sorma veya secenek sunma. Belirsiz bir haber "
     "sorusunda Turkiye ile ilgili en onemli guncel haberi secip cevapla. "
+    "Guncel veriyi bulamazsan erisemiyorum veya dogrulayamiyorum deme; web "
+    "aramasinda buldugun en yeni sonucu tarihini belirterek dogrudan ver. "
+    "Mac ve fikstur sorularini sadece Super Lig ile sinirlama; UEFA, Avrupa "
+    "ligleri, milli maclar ve Turkiye liglerinden en onemli maclari birlikte ver. "
     "URL, site veya kaynak adi yazma. Bugunun tarihi %s. En yeni tarihli "
     "guvenilir veriyi kullan; farkli tarihler varsa en guncelini sec. "
     "Son cumlede verinin tam tarihini belirt.")
@@ -1355,7 +1360,8 @@ def ota_restore_trial():
     return True
 
 
-def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=None):
+def openai_chat(messages, model, web_search, timeout, max_tok=None,
+                reasoning=None, search_context="low"):
     if socket is None or ssl is None:
         return None, "AG MODULU YOK"
     api_key = OPENAI_API_KEY.strip()
@@ -1384,7 +1390,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
         body["max_tool_calls"] = 1
         body["tools"] = [{
             "type": "web_search",
-            "search_context_size": "low",
+            "search_context_size": search_context,
             "user_location": {
                 "type": "approximate",
                 "country": USER_COUNTRY,
@@ -1447,7 +1453,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 
         if attempt < GPT_RETRY_COUNT:
             if limit_reached:
-                body["max_output_tokens"] = GPT_RETRY_OUTPUT_BUDGET
+                body["max_output_tokens"] = (
+                    WEB_RETRY_TOKENS if web_search else GPT_RETRY_OUTPUT_BUDGET)
                 payload = json.dumps(body)
             if lcd is not None:
                 retry_msg = "GPT YANITI TAMAMLIYOR..." if limit_reached else "GPT TEKRAR DENIYOR..."
@@ -1462,9 +1469,16 @@ WEB_QUERY_HINTS = (
     "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
     "sicaklik", "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
     "hisse", "bitcoin", "btc", "ethereum", "eth", "kripto", "fiyat", "kac tl", "ne kadar",
-    "haber", "mac", "skor", "puan durumu", "lig", "fikstur", "deprem",
+    "haber", "haberler", "mac", "maclar", "skor", "skorlar",
+    "puan durumu", "lig", "ligler", "fikstur", "fiksturler",
+    "deprem", "depremler",
     "trafik", "kim kazandi", "secim", "internetten", "webden", "ara",
     "kontrol et",
+)
+
+SPORTS_QUERY_HINTS = (
+    "mac", "maclar", "skor", "skorlar", "puan durumu",
+    "lig", "ligler", "fikstur", "fiksturler",
 )
 
 _fast_live_q = ""
@@ -1487,6 +1501,28 @@ def question_needs_web(q):
     text = _normalize_question(q)
     for hint in WEB_QUERY_HINTS:
         if " " + hint + " " in text:
+            return True
+    return False
+
+
+def _question_is_sports(q):
+    text = _normalize_question(q)
+    for hint in SPORTS_QUERY_HINTS:
+        if " " + hint + " " in text:
+            return True
+    return False
+
+
+def _answer_refuses_current(answer):
+    text = _normalize_question(answer)
+    markers = (
+        " dogrulayamiyorum ", " guncel veri alamiyorum ",
+        " guncel veriye erisemiyorum ", " canli veriye erisimim yok ",
+        " gercek zamanli veriye erisemiyorum ", " web erisimim yok ",
+        " internete erisemiyorum ", " hangi kanal ", " hangi lig ",
+    )
+    for marker in markers:
+        if marker in text:
             return True
     return False
 
@@ -1535,6 +1571,81 @@ def _weather_condition(code):
     if 95 <= code <= 99:
         return "gok gurultulu"
     return ""
+
+
+def _event_local_date_time(stamp):
+    try:
+        year = int(stamp[0:4])
+        month = int(stamp[5:7])
+        day = int(stamp[8:10])
+        hour = int(stamp[11:13]) + 3
+        minute = int(stamp[14:16])
+        if hour >= 24:
+            hour -= 24
+            day += 1
+            month_days = (31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30,
+                          31, 31, 30, 31, 30, 31)
+            if day > month_days[month - 1]:
+                day = 1
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+        return ("%04d-%02d-%02d" % (year, month, day),
+                "%02d:%02d" % (hour, minute))
+    except Exception:
+        return "", ""
+
+
+def _fast_sports_answer():
+    date_key = _today_text()
+    if date_key == "bilinmiyor":
+        return None
+    path = ("/apis/site/v2/sports/soccer/all/scoreboard?dates=" +
+            date_key.replace("-", "") + "&limit=8")
+    status, raw = https_get("site.api.espn.com", path, 12)
+    if status != 200 or not raw:
+        return None
+    gc.collect()
+    data = json.loads(raw)
+    raw = None
+    matches = []
+    for event in data.get("events") or []:
+        local_date, local_time = _event_local_date_time(event.get("date", ""))
+        if local_date != date_key:
+            continue
+        competitions = event.get("competitions") or []
+        if not competitions:
+            continue
+        competition = competitions[0]
+        home = None
+        away = None
+        home_score = ""
+        away_score = ""
+        for competitor in competition.get("competitors") or []:
+            team = competitor.get("team") or {}
+            name = team.get("shortDisplayName") or team.get("displayName")
+            if competitor.get("homeAway") == "home":
+                home = name
+                home_score = str(competitor.get("score", ""))
+            elif competitor.get("homeAway") == "away":
+                away = name
+                away_score = str(competitor.get("score", ""))
+        if not home or not away:
+            continue
+        status_type = ((competition.get("status") or {}).get("type") or {})
+        state = status_type.get("state")
+        line = local_time + " " + home + " - " + away
+        if state in ("in", "post"):
+            line += " " + home_score + "-" + away_score
+        matches.append((local_time, line))
+    data = None
+    gc.collect()
+    if not matches:
+        return None
+    matches.sort()
+    return "Bugunun onemli maclari: " + "; ".join(
+        item[1] for item in matches[:6]) + "."
 
 
 def _fast_weather_answer(text):
@@ -1669,7 +1780,9 @@ def fast_live_answer(q):
         return _fast_live_answer
     answer = None
     try:
-        if (" hava " in text or " sicaklik " in text or " yagmur " in text):
+        if _question_is_sports(text):
+            answer = _fast_sports_answer()
+        elif (" hava " in text or " sicaklik " in text or " yagmur " in text):
             answer = _fast_weather_answer(text)
         elif (" bitcoin " in text or " btc " in text or
               " ethereum " in text or " eth " in text):
@@ -1689,12 +1802,17 @@ def fast_live_answer(q):
     return answer
 
 
-def ask_question(q, web_search=None):
+def ask_question(q, web_search=None, search_context="low"):
     if web_search is None:
         web_search = question_needs_web(q)
     if web_search:
         sp = WEB_SYSTEM_PROMPT % _today_text()
         tok = WEB_MAX_TOKENS
+        if _question_is_sports(q):
+            search_context = "medium"
+            q = (q + " Bugun dunyadaki en onemli futbol maclarini ara. "
+                 "UEFA, Sampiyonlar Ligi, Avrupa Ligi, Avrupa buyuk ligleri, "
+                 "milli maclar ve Super Lig arasindan en fazla 6 mac ver.")
     else:
         extra = LEN_PROFILES[ans_len_idx][2]
         tok = LEN_PROFILES[ans_len_idx][1]
@@ -1703,7 +1821,8 @@ def ask_question(q, web_search=None):
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
         QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
-        reasoning="none" if web_search else "minimal")
+        reasoning="none" if web_search else "minimal",
+        search_context=search_context)
 
 
 def is_online():
@@ -1969,6 +2088,9 @@ def _ask_and_show(q):
         answer, err = ask_question(q, use_web)
     else:
         err = None
+    if err is None and use_web and _answer_refuses_current(answer):
+        show_status_screen("GUNCEL VERI TEKRAR ARANIYOR...", TITLE_COL)
+        answer, err = ask_question(q, True, "medium")
     if err is not None:
         txt = to_screen_text(err)
     else:
