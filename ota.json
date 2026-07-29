@@ -1,11 +1,11 @@
 {
-  "version": "1.0.12",
+  "version": "1.0.13",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "5f910942fd152a5ca21623ffdec08c3b213f214ad6c20b6b693d292a99872863",
+  "sha256": "17c97c9cc7958507e799dceae50353dbca9fa1b5580faef997b2dc09cd88c4ef",
   "notes": [
-    "GPT artik kullaniciya soru sormaz",
-    "Haber kanali secimi istemez",
-    "Belirsiz haberde en onemlisini secer",
-    "Haber yanitlari dogrudan gosterilir"
+    "Maclar dunya fiksturunden alinir",
+    "Sadece Super Lig gosterme giderildi",
+    "Haberler ve maclar artik taninir",
+    "Guncel veri hatasi azaltildi"
   ]
 }
