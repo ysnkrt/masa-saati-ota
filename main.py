@@ -33,7 +33,7 @@ WEB_MAX_TOKENS = 160
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.11"
+APP_VERSION = "1.0.12"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -46,6 +46,8 @@ USER_LON = None
 SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "kisaca topla. SADECE duz metin: madde isareti, yildiz (*), "
                  "baslik (#) veya tablo KULLANMA. "
+                 "Kullaniciya kesinlikle soru sorma veya secenek sunma. "
+                 "Soru belirsizse en makul varsayimi yapip dogrudan cevapla. "
                  "COK ONEMLI KURAL: Cevabinda kesinlikle URL, site adi veya "
                  "kaynak belirtme. 'Kaynaklara gore', 'haberlere gore', "
                  "'verilere gore', 'X sitesine gore', 'arastirmalara gore' "
@@ -55,6 +57,8 @@ SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "ait oldugunu kisa bir cumleyle belirt (kaynak degil, sadece yil).")
 WEB_SYSTEM_PROMPT = (
     "Turkce ve yalnizca duz metin cevap ver. En fazla 1-3 kisa cumle kullan. "
+    "Kullaniciya kesinlikle soru sorma veya secenek sunma. Belirsiz bir haber "
+    "sorusunda Turkiye ile ilgili en onemli guncel haberi secip cevapla. "
     "URL, site veya kaynak adi yazma. Bugunun tarihi %s. En yeni tarihli "
     "guvenilir veriyi kullan; farkli tarihler varsa en guncelini sec. "
     "Son cumlede verinin tam tarihini belirt.")
