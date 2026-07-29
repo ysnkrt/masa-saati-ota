@@ -29,11 +29,11 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
 WEB_SEARCH_MODEL = "gpt-5.4-nano"
-WEB_MAX_TOKENS = 220
+WEB_MAX_TOKENS = 160
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.9"
+APP_VERSION = "1.0.10"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -53,6 +53,11 @@ SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "kendin biliyormus gibi dogrudan soyle. "
                  "Cevabinin en sonunda, sadece verdigin bilginin hangi yila "
                  "ait oldugunu kisa bir cumleyle belirt (kaynak degil, sadece yil).")
+WEB_SYSTEM_PROMPT = (
+    "Turkce ve yalnizca duz metin cevap ver. En fazla 1-3 kisa cumle kullan. "
+    "URL, site veya kaynak adi yazma. Bugunun tarihi %s. En yeni tarihli "
+    "guvenilir veriyi kullan; farkli tarihler varsa en guncelini sec. "
+    "Son cumlede verinin tam tarihini belirt.")
 MAX_TOKENS = 450
 # ============================
 
@@ -1457,27 +1462,197 @@ WEB_QUERY_HINTS = (
     "kontrol et",
 )
 
+_fast_live_q = ""
+_fast_live_answer = ""
+_fast_live_at = 0
 
-def question_needs_web(q):
+
+def _normalize_question(q):
     text = str(q).lower()
-    for src, dst in (("ı", "i"), ("ş", "s"), ("ğ", "g"),
-                     ("ü", "u"), ("ö", "o"), ("ç", "c")):
+    for src, dst in (
+            ("ı", "i"), ("ş", "s"), ("ğ", "g"),
+            ("ü", "u"), ("ö", "o"), ("ç", "c")):
         text = text.replace(src, dst)
     for separator in ".,?!:;()[]{}-/\\'\"":
         text = text.replace(separator, " ")
-    text = " " + " ".join(text.split()) + " "
+    return " " + " ".join(text.split()) + " "
+
+
+def question_needs_web(q):
+    text = _normalize_question(q)
     for hint in WEB_QUERY_HINTS:
         if " " + hint + " " in text:
             return True
     return False
 
 
+def _today_text():
+    try:
+        lt = time.localtime()
+        if 2024 <= lt[0] <= 2100:
+            return "%04d-%02d-%02d" % (lt[0], lt[1], lt[2])
+    except Exception:
+        pass
+    return "bilinmiyor"
+
+
+def _display_date(value):
+    try:
+        parts = str(value)[:10].split("-")
+        return "%s/%s/%s" % (parts[2], parts[1], parts[0])
+    except Exception:
+        return str(value)
+
+
+def _weather_condition(code):
+    try:
+        code = int(code)
+    except Exception:
+        return ""
+    if code == 0:
+        return "acik"
+    if code <= 2:
+        return "parcali bulutlu"
+    if code == 3:
+        return "kapali"
+    if code in (45, 48):
+        return "sisli"
+    if 51 <= code <= 57:
+        return "ciseleyen"
+    if 61 <= code <= 67:
+        return "yagmurlu"
+    if 71 <= code <= 77:
+        return "karli"
+    if 80 <= code <= 82:
+        return "saganak yagisli"
+    if code in (85, 86):
+        return "kar saganakli"
+    if 95 <= code <= 99:
+        return "gok gurultulu"
+    return ""
+
+
+def _fast_weather_answer(text):
+    if " yarin " in text or USER_LAT is None or USER_LON is None:
+        return None
+    path = ("/v1/forecast?latitude=%s&longitude=%s"
+            "&current=temperature_2m,apparent_temperature,precipitation,"
+            "weather_code&timezone=auto") % (str(USER_LAT), str(USER_LON))
+    status, raw = https_get("api.open-meteo.com", path, 10)
+    if status != 200 or not raw:
+        return None
+    data = json.loads(raw)
+    current = data.get("current") or {}
+    temp = current.get("temperature_2m")
+    feels = current.get("apparent_temperature")
+    if temp is None:
+        return None
+    place = USER_REGION if USER_REGION else USER_CITY
+    condition = _weather_condition(current.get("weather_code"))
+    answer = "%s: %.1f C" % (place, float(temp))
+    if feels is not None:
+        answer += ", hissedilen %.1f C" % float(feels)
+    if condition:
+        answer += ", " + condition
+    rain = current.get("precipitation")
+    if rain is not None:
+        answer += ". Yagis %.1f mm" % float(rain)
+    stamp = current.get("time")
+    if stamp:
+        answer += ". Veri zamani " + _display_date(stamp[:10]) + " " + stamp[11:16]
+    return answer + "."
+
+
+def _fast_currency_answer(text):
+    wants_usd = " dolar " in text or " usd " in text
+    wants_eur = " euro " in text or " avro " in text or " eur " in text
+    if not (wants_usd or wants_eur or " kur " in text):
+        return None
+    status, raw = https_get("finans.truncgil.com", "/today.json", 10)
+    if status != 200 or not raw:
+        return None
+    data = json.loads(raw)
+    parts = []
+    for wanted, key, label in (
+            (wants_usd or not wants_eur, "USD", "Dolar"),
+            (wants_eur or not wants_usd, "EUR", "Euro")):
+        rate = data.get(key) or {}
+        buying = rate.get("Al\u0131\u015f")
+        selling = rate.get("Sat\u0131\u015f")
+        if wanted and buying and selling:
+            buying = float(str(buying).replace(".", "").replace(",", "."))
+            selling = float(str(selling).replace(".", "").replace(",", "."))
+            parts.append("%s alis %.2f, satis %.2f TL" %
+                         (label, buying, selling))
+    if not parts:
+        return None
+    stamp = str(data.get("Update_Date", ""))
+    return ", ".join(parts) + ". Veri zamani " + stamp + "."
+
+
+def _fast_crypto_answer(text):
+    wants_btc = " bitcoin " in text or " btc " in text
+    wants_eth = " ethereum " in text or " eth " in text
+    if not (wants_btc or wants_eth):
+        return None
+    ids = []
+    if wants_btc:
+        ids.append("bitcoin")
+    if wants_eth:
+        ids.append("ethereum")
+    path = ("/api/v3/simple/price?ids=" + ",".join(ids) +
+            "&vs_currencies=try&include_last_updated_at=true")
+    status, raw = https_get("api.coingecko.com", path, 10)
+    if status != 200 or not raw:
+        return None
+    data = json.loads(raw)
+    parts = []
+    if wants_btc and (data.get("bitcoin") or {}).get("try") is not None:
+        parts.append("Bitcoin %d TL" % int(float(data["bitcoin"]["try"]) + 0.5))
+    if wants_eth and (data.get("ethereum") or {}).get("try") is not None:
+        parts.append("Ethereum %d TL" % int(float(data["ethereum"]["try"]) + 0.5))
+    if not parts:
+        return None
+    return ", ".join(parts) + ". Kontrol tarihi " + _display_date(_today_text()) + "."
+
+
+def fast_live_answer(q):
+    global _fast_live_q, _fast_live_answer, _fast_live_at
+    text = _normalize_question(q)
+    now = time.ticks_ms()
+    if (text == _fast_live_q and _fast_live_answer and
+            time.ticks_diff(now, _fast_live_at) < 60000):
+        return _fast_live_answer
+    answer = None
+    try:
+        if (" hava " in text or " sicaklik " in text or " yagmur " in text):
+            answer = _fast_weather_answer(text)
+        elif (" bitcoin " in text or " btc " in text or
+              " ethereum " in text or " eth " in text):
+            answer = _fast_crypto_answer(text)
+        elif (" dolar " in text or " usd " in text or " euro " in text or
+              " avro " in text or " eur " in text or " kur " in text):
+            answer = _fast_currency_answer(text)
+    except Exception:
+        answer = None
+    gc.collect()
+    if answer:
+        _fast_live_q = text
+        _fast_live_answer = answer
+        _fast_live_at = now
+    return answer
+
+
 def ask_question(q, web_search=None):
     if web_search is None:
         web_search = question_needs_web(q)
-    extra = LEN_PROFILES[ans_len_idx][2]
-    tok = LEN_PROFILES[ans_len_idx][1]
-    sp = SYSTEM_PROMPT + " " + extra
+    if web_search:
+        sp = WEB_SYSTEM_PROMPT % _today_text()
+        tok = WEB_MAX_TOKENS
+    else:
+        extra = LEN_PROFILES[ans_len_idx][2]
+        tok = LEN_PROFILES[ans_len_idx][1]
+        sp = SYSTEM_PROMPT + " " + extra
     return openai_chat(
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
@@ -1743,7 +1918,11 @@ def _ask_and_show(q):
     use_web = question_needs_web(q)
     status = "INTERNETTEN ARASTIRIYOR..." if use_web else "GPT CEVAPLIYOR..."
     show_status_screen(status, TITLE_COL)
-    answer, err = ask_question(q, use_web)
+    answer = fast_live_answer(q) if use_web else None
+    if answer is None:
+        answer, err = ask_question(q, use_web)
+    else:
+        err = None
     if err is not None:
         txt = to_screen_text(err)
     else:
