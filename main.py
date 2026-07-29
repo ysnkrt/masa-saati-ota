@@ -30,7 +30,7 @@ OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-search-api"                        # web_search_options destekleyen gercek model
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -2213,10 +2213,14 @@ def _prayer_draw_size(txt):
     return size
 
 
-# Ust cubukta MANUEL butonu: NTP yazisinin karsisinda (sag), ayni boyutta (1).
+# Ust cubukta OTA sag kosede; MANUEL yalnizca cevrimdisiyken onun solunda.
+OTA_TOP_TXT = "OTA"
+OTA_TOP_W = len(OTA_TOP_TXT) * 6
+OTA_TOP_X = WIDTH - OTA_TOP_W - 4
+OTA_TOP_HIT_X0 = OTA_TOP_X - 10
 TOPBTN_TXT = "MANUEL"
 TOPBTN_W = len(TOPBTN_TXT) * 6
-TOPBTN_X = WIDTH - TOPBTN_W - 4
+TOPBTN_X = OTA_TOP_X - TOPBTN_W - 12
 TOPBTN_HIT_X0 = TOPBTN_X - 10          # dokunma alani biraz genis tutulur
 
 
@@ -2226,7 +2230,9 @@ def draw_status():
     # Konum ekranda gosterilmez; sadece SOR cevaplari/namaz vakitleri icin
     # arka planda IP'den tespit edilir (bkz. geo_locate()).
     lcd.fill_rect(0, 0, WIDTH, 18, BG)
-    if is_online():
+    online = is_online()
+    lcd.text(OTA_TOP_TXT, OTA_TOP_X, 3, GREEN if online else GRAY, 1)
+    if online:
         return
     lt = time.localtime()
     if ntp_ok:
@@ -3282,9 +3288,7 @@ def _settings_draw(preview_flip):
     _settings_draw_direction(preview_flip, False)
     lcd.fill_rect(0, _SET_BACK_Y, WIDTH, HEIGHT - _SET_BACK_Y, DARKGRAY)
     lcd.hline(0, _SET_BACK_Y, WIDTH, GRAY)
-    lcd.vline(WIDTH // 2, _SET_BACK_Y, HEIGHT - _SET_BACK_Y, GRAY)
-    lcd.text("GERI", 68, 224, WHITE, 1)
-    lcd.text("OTA", 231, 224, GREEN, 1)
+    lcd.text("GERI", (WIDTH - 24) // 2, 224, WHITE, 1)
 
 
 def _settings_change(col, y):
@@ -3429,11 +3433,7 @@ def run_all_settings():
         last_touch = now
         if y >= _SET_BACK_Y:
             _wait_touch_release()
-            if x < WIDTH // 2:
-                return
-            run_ota_update()
-            _settings_draw(screen_flip)
-            continue
+            return
         if y < 38:
             _wait_touch_release()
             continue
@@ -4419,10 +4419,12 @@ def main():
                     wipe_transition()
                     draw_static()
                 elif abs(dx) < 22 and abs(dy) < 22 and sy < 28:
-                    # Ust cubuk: solda durum yazisi (her zaman dokununca wifi
-                    # ekrani acilir), sagda MANUEL (her zaman elle saat ayari
-                    # acar).
-                    if not is_online():
+                    # Sag kosede OTA her zaman dokunulabilir. Cevrimdisiyken
+                    # MANUEL onun solunda, WiFi ayari ise soldaki durumdadir.
+                    if sx >= OTA_TOP_HIT_X0:
+                        run_ota_update()
+                        draw_static()
+                    elif not is_online():
                         if sx >= TOPBTN_HIT_X0:
                             run_set()
                             draw_static()
