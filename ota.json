@@ -1,11 +1,11 @@
 {
-  "version": "1.0.9",
+  "version": "1.0.10",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "d7ee6651a5a6e5c12717ea91c5bee7e0416bcad96c984d1afbf6c02338719766",
+  "sha256": "f3287f96f07840f79fbc85e90a1304b8de03ecb9f474d83ca35760fa69b61219",
   "notes": [
-    "Web yanitlari daha da hizlandirildi",
-    "Guncelleme ekrani sadelestirildi",
-    "Eski surum bilgisi kaldirildi",
-    "Gereksiz uyari metni kaldirildi"
+    "Hava kur ve kripto hizlandirildi",
+    "Veriler dogrudan guncel servisten",
+    "Tekrar sorulan cevap aninda acilir",
+    "Web aramasi bugunun tarihini kullanir"
   ]
 }
