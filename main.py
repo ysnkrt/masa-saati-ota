@@ -30,7 +30,7 @@ OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-search-api"                        # web_search_options destekleyen gercek model
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -701,10 +701,9 @@ _EMPTY = []
 ANS_TOP = 24
 ANS_BOTTOM = 206
 
-# Her boyut icin glif tablosu + satir tamponu onceden hesapla
+# Her boyut icin glif tablosunu onceden hesapla. RAM'i korumak icin
+# satir tamponlarindan yalnizca secili boyuta ait olanlar tutulur.
 _GLYPH_TABLES = []
-_BUFS = []
-_ZEROS = []
 for (_AGWp, _AGHp, _AADVp, _LHp) in SIZE_PROFILES:
     _tbl = {}
     for _ch in FONT:
@@ -719,38 +718,66 @@ for (_AGWp, _AGHp, _AADVp, _LHp) in SIZE_PROFILES:
                     _pts.append((_dx, _dy))
         _tbl[_ch] = _pts
     _GLYPH_TABLES.append(_tbl)
-    _BUFS.append(bytearray(WIDTH * _LHp * 2))
-    _ZEROS.append(bytearray(WIDTH * _LHp * 2))
+
+_BUFS = [None] * len(SIZE_PROFILES)
+_ZEROS = [None] * len(SIZE_PROFILES)
+_DEFAULT_ANS_IDX = 1
+_DEFAULT_ANS_BYTES = WIDTH * SIZE_PROFILES[_DEFAULT_ANS_IDX][3] * 2
+_BUFS[_DEFAULT_ANS_IDX] = bytearray(_DEFAULT_ANS_BYTES)
+_ZEROS[_DEFAULT_ANS_IDX] = bytearray(_DEFAULT_ANS_BYTES)
 
 # aktif boyut degiskenleri (apply_ans_size ile ayarlanir)
 _AADV = 9
 ANS_LINE_H = 16
 ANS_CHARS = (WIDTH - 8) // _AADV
 ANS_VISIBLE = (ANS_BOTTOM - ANS_TOP) // ANS_LINE_H
-_AGLYPH = _GLYPH_TABLES[1]
-_ANS_BUF = _BUFS[1]
-_ANS_ZERO = _ZEROS[1]
+_AGLYPH = _GLYPH_TABLES[_DEFAULT_ANS_IDX]
+_ANS_BUF = _BUFS[_DEFAULT_ANS_IDX]
+_ANS_ZERO = _ZEROS[_DEFAULT_ANS_IDX]
 
 
-def _rebuild_ans_zero_buffers():
-    # SOR cevap satirlarinin zemini _ZEROS'tan gelir; mod degisince
-    # (KOYU/ACIK) mevcut tamponlar yerinde boyanir. Yeni buyuk tampon
-    # ayirmamak, Pico'da tema degisimindeki ani RAM yukunu engeller.
-    global _ANS_ZERO
+def _fill_answer_background(zero):
+    if zero is None:
+        return
     hi = BG >> 8
     lo = BG & 0xFF
     chunk = bytes([hi, lo]) * 32
     chunk_len = len(chunk)
+    for start in range(0, len(zero), chunk_len):
+        end = min(start + chunk_len, len(zero))
+        zero[start:end] = chunk[:end - start]
+
+
+def _rebuild_ans_zero_buffers():
+    # SOR cevap satirinin zeminini yeni temaya gore yerinde boya.
+    global _ANS_ZERO
     for zero in _ZEROS:
-        for start in range(0, len(zero), chunk_len):
-            zero[start:start + chunk_len] = chunk
-    _ANS_ZERO = _ZEROS[ans_size_idx % len(SIZE_PROFILES)]
+        _fill_answer_background(zero)
+    active = _ZEROS[ans_size_idx % len(SIZE_PROFILES)]
+    if active is not None:
+        _ANS_ZERO = active
+
+
+def release_answer_buffers():
+    global _ANS_BUF, _ANS_ZERO
+    _ANS_BUF = None
+    _ANS_ZERO = None
+    for i in range(len(_BUFS)):
+        _BUFS[i] = None
+        _ZEROS[i] = None
+    gc.collect()
 
 
 def apply_ans_size(idx):
     global _AADV, ANS_LINE_H, ANS_CHARS, ANS_VISIBLE, _AGLYPH, _ANS_BUF, _ANS_ZERO
     idx = idx % len(SIZE_PROFILES)
     AGW, AGH, AADV, LH = SIZE_PROFILES[idx]
+    if _BUFS[idx] is None or _ZEROS[idx] is None:
+        release_answer_buffers()
+        size = WIDTH * LH * 2
+        _BUFS[idx] = bytearray(size)
+        _ZEROS[idx] = bytearray(size)
+        _fill_answer_background(_ZEROS[idx])
     _AADV = AADV
     ANS_LINE_H = LH
     ANS_CHARS = (WIDTH - 8) // AADV
@@ -1014,6 +1041,7 @@ def ota_check_manifest():
     if not host:
         return None, "OTA ADRESI GECERSIZ"
     try:
+        gc.collect()
         status, text = https_get(host, path, 20)
     except Exception as exc:
         return None, "OTA BAGLANTI: " + str(exc)
@@ -1064,6 +1092,7 @@ def ota_download(url, expected_sha):
     ss = None
     f = None
     try:
+        gc.collect()
         try:
             os.remove(OTA_RAW_FILE)
         except Exception:
@@ -1123,7 +1152,7 @@ def ota_download(url, expected_sha):
                     break
                 remaining = size
                 while remaining > 0:
-                    block = ss.read(min(1024, remaining))
+                    block = ss.read(min(512, remaining))
                     if not block:
                         raise OSError("dosya yarim kaldi")
                     done += len(block)
@@ -1138,7 +1167,7 @@ def ota_download(url, expected_sha):
                 ss.read(2)
         else:
             while True:
-                block = ss.read(1024)
+                block = ss.read(512)
                 if not block:
                     break
                 done += len(block)
@@ -3379,20 +3408,30 @@ def run_ota_update():
     if not _ota_confirm_screen(manifest["version"]):
         return
 
+    download_url = manifest["url"]
+    expected_sha = manifest["sha256"]
+    manifest = None
+    release_answer_buffers()
+    gc.collect()
+
     lcd.fill(BG)
     lcd.text("GUNCELLEME INIYOR", 58, 76, TITLE_COL, 2)
     _ota_draw_progress(0, 1)
-    ok, err = ota_download(manifest["url"], manifest["sha256"])
+    ok, err = ota_download(download_url, expected_sha)
     if not ok:
         show_status_screen(to_screen_text(err)[:48], RED)
         time.sleep_ms(2200)
         return
+    download_url = None
+    expected_sha = None
+    gc.collect()
     show_status_screen("API ANAHTARI KORUNUYOR", TITLE_COL)
     ok, err = ota_prepare_with_local_key()
     if not ok:
         show_status_screen(to_screen_text(err)[:48], RED)
         time.sleep_ms(2200)
         return
+    gc.collect()
     show_status_screen("DOGRULANDI, KURULUYOR", GREEN)
     ok, err = ota_install_ready()
     if not ok:
