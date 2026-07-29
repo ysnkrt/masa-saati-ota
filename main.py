@@ -33,7 +33,7 @@ WEB_MAX_TOKENS = 160
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.10"
+APP_VERSION = "1.0.11"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1376,6 +1376,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
         body["reasoning"] = {"effort": reasoning}
     if web_search:
         body["text"] = {"verbosity": "low"}
+        body["tool_choice"] = "required"
         body["max_tool_calls"] = 1
         body["tools"] = [{
             "type": "web_search",
@@ -1455,8 +1456,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 WEB_QUERY_HINTS = (
     "bugun", "yarin", "dun", "guncel", "son dakika", "su an", "simdi",
     "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
-    "sicaklik", "dolar", "euro", "avro", "altin", "kur", "borsa",
-    "hisse", "bitcoin", "kripto", "fiyat", "kac tl", "ne kadar",
+    "sicaklik", "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
+    "hisse", "bitcoin", "btc", "ethereum", "eth", "kripto", "fiyat", "kac tl", "ne kadar",
     "haber", "mac", "skor", "puan durumu", "lig", "fikstur", "deprem",
     "trafik", "kim kazandi", "secim", "internetten", "webden", "ara",
     "kontrol et",
@@ -1563,15 +1564,26 @@ def _fast_weather_answer(text):
     return answer + "."
 
 
-def _fast_currency_answer(text):
+def _tr_money(value):
+    return float(str(value).replace(".", "").replace(",", "."))
+
+
+def _fast_market_data():
+    status, raw = https_get("finans.truncgil.com", "/today.json", 10)
+    if status != 200 or not raw:
+        return None
+    return json.loads(raw)
+
+
+def _fast_currency_answer(text, data=None):
     wants_usd = " dolar " in text or " usd " in text
     wants_eur = " euro " in text or " avro " in text or " eur " in text
     if not (wants_usd or wants_eur or " kur " in text):
         return None
-    status, raw = https_get("finans.truncgil.com", "/today.json", 10)
-    if status != 200 or not raw:
+    if data is None:
+        data = _fast_market_data()
+    if data is None:
         return None
-    data = json.loads(raw)
     parts = []
     for wanted, key, label in (
             (wants_usd or not wants_eur, "USD", "Dolar"),
@@ -1580,14 +1592,42 @@ def _fast_currency_answer(text):
         buying = rate.get("Al\u0131\u015f")
         selling = rate.get("Sat\u0131\u015f")
         if wanted and buying and selling:
-            buying = float(str(buying).replace(".", "").replace(",", "."))
-            selling = float(str(selling).replace(".", "").replace(",", "."))
+            buying = _tr_money(buying)
+            selling = _tr_money(selling)
             parts.append("%s alis %.2f, satis %.2f TL" %
                          (label, buying, selling))
     if not parts:
         return None
     stamp = str(data.get("Update_Date", ""))
     return ", ".join(parts) + ". Veri zamani " + stamp + "."
+
+
+def _fast_gold_answer(text):
+    choices = []
+    if " ceyrek " in text:
+        choices.append(("ceyrek-altin", "Ceyrek altin"))
+    elif " yarim " in text:
+        choices.append(("yarim-altin", "Yarim altin"))
+    elif " tam " in text:
+        choices.append(("tam-altin", "Tam altin"))
+    elif " gumus " in text:
+        choices.append(("gumus", "Gumus"))
+    else:
+        choices.append(("gram-altin", "Gram altin"))
+    data = _fast_market_data()
+    if data is None:
+        return None
+    parts = []
+    for key, label in choices:
+        rate = data.get(key) or {}
+        buying = rate.get("Al\u0131\u015f")
+        selling = rate.get("Sat\u0131\u015f")
+        if buying and selling:
+            parts.append("%s alis %.2f, satis %.2f TL" %
+                         (label, _tr_money(buying), _tr_money(selling)))
+    if not parts:
+        return None
+    return ", ".join(parts) + ". Veri zamani " + str(data.get("Update_Date", "")) + "."
 
 
 def _fast_crypto_answer(text):
@@ -1630,6 +1670,8 @@ def fast_live_answer(q):
         elif (" bitcoin " in text or " btc " in text or
               " ethereum " in text or " eth " in text):
             answer = _fast_crypto_answer(text)
+        elif " altin " in text or " gumus " in text:
+            answer = _fast_gold_answer(text)
         elif (" dolar " in text or " usd " in text or " euro " in text or
               " avro " in text or " eur " in text or " kur " in text):
             answer = _fast_currency_answer(text)
