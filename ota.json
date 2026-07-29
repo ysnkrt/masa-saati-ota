@@ -1,5 +1,10 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "15b6741b6ea179720ce3cc53c7a6fca2a1e2f01d7376cbb64111befc59d78a70"
+  "sha256": "fcfba768c1f030997ed426cea520b76c255ca12fa9f61cfb56143e47255d86a9",
+  "notes": [
+    "Web sorulari hizlandirildi",
+    "Genel sorularda GPT-5 nano korundu",
+    "Guncelleme yenilikleri ekrana eklendi"
+  ]
 }
