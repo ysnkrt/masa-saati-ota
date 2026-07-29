@@ -1,11 +1,11 @@
 {
-  "version": "1.0.13",
+  "version": "1.0.14",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "17c97c9cc7958507e799dceae50353dbca9fa1b5580faef997b2dc09cd88c4ef",
+  "sha256": "8cf92a9a69922222583bd849860afc2bc98cba567977b73a16d90e773fdc9128",
   "notes": [
-    "Maclar dunya fiksturunden alinir",
-    "Sadece Super Lig gosterme giderildi",
-    "Haberler ve maclar artik taninir",
-    "Guncel veri hatasi azaltildi"
+    "Hava durumu tum ayrintilari verir",
+    "Yarin hava tahmini hizlandirildi",
+    "Veri yoksa GPT cevap vermeyi dener",
+    "GPT beklerken nabiz animasyonu var"
   ]
 }
