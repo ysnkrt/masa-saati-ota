@@ -1,11 +1,11 @@
 {
-  "version": "1.0.8",
+  "version": "1.0.9",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "1be5576d167158c287469522302b986d883e24fc4844f7e20b7edc39506883f7",
+  "sha256": "d7ee6651a5a6e5c12717ea91c5bee7e0416bcad96c984d1afbf6c02338719766",
   "notes": [
-    "Canli web yanitlari hizlandirildi",
-    "Webde GPT-5.4 nano kullaniliyor",
-    "Dusunme gecikmesi kaldirildi",
-    "Web aramasi tek cagriyla sinirlandi"
+    "Web yanitlari daha da hizlandirildi",
+    "Guncelleme ekrani sadelestirildi",
+    "Eski surum bilgisi kaldirildi",
+    "Gereksiz uyari metni kaldirildi"
   ]
 }
