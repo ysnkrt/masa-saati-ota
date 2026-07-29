@@ -27,10 +27,10 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 
 # ==== SOR (ChatGPT) AYARLARI ====
 OPENAI_API_KEY = ""
-QA_MODEL = "gpt-5-search-api"                        # web_search_options destekleyen gercek model
+QA_MODEL = "gpt-5-nano"
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1338,29 +1338,34 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     api_key = OPENAI_API_KEY.strip()
     if not api_key or api_key.startswith("sk-BURAYA"):
         return None, "API ANAHTARI GIRILMEMIS"
-    msl = model.lower()
-    is_gpt5 = ("gpt-5" in msl) or ("gpt5" in msl)
-    is_search_api = "search" in msl   # gpt-5-search-api: reasoning_effort desteklemiyor
     mt = max_tok if max_tok is not None else MAX_TOKENS
-    body = {"model": model, "messages": messages}
+    instructions = []
+    request_input = []
+    for message in messages:
+        if message.get("role") == "system":
+            instructions.append(message.get("content", ""))
+        else:
+            request_input.append(message)
+    body = {
+        "model": model,
+        "input": request_input,
+        "max_output_tokens": mt,
+    }
+    if instructions:
+        body["instructions"] = "\n".join(instructions)
     if web_search:
-        body["web_search_options"] = {
+        body["tools"] = [{
+            "type": "web_search",
+            "search_context_size": "low",
             "user_location": {
                 "type": "approximate",
-                "approximate": {
-                    "country": USER_COUNTRY,
-                    "city": USER_CITY,
-                    "region": USER_REGION,
-                },
-            }
-        }
-    if is_gpt5:
-        body["max_completion_tokens"] = mt
-        if reasoning and not is_search_api:
-            body["reasoning_effort"] = reasoning
-    elif not web_search:
-        body["max_tokens"] = mt
-        body["temperature"] = 0.7
+                "country": USER_COUNTRY,
+                "city": USER_CITY,
+                "region": USER_REGION,
+            },
+        }]
+    if reasoning:
+        body["reasoning"] = {"effort": reasoning}
     payload = json.dumps(body)
     transient_status = (0, 408, 429, 500, 502, 503, 504)
     last_error = "BAGLANTI HATASI"
@@ -1369,7 +1374,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
         status = 0
         text = ""
         try:
-            status, text = https_post("api.openai.com", "/v1/chat/completions",
+            status, text = https_post("api.openai.com", "/v1/responses",
                                        api_key, payload, timeout)
         except Exception as exc:
             last_error = "BAGLANTI HATASI: " + str(exc)
@@ -1387,7 +1392,16 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 
         if status == 200 and data is not None:
             try:
-                return data["choices"][0]["message"]["content"], None
+                output_text = []
+                for item in data.get("output", []):
+                    if item.get("type") != "message":
+                        continue
+                    for content in item.get("content", []):
+                        if content.get("type") == "output_text":
+                            output_text.append(content.get("text", ""))
+                if output_text:
+                    return "\n".join(output_text), None
+                last_error = "GPT BOS YANIT VERDI"
             except Exception:
                 last_error = "BEKLENMEYEN BICIM"
         elif status in transient_status and status != 0:
@@ -1414,7 +1428,7 @@ def ask_question(q):
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
         QA_MODEL, True, 45, max_tok=tok,
-        reasoning="minimal")   # olabildigince hizli cevap; web aramasi her zaman acik
+        reasoning="low")   # GPT-5 nano web aramasi icin en dusuk desteklenen seviye
 
 
 def is_online():
