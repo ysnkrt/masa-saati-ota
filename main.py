@@ -29,10 +29,11 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
 WEB_SEARCH_MODEL = "gpt-5.4-nano"
+WEB_MAX_TOKENS = 220
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.8"
+APP_VERSION = "1.0.9"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1362,7 +1363,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     body = {
         "model": WEB_SEARCH_MODEL if web_search else model,
         "input": request_input,
-        "max_output_tokens": mt,
+        "max_output_tokens": min(mt, WEB_MAX_TOKENS) if web_search else mt,
     }
     if instructions:
         body["instructions"] = "\n".join(instructions)
@@ -3434,22 +3435,19 @@ def _settings_set_brightness(y):
 
 def _ota_confirm_screen(version, notes):
     lcd.fill(BG)
-    lcd.text("YENI SURUM", 94, 14, TITLE_COL, 2)
-    current = "MEVCUT  v" + APP_VERSION
-    incoming = "YENI    v" + version
-    lcd.text(current, (WIDTH - len(current) * 6) // 2, 48, GRAY, 1)
-    lcd.text(incoming, (WIDTH - len(incoming) * 6) // 2, 65, GREEN, 1)
-    lcd.hline(24, 83, WIDTH - 48, DARKGRAY)
-    lcd.text("BU GUNCELLEMEDE", 112, 92, TITLE_COL, 1)
+    lcd.text("YAZILIM GUNCELLEMESI", 34, 14, TITLE_COL, 2)
+    incoming = "SURUM  v" + version
+    lcd.text(incoming, (WIDTH - len(incoming) * 6) // 2, 51, GREEN, 1)
+    lcd.hline(24, 72, WIDTH - 48, DARKGRAY)
+    lcd.text("YENILIKLER", 127, 84, TITLE_COL, 1)
     shown_notes = notes if notes else ["Genel iyilestirmeler"]
-    y = 111
+    y = 106
     for note in shown_notes[:4]:
         line = "- " + to_screen_text(note)
         if len(line) > 50:
             line = line[:47] + "..."
         lcd.text(line, 10, y, FG, 1)
-        y += 14
-    lcd.text("GUNCELLEME SIRASINDA KAPATMA", 70, 180, AMBER, 1)
+        y += 16
     lcd.fill_rect(0, 198, 158, 42, DARKGRAY)
     lcd.rect(0, 198, 158, 42, GRAY)
     lcd.text("IPTAL", 64, 215, WHITE, 1)
@@ -3493,7 +3491,7 @@ def run_ota_update():
     gc.collect()
 
     lcd.fill(BG)
-    lcd.text("GUNCELLEME INIYOR", 58, 76, TITLE_COL, 2)
+    lcd.text("YAZILIM GUNCELLENIYOR", 28, 76, TITLE_COL, 2)
     _ota_draw_progress(0, 1)
     ok, err = ota_download(download_url, expected_sha)
     if not ok:
