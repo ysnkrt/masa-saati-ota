@@ -28,11 +28,11 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 # ==== SOR (ChatGPT) AYARLARI ====
 OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
-WEB_SEARCH_MODEL = "gpt-5-search-api"
+WEB_SEARCH_MODEL = "gpt-5.4-nano"
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.7"
+APP_VERSION = "1.0.8"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1352,42 +1352,36 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     if not api_key or api_key.startswith("sk-BURAYA"):
         return None, "API ANAHTARI GIRILMEMIS"
     mt = max_tok if max_tok is not None else MAX_TOKENS
+    instructions = []
+    request_input = []
+    for message in messages:
+        if message.get("role") == "system":
+            instructions.append(message.get("content", ""))
+        else:
+            request_input.append(message)
+    body = {
+        "model": WEB_SEARCH_MODEL if web_search else model,
+        "input": request_input,
+        "max_output_tokens": mt,
+    }
+    if instructions:
+        body["instructions"] = "\n".join(instructions)
+    if reasoning:
+        body["reasoning"] = {"effort": reasoning}
     if web_search:
-        body = {
-            "model": WEB_SEARCH_MODEL,
-            "messages": messages,
-            "max_completion_tokens": max(350, mt),
-            "web_search_options": {
-                "search_context_size": "low",
-                "user_location": {
-                    "type": "approximate",
-                    "approximate": {
-                        "country": USER_COUNTRY,
-                        "city": USER_CITY,
-                        "region": USER_REGION,
-                    },
-                },
+        body["text"] = {"verbosity": "low"}
+        body["max_tool_calls"] = 1
+        body["tools"] = [{
+            "type": "web_search",
+            "search_context_size": "low",
+            "user_location": {
+                "type": "approximate",
+                "country": USER_COUNTRY,
+                "city": USER_CITY,
+                "region": USER_REGION,
             },
-        }
-        endpoint = "/v1/chat/completions"
-    else:
-        instructions = []
-        request_input = []
-        for message in messages:
-            if message.get("role") == "system":
-                instructions.append(message.get("content", ""))
-            else:
-                request_input.append(message)
-        body = {
-            "model": model,
-            "input": request_input,
-            "max_output_tokens": mt,
-        }
-        if instructions:
-            body["instructions"] = "\n".join(instructions)
-        if reasoning:
-            body["reasoning"] = {"effort": reasoning}
-        endpoint = "/v1/responses"
+        }]
+    endpoint = "/v1/responses"
     payload = json.dumps(body)
     transient_status = (0, 408, 429, 500, 502, 503, 504)
     last_error = "BAGLANTI HATASI"
@@ -1415,32 +1409,21 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 
         if status == 200 and data is not None:
             try:
-                if web_search:
-                    choice = data["choices"][0]
-                    answer = choice["message"].get("content", "")
-                    if answer:
-                        return answer, None
-                    if choice.get("finish_reason") == "length":
-                        last_error = "GPT YANIT SINIRINA ULASTI"
-                        limit_reached = True
-                    else:
-                        last_error = "GPT BOS YANIT VERDI"
+                output_text = []
+                for item in data.get("output", []):
+                    if item.get("type") != "message":
+                        continue
+                    for content in item.get("content", []):
+                        if content.get("type") == "output_text":
+                            output_text.append(content.get("text", ""))
+                if output_text:
+                    return "\n".join(output_text), None
+                incomplete = data.get("incomplete_details") or {}
+                if incomplete.get("reason") == "max_output_tokens":
+                    last_error = "GPT YANIT SINIRINA ULASTI"
+                    limit_reached = True
                 else:
-                    output_text = []
-                    for item in data.get("output", []):
-                        if item.get("type") != "message":
-                            continue
-                        for content in item.get("content", []):
-                            if content.get("type") == "output_text":
-                                output_text.append(content.get("text", ""))
-                    if output_text:
-                        return "\n".join(output_text), None
-                    incomplete = data.get("incomplete_details") or {}
-                    if incomplete.get("reason") == "max_output_tokens":
-                        last_error = "GPT YANIT SINIRINA ULASTI"
-                        limit_reached = True
-                    else:
-                        last_error = "GPT BOS YANIT VERDI"
+                    last_error = "GPT BOS YANIT VERDI"
             except Exception:
                 last_error = "BEKLENMEYEN BICIM"
         elif status in transient_status and status != 0:
@@ -1453,8 +1436,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 
         if attempt < GPT_RETRY_COUNT:
             if limit_reached:
-                token_key = "max_completion_tokens" if web_search else "max_output_tokens"
-                body[token_key] = GPT_RETRY_OUTPUT_BUDGET
+                body["max_output_tokens"] = GPT_RETRY_OUTPUT_BUDGET
                 payload = json.dumps(body)
             if lcd is not None:
                 retry_msg = "GPT YANITI TAMAMLIYOR..." if limit_reached else "GPT TEKRAR DENIYOR..."
@@ -1499,7 +1481,7 @@ def ask_question(q, web_search=None):
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
         QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
-        reasoning="low" if web_search else "minimal")
+        reasoning="none" if web_search else "minimal")
 
 
 def is_online():
