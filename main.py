@@ -28,12 +28,11 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 # ==== SOR (ChatGPT) AYARLARI ====
 OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
+WEB_SEARCH_MODEL = "gpt-5-search-api"
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
-GPT_TOOL_TOKEN_RESERVE = 700                         # web aramasi ve dusunme payi
-GPT_MIN_OUTPUT_BUDGET = 4096
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.6"
+APP_VERSION = "1.0.7"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1055,11 +1054,22 @@ def ota_check_manifest():
         version = str(data["version"]).strip()
         url = str(data["url"]).strip()
         sha256 = str(data["sha256"]).strip().lower()
+        raw_notes = data.get("notes", [])
     except Exception:
         return None, "OTA BILGISI GECERSIZ"
     if not version or not url.startswith("https://") or len(sha256) != 64:
         return None, "OTA ALANLARI EKSIK"
-    return {"version": version, "url": url, "sha256": sha256}, None
+    if isinstance(raw_notes, str):
+        raw_notes = [raw_notes]
+    notes = []
+    for item in raw_notes:
+        note = str(item).strip()
+        if note:
+            notes.append(note)
+        if len(notes) >= 4:
+            break
+    return {"version": version, "url": url, "sha256": sha256,
+            "notes": notes}, None
 
 
 def _ota_digest_hex(hasher):
@@ -1342,39 +1352,42 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     if not api_key or api_key.startswith("sk-BURAYA"):
         return None, "API ANAHTARI GIRILMEMIS"
     mt = max_tok if max_tok is not None else MAX_TOKENS
-    api_mt = mt
     if web_search:
-        api_mt += GPT_TOOL_TOKEN_RESERVE
-        if api_mt < GPT_MIN_OUTPUT_BUDGET:
-            api_mt = GPT_MIN_OUTPUT_BUDGET
-    instructions = []
-    request_input = []
-    for message in messages:
-        if message.get("role") == "system":
-            instructions.append(message.get("content", ""))
-        else:
-            request_input.append(message)
-    body = {
-        "model": model,
-        "input": request_input,
-        "max_output_tokens": api_mt,
-    }
-    if instructions:
-        body["instructions"] = "\n".join(instructions)
-    if web_search:
-        body["tools"] = [{
-            "type": "web_search",
-            "search_context_size": "low",
-            "user_location": {
-                "type": "approximate",
-                "country": USER_COUNTRY,
-                "city": USER_CITY,
-                "region": USER_REGION,
+        body = {
+            "model": WEB_SEARCH_MODEL,
+            "messages": messages,
+            "max_completion_tokens": max(350, mt),
+            "web_search_options": {
+                "search_context_size": "low",
+                "user_location": {
+                    "type": "approximate",
+                    "approximate": {
+                        "country": USER_COUNTRY,
+                        "city": USER_CITY,
+                        "region": USER_REGION,
+                    },
+                },
             },
-        }]
-        body["max_tool_calls"] = 1
-    if reasoning:
-        body["reasoning"] = {"effort": reasoning}
+        }
+        endpoint = "/v1/chat/completions"
+    else:
+        instructions = []
+        request_input = []
+        for message in messages:
+            if message.get("role") == "system":
+                instructions.append(message.get("content", ""))
+            else:
+                request_input.append(message)
+        body = {
+            "model": model,
+            "input": request_input,
+            "max_output_tokens": mt,
+        }
+        if instructions:
+            body["instructions"] = "\n".join(instructions)
+        if reasoning:
+            body["reasoning"] = {"effort": reasoning}
+        endpoint = "/v1/responses"
     payload = json.dumps(body)
     transient_status = (0, 408, 429, 500, 502, 503, 504)
     last_error = "BAGLANTI HATASI"
@@ -1384,7 +1397,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
         text = ""
         limit_reached = False
         try:
-            status, text = https_post("api.openai.com", "/v1/responses",
+            status, text = https_post("api.openai.com", endpoint,
                                        api_key, payload, timeout)
         except Exception as exc:
             last_error = "BAGLANTI HATASI: " + str(exc)
@@ -1402,21 +1415,32 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 
         if status == 200 and data is not None:
             try:
-                output_text = []
-                for item in data.get("output", []):
-                    if item.get("type") != "message":
-                        continue
-                    for content in item.get("content", []):
-                        if content.get("type") == "output_text":
-                            output_text.append(content.get("text", ""))
-                if output_text:
-                    return "\n".join(output_text), None
-                incomplete = data.get("incomplete_details") or {}
-                if incomplete.get("reason") == "max_output_tokens":
-                    last_error = "GPT YANIT SINIRINA ULASTI"
-                    limit_reached = True
+                if web_search:
+                    choice = data["choices"][0]
+                    answer = choice["message"].get("content", "")
+                    if answer:
+                        return answer, None
+                    if choice.get("finish_reason") == "length":
+                        last_error = "GPT YANIT SINIRINA ULASTI"
+                        limit_reached = True
+                    else:
+                        last_error = "GPT BOS YANIT VERDI"
                 else:
-                    last_error = "GPT BOS YANIT VERDI"
+                    output_text = []
+                    for item in data.get("output", []):
+                        if item.get("type") != "message":
+                            continue
+                        for content in item.get("content", []):
+                            if content.get("type") == "output_text":
+                                output_text.append(content.get("text", ""))
+                    if output_text:
+                        return "\n".join(output_text), None
+                    incomplete = data.get("incomplete_details") or {}
+                    if incomplete.get("reason") == "max_output_tokens":
+                        last_error = "GPT YANIT SINIRINA ULASTI"
+                        limit_reached = True
+                    else:
+                        last_error = "GPT BOS YANIT VERDI"
             except Exception:
                 last_error = "BEKLENMEYEN BICIM"
         elif status in transient_status and status != 0:
@@ -1429,7 +1453,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
 
         if attempt < GPT_RETRY_COUNT:
             if limit_reached:
-                body["max_output_tokens"] = GPT_RETRY_OUTPUT_BUDGET
+                token_key = "max_completion_tokens" if web_search else "max_output_tokens"
+                body[token_key] = GPT_RETRY_OUTPUT_BUDGET
                 payload = json.dumps(body)
             if lcd is not None:
                 retry_msg = "GPT YANITI TAMAMLIYOR..." if limit_reached else "GPT TEKRAR DENIYOR..."
@@ -3425,14 +3450,24 @@ def _settings_set_brightness(y):
     _settings_draw_brightness(False, old_y)
 
 
-def _ota_confirm_screen(version):
+def _ota_confirm_screen(version, notes):
     lcd.fill(BG)
-    lcd.text("YENI SURUM", 94, 38, TITLE_COL, 2)
+    lcd.text("YENI SURUM", 94, 14, TITLE_COL, 2)
     current = "MEVCUT  v" + APP_VERSION
     incoming = "YENI    v" + version
-    lcd.text(current, (WIDTH - len(current) * 6) // 2, 91, GRAY, 1)
-    lcd.text(incoming, (WIDTH - len(incoming) * 6) // 2, 117, GREEN, 1)
-    lcd.text("GUNCELLEME SIRASINDA KAPATMA", 70, 157, AMBER, 1)
+    lcd.text(current, (WIDTH - len(current) * 6) // 2, 48, GRAY, 1)
+    lcd.text(incoming, (WIDTH - len(incoming) * 6) // 2, 65, GREEN, 1)
+    lcd.hline(24, 83, WIDTH - 48, DARKGRAY)
+    lcd.text("BU GUNCELLEMEDE", 112, 92, TITLE_COL, 1)
+    shown_notes = notes if notes else ["Genel iyilestirmeler"]
+    y = 111
+    for note in shown_notes[:4]:
+        line = "- " + to_screen_text(note)
+        if len(line) > 50:
+            line = line[:47] + "..."
+        lcd.text(line, 10, y, FG, 1)
+        y += 14
+    lcd.text("GUNCELLEME SIRASINDA KAPATMA", 70, 180, AMBER, 1)
     lcd.fill_rect(0, 198, 158, 42, DARKGRAY)
     lcd.rect(0, 198, 158, 42, GRAY)
     lcd.text("IPTAL", 64, 215, WHITE, 1)
@@ -3466,7 +3501,7 @@ def run_ota_update():
         show_status_screen("SURUM GUNCEL: v" + APP_VERSION, GREEN)
         time.sleep_ms(1400)
         return
-    if not _ota_confirm_screen(manifest["version"]):
+    if not _ota_confirm_screen(manifest["version"], manifest.get("notes", [])):
         return
 
     download_url = manifest["url"]
