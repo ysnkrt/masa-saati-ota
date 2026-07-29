@@ -34,7 +34,7 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.13"
+APP_VERSION = "1.0.14"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -49,6 +49,8 @@ SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "baslik (#) veya tablo KULLANMA. "
                  "Kullaniciya kesinlikle soru sorma veya secenek sunma. "
                  "Soru belirsizse en makul varsayimi yapip dogrudan cevapla. "
+                 "Guncel veriye erisemesen bile erisemiyorum deme; en son "
+                 "bildigin bilgiyi tarihini acikca belirterek cevapla. "
                  "COK ONEMLI KURAL: Cevabinda kesinlikle URL, site adi veya "
                  "kaynak belirtme. 'Kaynaklara gore', 'haberlere gore', "
                  "'verilere gore', 'X sitesine gore', 'arastirmalara gore' "
@@ -136,6 +138,13 @@ try:
     import ssl
 except Exception:
     ssl = None
+try:
+    import select
+except Exception:
+    try:
+        import uselect as select
+    except Exception:
+        select = None
 
 try:
     import network
@@ -939,7 +948,26 @@ def https_post(host, path, api_key, body_str, timeout=45):
     ss.write(req.encode("utf-8"))
     ss.write(body)
     parts = []
+    poller = None
+    if select is not None:
+        try:
+            poller = select.poll()
+            poller.register(ss, select.POLLIN)
+        except Exception:
+            poller = None
+    read_started = time.ticks_ms()
     while True:
+        if poller is not None:
+            try:
+                ready = poller.poll(90)
+            except Exception:
+                poller = None
+                ready = None
+            if poller is not None and not ready:
+                _gpt_wait_step()
+                if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
+                    break
+                continue
         try:
             d = ss.read(512)
         except Exception:
@@ -947,6 +975,7 @@ def https_post(host, path, api_key, body_str, timeout=45):
         if not d:
             break
         parts.append(d)
+        _gpt_wait_step()
     try:
         ss.close()
     except Exception:
@@ -1467,7 +1496,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
 WEB_QUERY_HINTS = (
     "bugun", "yarin", "dun", "guncel", "son dakika", "su an", "simdi",
     "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
-    "sicaklik", "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
+    "sicaklik", "sogukluk", "nem", "ruzgar", "basinc", "uv", "gorus",
+    "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
     "hisse", "bitcoin", "btc", "ethereum", "eth", "kripto", "fiyat", "kac tl", "ne kadar",
     "haber", "haberler", "mac", "maclar", "skor", "skorlar",
     "puan durumu", "lig", "ligler", "fikstur", "fiksturler",
@@ -1648,31 +1678,115 @@ def _fast_sports_answer():
         item[1] for item in matches[:6]) + "."
 
 
+def _daily_item(daily, key, index):
+    values = daily.get(key) or []
+    if index < len(values):
+        return values[index]
+    return None
+
+
+def _wind_direction_name(value):
+    try:
+        names = ("K", "KD", "D", "GD", "G", "GB", "B", "KB")
+        return names[int((float(value) + 22.5) // 45) % 8]
+    except Exception:
+        return ""
+
+
 def _fast_weather_answer(text):
-    if " yarin " in text or USER_LAT is None or USER_LON is None:
+    if USER_LAT is None or USER_LON is None:
         return None
     path = ("/v1/forecast?latitude=%s&longitude=%s"
-            "&current=temperature_2m,apparent_temperature,precipitation,"
-            "weather_code&timezone=auto") % (str(USER_LAT), str(USER_LON))
+            "&current=temperature_2m,relative_humidity_2m,"
+            "apparent_temperature,precipitation,rain,snowfall,weather_code,"
+            "cloud_cover,surface_pressure,visibility,wind_speed_10m,"
+            "wind_direction_10m,wind_gusts_10m"
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+            "apparent_temperature_max,apparent_temperature_min,"
+            "precipitation_probability_max,uv_index_max,sunrise,sunset"
+            "&timezone=auto&forecast_days=3") % (str(USER_LAT), str(USER_LON))
     status, raw = https_get("api.open-meteo.com", path, 10)
     if status != 200 or not raw:
         return None
     data = json.loads(raw)
+    daily = data.get("daily") or {}
+    place = USER_REGION if USER_REGION else USER_CITY
+    if " yarin " in text:
+        index = 1
+        date_value = _daily_item(daily, "time", index)
+        low = _daily_item(daily, "temperature_2m_min", index)
+        high = _daily_item(daily, "temperature_2m_max", index)
+        feels_low = _daily_item(daily, "apparent_temperature_min", index)
+        feels_high = _daily_item(daily, "apparent_temperature_max", index)
+        rain_chance = _daily_item(
+            daily, "precipitation_probability_max", index)
+        uv = _daily_item(daily, "uv_index_max", index)
+        condition = _weather_condition(
+            _daily_item(daily, "weather_code", index))
+        if date_value is None or low is None or high is None:
+            return None
+        answer = "Yarin %s: %s, en dusuk %.1f C, en yuksek %.1f C" % (
+            place, condition, float(low), float(high))
+        if feels_low is not None and feels_high is not None:
+            answer += ", hissedilen %.1f-%.1f C" % (
+                float(feels_low), float(feels_high))
+        if rain_chance is not None:
+            answer += ". Yagis ihtimali %%%d" % int(float(rain_chance))
+        if uv is not None:
+            answer += ", UV en fazla %.1f" % float(uv)
+        sunrise = _daily_item(daily, "sunrise", index)
+        sunset = _daily_item(daily, "sunset", index)
+        if sunrise and sunset:
+            answer += ". Gun dogumu %s, gun batimi %s" % (
+                sunrise[11:16], sunset[11:16])
+        return answer + ". Tahmin tarihi " + _display_date(date_value) + "."
+
     current = data.get("current") or {}
     temp = current.get("temperature_2m")
     feels = current.get("apparent_temperature")
     if temp is None:
         return None
-    place = USER_REGION if USER_REGION else USER_CITY
     condition = _weather_condition(current.get("weather_code"))
     answer = "%s: %.1f C" % (place, float(temp))
     if feels is not None:
         answer += ", hissedilen %.1f C" % float(feels)
     if condition:
         answer += ", " + condition
-    rain = current.get("precipitation")
-    if rain is not None:
-        answer += ". Yagis %.1f mm" % float(rain)
+    low = _daily_item(daily, "temperature_2m_min", 0)
+    high = _daily_item(daily, "temperature_2m_max", 0)
+    if low is not None and high is not None:
+        answer += ". Bugun en dusuk %.1f C, en yuksek %.1f C" % (
+            float(low), float(high))
+    humidity = current.get("relative_humidity_2m")
+    if humidity is not None:
+        answer += ". Nem %%%d" % int(float(humidity))
+    precipitation = current.get("precipitation")
+    if precipitation is not None:
+        answer += ", yagis %.1f mm" % float(precipitation)
+    wind = current.get("wind_speed_10m")
+    if wind is not None:
+        direction = _wind_direction_name(current.get("wind_direction_10m"))
+        answer += ". Ruzgar %s %.1f km/s" % (direction, float(wind))
+        gust = current.get("wind_gusts_10m")
+        if gust is not None:
+            answer += ", hamle %.1f km/s" % float(gust)
+    pressure = current.get("surface_pressure")
+    if pressure is not None:
+        answer += ". Basinc %.0f hPa" % float(pressure)
+    cloud = current.get("cloud_cover")
+    if cloud is not None:
+        answer += ", bulut %%%d" % int(float(cloud))
+    visibility = current.get("visibility")
+    if visibility is not None:
+        answer += ", gorus %.1f km" % (float(visibility) / 1000.0)
+    uv = _daily_item(daily, "uv_index_max", 0)
+    if uv is not None:
+        answer += ". UV en fazla %.1f" % float(uv)
+    sunrise = _daily_item(daily, "sunrise", 0)
+    sunset = _daily_item(daily, "sunset", 0)
+    if sunrise and sunset:
+        answer += ", gun dogumu %s, gun batimi %s" % (
+            sunrise[11:16], sunset[11:16])
     stamp = current.get("time")
     if stamp:
         answer += ". Veri zamani " + _display_date(stamp[:10]) + " " + stamp[11:16]
@@ -1782,7 +1896,9 @@ def fast_live_answer(q):
     try:
         if _question_is_sports(text):
             answer = _fast_sports_answer()
-        elif (" hava " in text or " sicaklik " in text or " yagmur " in text):
+        elif any((" " + hint + " ") in text for hint in (
+                "hava", "sicaklik", "sogukluk", "yagmur", "nem",
+                "ruzgar", "basinc", "uv", "gorus")):
             answer = _fast_weather_answer(text)
         elif (" bitcoin " in text or " btc " in text or
               " ethereum " in text or " eth " in text):
@@ -2085,12 +2201,21 @@ def _ask_and_show(q):
     show_status_screen(status, TITLE_COL)
     answer = fast_live_answer(q) if use_web else None
     if answer is None:
+        _gpt_wait_start()
         answer, err = ask_question(q, use_web)
     else:
         err = None
-    if err is None and use_web and _answer_refuses_current(answer):
+    if use_web and (err is not None or _answer_refuses_current(answer)):
         show_status_screen("GUNCEL VERI TEKRAR ARANIYOR...", TITLE_COL)
+        _gpt_wait_start()
         answer, err = ask_question(q, True, "medium")
+    if use_web and (err is not None or _answer_refuses_current(answer)):
+        show_status_screen("GPT BILGISIYLE CEVAPLIYOR...", TITLE_COL)
+        _gpt_wait_start()
+        fallback_q = (q + " Canli veri yoksa en son bildigin bilgiyi ve "
+                      "bilginin tarihini belirterek dogrudan cevapla.")
+        answer, err = ask_question(fallback_q, False)
+    _gpt_wait_stop()
     if err is not None:
         txt = to_screen_text(err)
     else:
@@ -2130,6 +2255,45 @@ def show_status_screen(msg, color=AMBER):
     if x < 2:
         x = 2
     lcd.text(msg, x, HEIGHT // 2 - 4, color, 1)
+
+
+_gpt_wait_active = False
+_gpt_wait_phase = 0
+_gpt_wait_last = 0
+_GPT_WAIT_HEIGHTS = (8, 14, 22, 14)
+
+
+def _gpt_wait_step(force=False):
+    global _gpt_wait_phase, _gpt_wait_last
+    if not _gpt_wait_active or lcd is None:
+        return
+    now = time.ticks_ms()
+    if not force and time.ticks_diff(now, _gpt_wait_last) < 90:
+        return
+    _gpt_wait_last = now
+    for i in range(4):
+        x = 10 + i * 10
+        lcd.fill_rect(x - 1, 8, 8, 30, BG)
+        h = _GPT_WAIT_HEIGHTS[(_gpt_wait_phase + i) % 4]
+        y = 23 - h // 2
+        _draw_round_rect(x, y, 6, h, 3, TITLE_COL)
+    _gpt_wait_phase = (_gpt_wait_phase + 1) % 4
+
+
+def _gpt_wait_start():
+    global _gpt_wait_active, _gpt_wait_phase, _gpt_wait_last
+    _gpt_wait_active = True
+    _gpt_wait_phase = 0
+    _gpt_wait_last = 0
+    lcd.fill_rect(6, 6, 48, 34, BG)
+    _gpt_wait_step(True)
+
+
+def _gpt_wait_stop():
+    global _gpt_wait_active
+    _gpt_wait_active = False
+    if lcd is not None:
+        lcd.fill_rect(6, 6, 48, 34, BG)
 
 
 # ===================== WIFI DOSYA / TARAMA =====================
