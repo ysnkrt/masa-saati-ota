@@ -31,8 +31,9 @@ QA_MODEL = "gpt-5-nano"
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_TOOL_TOKEN_RESERVE = 700                         # web aramasi ve dusunme payi
-GPT_MIN_OUTPUT_BUDGET = 900
-APP_VERSION = "1.0.4"
+GPT_MIN_OUTPUT_BUDGET = 4096
+GPT_RETRY_OUTPUT_BUDGET = 8192
+APP_VERSION = "1.0.5"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1380,6 +1381,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
         gc.collect()
         status = 0
         text = ""
+        limit_reached = False
         try:
             status, text = https_post("api.openai.com", "/v1/responses",
                                        api_key, payload, timeout)
@@ -1411,6 +1413,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
                 incomplete = data.get("incomplete_details") or {}
                 if incomplete.get("reason") == "max_output_tokens":
                     last_error = "GPT YANIT SINIRINA ULASTI"
+                    limit_reached = True
                 else:
                     last_error = "GPT BOS YANIT VERDI"
             except Exception:
@@ -1424,8 +1427,12 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
                 return None, "API HATASI KOD " + str(status)
 
         if attempt < GPT_RETRY_COUNT:
+            if limit_reached:
+                body["max_output_tokens"] = GPT_RETRY_OUTPUT_BUDGET
+                payload = json.dumps(body)
             if lcd is not None:
-                show_status_screen("GPT TEKRAR DENIYOR...", AMBER)
+                retry_msg = "GPT YANITI TAMAMLIYOR..." if limit_reached else "GPT TEKRAR DENIYOR..."
+                show_status_screen(retry_msg, AMBER)
             time.sleep_ms(GPT_RETRY_DELAY_MS)
 
     return None, last_error
@@ -1438,7 +1445,7 @@ def ask_question(q):
     return openai_chat(
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
-        QA_MODEL, True, 45, max_tok=tok,
+        QA_MODEL, True, 75, max_tok=tok,
         reasoning="low")   # GPT-5 nano web aramasi icin en dusuk desteklenen seviye
 
 
