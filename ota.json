@@ -1,11 +1,11 @@
 {
-  "version": "1.0.11",
+  "version": "1.0.12",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "ac3ea3f830eb9c78c3a3f5e71e308fcc4ca5445cb50d9d8d103afc98cc57e94c",
+  "sha256": "5f910942fd152a5ca21623ffdec08c3b213f214ad6c20b6b693d292a99872863",
   "notes": [
-    "Guncel web aramasi zorunlu yapildi",
-    "Dogrulayamiyorum sorunu giderildi",
-    "Altin ve gumus hizli veriye eklendi",
-    "Fiyatlarda tarih ve saat gosterilir"
+    "GPT artik kullaniciya soru sormaz",
+    "Haber kanali secimi istemez",
+    "Belirsiz haberde en onemlisini secer",
+    "Haber yanitlari dogrudan gosterilir"
   ]
 }
