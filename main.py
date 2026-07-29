@@ -30,7 +30,9 @@ OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
-APP_VERSION = "1.0.3"
+GPT_TOOL_TOKEN_RESERVE = 700                         # web aramasi ve dusunme payi
+GPT_MIN_OUTPUT_BUDGET = 900
+APP_VERSION = "1.0.4"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1339,6 +1341,11 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     if not api_key or api_key.startswith("sk-BURAYA"):
         return None, "API ANAHTARI GIRILMEMIS"
     mt = max_tok if max_tok is not None else MAX_TOKENS
+    api_mt = mt
+    if web_search:
+        api_mt += GPT_TOOL_TOKEN_RESERVE
+        if api_mt < GPT_MIN_OUTPUT_BUDGET:
+            api_mt = GPT_MIN_OUTPUT_BUDGET
     instructions = []
     request_input = []
     for message in messages:
@@ -1349,7 +1356,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     body = {
         "model": model,
         "input": request_input,
-        "max_output_tokens": mt,
+        "max_output_tokens": api_mt,
     }
     if instructions:
         body["instructions"] = "\n".join(instructions)
@@ -1401,7 +1408,11 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
                             output_text.append(content.get("text", ""))
                 if output_text:
                     return "\n".join(output_text), None
-                last_error = "GPT BOS YANIT VERDI"
+                incomplete = data.get("incomplete_details") or {}
+                if incomplete.get("reason") == "max_output_tokens":
+                    last_error = "GPT YANIT SINIRINA ULASTI"
+                else:
+                    last_error = "GPT BOS YANIT VERDI"
             except Exception:
                 last_error = "BEKLENMEYEN BICIM"
         elif status in transient_status and status != 0:
