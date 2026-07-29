@@ -33,7 +33,7 @@ GPT_RETRY_DELAY_MS = 900
 GPT_TOOL_TOKEN_RESERVE = 700                         # web aramasi ve dusunme payi
 GPT_MIN_OUTPUT_BUDGET = 4096
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.0.6"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1372,6 +1372,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
                 "region": USER_REGION,
             },
         }]
+        body["max_tool_calls"] = 1
     if reasoning:
         body["reasoning"] = {"effort": reasoning}
     payload = json.dumps(body)
@@ -1438,15 +1439,42 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None, reasoning=No
     return None, last_error
 
 
-def ask_question(q):
+WEB_QUERY_HINTS = (
+    "bugun", "yarin", "dun", "guncel", "son dakika", "su an", "simdi",
+    "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
+    "sicaklik", "dolar", "euro", "avro", "altin", "kur", "borsa",
+    "hisse", "bitcoin", "kripto", "fiyat", "kac tl", "ne kadar",
+    "haber", "mac", "skor", "puan durumu", "lig", "fikstur", "deprem",
+    "trafik", "kim kazandi", "secim", "internetten", "webden", "ara",
+    "kontrol et",
+)
+
+
+def question_needs_web(q):
+    text = str(q).lower()
+    for src, dst in (("ı", "i"), ("ş", "s"), ("ğ", "g"),
+                     ("ü", "u"), ("ö", "o"), ("ç", "c")):
+        text = text.replace(src, dst)
+    for separator in ".,?!:;()[]{}-/\\'\"":
+        text = text.replace(separator, " ")
+    text = " " + " ".join(text.split()) + " "
+    for hint in WEB_QUERY_HINTS:
+        if " " + hint + " " in text:
+            return True
+    return False
+
+
+def ask_question(q, web_search=None):
+    if web_search is None:
+        web_search = question_needs_web(q)
     extra = LEN_PROFILES[ans_len_idx][2]
     tok = LEN_PROFILES[ans_len_idx][1]
     sp = SYSTEM_PROMPT + " " + extra
     return openai_chat(
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
-        QA_MODEL, True, 75, max_tok=tok,
-        reasoning="low")   # GPT-5 nano web aramasi icin en dusuk desteklenen seviye
+        QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
+        reasoning="low" if web_search else "minimal")
 
 
 def is_online():
@@ -1702,11 +1730,12 @@ def _fmt_int(v):
 
 
 def _ask_and_show(q):
-    # Soruyu internetten sorar ve cevabi gosterir. show_answer'in
-    # sonucunu ("back"/"new") dondurur.
+    # Guncel sorularda web arar, digerlerini dogrudan GPT'ye sorar.
     apply_ans_size(ans_size_idx)
-    show_status_screen("INTERNETTEN ARASTIRIYOR...", TITLE_COL)
-    answer, err = ask_question(q)
+    use_web = question_needs_web(q)
+    status = "INTERNETTEN ARASTIRIYOR..." if use_web else "GPT CEVAPLIYOR..."
+    show_status_screen(status, TITLE_COL)
+    answer, err = ask_question(q, use_web)
     if err is not None:
         txt = to_screen_text(err)
     else:
