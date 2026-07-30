@@ -1,11 +1,11 @@
 {
-  "version": "1.0.16",
+  "version": "1.0.17",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "7fbd30abeb0f72bd15b18eda611f124192b33559fe1016b77420041f874df46b",
+  "sha256": "5aaa7acc4893746519f1a96a00dac112c7d408e1d3a801e2a05d529a6a90a79a",
   "notes": [
-    "ENOMEM bellek hatasi giderildi",
-    "Haber aramasinda RAM bosaltildi",
-    "HTTP yaniti kopyalanmadan okunur",
-    "Yalniz secili yazi boyutu tutulur"
+    "OTA bytearray uyumluluk hatasi giderildi",
+    "HTTPS baglantilari hatada tamamen kapatilir",
+    "Baglanti belleği her istekte temizlenir",
+    "Tekrarlayan ENOMEM hatasi onlendi"
   ]
 }

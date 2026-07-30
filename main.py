@@ -34,7 +34,7 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.16"
+APP_VERSION = "1.0.17"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -914,12 +914,40 @@ def show_answer(lines):
             draw_answer_text(lines, offset)
 
 
+def _buffer_find(data, needle, start=0):
+    needle_len = len(needle)
+    if needle_len == 0:
+        return start
+    limit = len(data) - needle_len
+    first = needle[0]
+    while start <= limit:
+        if data[start] == first:
+            matched = True
+            for offset in range(1, needle_len):
+                if data[start + offset] != needle[offset]:
+                    matched = False
+                    break
+            if matched:
+                return start
+        start += 1
+    return -1
+
+
+def _decode_buffer(data):
+    if isinstance(data, bytearray):
+        data = bytes(data)
+    try:
+        return data.decode("utf-8")
+    except Exception:
+        return data.decode()
+
+
 def _dechunk(data):
     out = bytearray()
     i = 0
     L = len(data)
     while i < L:
-        j = data.find(b"\r\n", i)
+        j = _buffer_find(data, b"\r\n", i)
         if j < 0:
             break
         try:
@@ -937,138 +965,165 @@ def _dechunk(data):
 def https_post(host, path, api_key, body_str, timeout=45):
     body = body_str.encode("utf-8")
     body_str = None
-    addr = socket.getaddrinfo(host, 443)[0][-1]
-    s = socket.socket()
+    s = None
+    ss = None
+    raw = None
     try:
-        s.settimeout(timeout)
-    except Exception:
-        pass
-    s.connect(addr)
-    try:
-        ss = ssl.wrap_socket(s, server_hostname=host)
-    except TypeError:
-        ss = ssl.wrap_socket(s)
-    req = ("POST " + path + " HTTP/1.1\r\n"
-           "Host: " + host + "\r\n"
-           "Authorization: Bearer " + api_key + "\r\n"
-           "Content-Type: application/json\r\n"
-           "Content-Length: " + str(len(body)) + "\r\n"
-           "Connection: close\r\n\r\n")
-    ss.write(req.encode("utf-8"))
-    ss.write(body)
-    raw = bytearray()
-    poller = None
-    if select is not None:
+        gc.collect()
+        addr = socket.getaddrinfo(host, 443)[0][-1]
+        s = socket.socket()
         try:
-            poller = select.poll()
-            poller.register(ss, select.POLLIN)
+            s.settimeout(timeout)
         except Exception:
-            poller = None
-    read_started = time.ticks_ms()
-    read_errors = 0
-    while True:
-        if poller is not None:
+            pass
+        s.connect(addr)
+        try:
+            ss = ssl.wrap_socket(s, server_hostname=host)
+        except TypeError:
+            ss = ssl.wrap_socket(s)
+        req = ("POST " + path + " HTTP/1.1\r\n"
+               "Host: " + host + "\r\n"
+               "Authorization: Bearer " + api_key + "\r\n"
+               "Content-Type: application/json\r\n"
+               "Content-Length: " + str(len(body)) + "\r\n"
+               "Connection: close\r\n\r\n")
+        ss.write(req.encode("utf-8"))
+        ss.write(body)
+        body = None
+        raw = bytearray()
+        poller = None
+        if select is not None:
             try:
-                ready = poller.poll(90)
+                poller = select.poll()
+                poller.register(ss, select.POLLIN)
             except Exception:
                 poller = None
-                ready = None
-            if poller is not None and not ready:
-                _gpt_wait_step()
-                if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
-                    break
-                continue
-        try:
-            d = ss.read(512)
-        except Exception:
-            read_errors += 1
-            if (poller is not None and read_errors < 200 and
-                    time.ticks_diff(time.ticks_ms(), read_started) < timeout * 1000):
-                _gpt_wait_step()
-                time.sleep_ms(10)
-                continue
-            break
-        if not d:
-            break
+        read_started = time.ticks_ms()
         read_errors = 0
-        raw.extend(d)
-        _gpt_wait_step()
-    try:
-        ss.close()
-    except Exception:
-        pass
-    he = raw.find(b"\r\n\r\n")
-    if he < 0:
-        return 0, ""
-    head = bytes(raw[:he])
-    del raw[:he + 4]
-    try:
-        status = int(head.split(b"\r\n")[0].split(b" ")[1])
-    except Exception:
-        status = 0
-    if head.lower().find(b"transfer-encoding: chunked") >= 0:
-        body_bytes = _dechunk(raw)
+        while True:
+            if poller is not None:
+                try:
+                    ready = poller.poll(90)
+                except Exception:
+                    poller = None
+                    ready = None
+                if poller is not None and not ready:
+                    _gpt_wait_step()
+                    if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
+                        break
+                    continue
+            try:
+                d = ss.read(512)
+            except Exception:
+                read_errors += 1
+                if (poller is not None and read_errors < 200 and
+                        time.ticks_diff(time.ticks_ms(), read_started) < timeout * 1000):
+                    _gpt_wait_step()
+                    time.sleep_ms(10)
+                    continue
+                raise
+            if not d:
+                break
+            read_errors = 0
+            raw.extend(d)
+            _gpt_wait_step()
+        he = _buffer_find(raw, b"\r\n\r\n")
+        if he < 0:
+            return 0, ""
+        head = bytes(raw[:he])
+        del raw[:he + 4]
+        try:
+            status = int(head.split(b"\r\n")[0].split(b" ")[1])
+        except Exception:
+            status = 0
+        if head.lower().find(b"transfer-encoding: chunked") >= 0:
+            body_bytes = _dechunk(raw)
+            raw = None
+        else:
+            body_bytes = raw
+            raw = None
+        text = _decode_buffer(body_bytes)
+        body_bytes = None
+        return status, text
+    finally:
+        body = None
         raw = None
-    else:
-        body_bytes = raw
-    try:
-        return status, body_bytes.decode("utf-8")
-    except Exception:
-        return status, body_bytes.decode()
+        if ss is not None:
+            try:
+                ss.close()
+            except Exception:
+                pass
+        elif s is not None:
+            try:
+                s.close()
+            except Exception:
+                pass
+        gc.collect()
 
 
 
 def https_get(host, path, timeout=25):
     if socket is None or ssl is None:
         return 0, ""
-    addr = socket.getaddrinfo(host, 443)[0][-1]
-    s = socket.socket()
+    s = None
+    ss = None
+    raw = None
     try:
-        s.settimeout(timeout)
-    except Exception:
-        pass
-    s.connect(addr)
-    try:
-        ss = ssl.wrap_socket(s, server_hostname=host)
-    except TypeError:
-        ss = ssl.wrap_socket(s)
-    req = ("GET " + path + " HTTP/1.1\r\n"
-           "Host: " + host + "\r\n"
-           "User-Agent: masasaati-pico/1.0\r\n"
-           "Accept: application/json\r\n"
-           "Connection: close\r\n\r\n")
-    ss.write(req.encode("utf-8"))
-    raw = bytearray()
-    while True:
+        gc.collect()
+        addr = socket.getaddrinfo(host, 443)[0][-1]
+        s = socket.socket()
         try:
-            d = ss.read(512)
+            s.settimeout(timeout)
         except Exception:
-            break
-        if not d:
-            break
-        raw.extend(d)
-    try:
-        ss.close()
-    except Exception:
-        pass
-    he = raw.find(b"\r\n\r\n")
-    if he < 0:
-        return 0, ""
-    head = bytes(raw[:he])
-    del raw[:he + 4]
-    try:
-        status = int(head.split(b"\r\n")[0].split(b" ")[1])
-    except Exception:
-        status = 0
-    if head.lower().find(b"transfer-encoding: chunked") >= 0:
-        body_bytes = _dechunk(raw)
+            pass
+        s.connect(addr)
+        try:
+            ss = ssl.wrap_socket(s, server_hostname=host)
+        except TypeError:
+            ss = ssl.wrap_socket(s)
+        req = ("GET " + path + " HTTP/1.1\r\n"
+               "Host: " + host + "\r\n"
+               "User-Agent: masasaati-pico/1.0\r\n"
+               "Accept: application/json\r\n"
+               "Connection: close\r\n\r\n")
+        ss.write(req.encode("utf-8"))
+        raw = bytearray()
+        while True:
+            d = ss.read(512)
+            if not d:
+                break
+            raw.extend(d)
+        he = _buffer_find(raw, b"\r\n\r\n")
+        if he < 0:
+            return 0, ""
+        head = bytes(raw[:he])
+        del raw[:he + 4]
+        try:
+            status = int(head.split(b"\r\n")[0].split(b" ")[1])
+        except Exception:
+            status = 0
+        if head.lower().find(b"transfer-encoding: chunked") >= 0:
+            body_bytes = _dechunk(raw)
+            raw = None
+        else:
+            body_bytes = raw
+            raw = None
+        text = _decode_buffer(body_bytes)
+        body_bytes = None
+        return status, text
+    finally:
         raw = None
-    else:
-        body_bytes = raw
-    try:
-        return status, body_bytes.decode("utf-8")
-    except Exception:
-        return status, body_bytes.decode()
+        if ss is not None:
+            try:
+                ss.close()
+            except Exception:
+                pass
+        elif s is not None:
+            try:
+                s.close()
+            except Exception:
+                pass
+        gc.collect()
 
 
 OTA_RAW_FILE = "main.py.ota.raw"
@@ -1288,6 +1343,7 @@ def ota_download(url, expected_sha):
                 raw.close()
             except Exception:
                 pass
+        gc.collect()
 
 
 def ota_prepare_with_local_key():
@@ -4002,6 +4058,8 @@ def run_ota_update():
         time.sleep_ms(1400)
         return
     show_status_screen("GUNCELLEME KONTROL EDILIYOR", TITLE_COL)
+    release_answer_buffers()
+    gc.collect()
     manifest, err = ota_check_manifest()
     if err is not None:
         show_status_screen(to_screen_text(err)[:48], RED)
