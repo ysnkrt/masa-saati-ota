@@ -1,11 +1,11 @@
 {
-  "version": "1.0.18",
+  "version": "1.0.19",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "724c4d4db1b09a59fdf043e9d3924d754c45328ad276f6bd38ad9b89a89f4c74",
+  "sha256": "bbbc78a4754d31e496dd19b05489b809f8ebb6192e848cc03372329274c67dd1",
   "notes": [
-    "Pico bytearray uyumluluk hatasi giderildi",
-    "HTTPS baglantilari hatada tamamen kapatilir",
-    "Baglanti bellegi her istekte temizlenir",
-    "Tekrarlayan ENOMEM hatasi onlendi"
+    "Guncel sorular zorunlu web aramasi kullanir",
+    "Eski bilgiye geri donus kaldirildi",
+    "Bekleme animasyonu ters yone cevrildi",
+    "Animasyon tek SPI yazimiyla akicilastirildi"
   ]
 }
