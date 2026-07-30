@@ -29,12 +29,12 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 OPENAI_API_KEY = ""
 QA_MODEL = "gpt-5-nano"
 WEB_SEARCH_MODEL = "gpt-5.4-nano"
-WEB_MAX_TOKENS = 350
+WEB_MAX_TOKENS = 500
 WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.18"
+APP_VERSION = "1.0.19"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -60,6 +60,8 @@ SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "ait oldugunu kisa bir cumleyle belirt (kaynak degil, sadece yil).")
 WEB_SYSTEM_PROMPT = (
     "Turkce ve yalnizca duz metin cevap ver. En fazla 1-3 kisa cumle kullan. "
+    "Web arama aracini mutlaka kullan; guncel sorularda model bellegine "
+    "dayanma. Yayin veya guncellenme tarihi en yeni olan sonucu sec. "
     "Kullaniciya kesinlikle soru sorma veya secenek sunma. Belirsiz bir haber "
     "sorusunda Turkiye ile ilgili en onemli guncel haberi secip cevapla. "
     "Guncel veriyi bulamazsan erisemiyorum veya dogrulayamiyorum deme; web "
@@ -1508,7 +1510,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
     payload = json.dumps(body)
     transient_status = (0, 408, 429, 500, 502, 503, 504)
     last_error = "BAGLANTI HATASI"
-    for attempt in range(GPT_RETRY_COUNT + 1):
+    attempt_count = 1 if web_search else GPT_RETRY_COUNT + 1
+    for attempt in range(attempt_count):
         gc.collect()
         status = 0
         text = ""
@@ -1561,7 +1564,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
             except Exception:
                 return None, "API HATASI KOD " + str(status)
 
-        if attempt < GPT_RETRY_COUNT:
+        if attempt + 1 < attempt_count:
             if limit_reached or empty_answer:
                 body["max_output_tokens"] = (
                     WEB_RETRY_TOKENS if web_search else GPT_RETRY_OUTPUT_BUDGET)
@@ -1572,7 +1575,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
 
 
 WEB_QUERY_HINTS = (
-    "bugun", "yarin", "dun", "guncel", "son dakika", "su an", "simdi",
+    "bugun", "bugunku", "yarin", "yarinki", "dun", "dunku", "guncel",
+    "canli", "son durum", "son dakika", "su an", "simdi",
     "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
     "sicaklik", "sogukluk", "nem", "ruzgar", "basinc", "uv", "gorus",
     "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
@@ -1580,8 +1584,10 @@ WEB_QUERY_HINTS = (
     "haber", "haberler", "mac", "maclar", "skor", "skorlar",
     "puan durumu", "lig", "ligler", "fikstur", "fiksturler",
     "deprem", "depremler",
-    "trafik", "kim kazandi", "secim", "internetten", "webden", "ara",
-    "kontrol et",
+    "trafik", "kim kazandi", "secim", "sonuc", "sonuclar", "piyasa",
+    "doviz", "enflasyon", "faiz", "zam", "resmi gazete",
+    "cumhurbaskani", "baskani", "bakani", "ceo",
+    "internetten", "webden", "ara", "kontrol et",
 )
 
 SPORTS_QUERY_HINTS = (
@@ -1996,12 +2002,14 @@ def fast_live_answer(q):
     return answer
 
 
-def ask_question(q, web_search=None, search_context="low"):
+def ask_question(q, web_search=None, search_context="medium"):
     if web_search is None:
         web_search = question_needs_web(q)
     if web_search:
         sp = WEB_SYSTEM_PROMPT % _today_text()
         tok = WEB_MAX_TOKENS
+        q = (q + " Bugunun tarihi " + _today_text() +
+             ". Web'de ara ve yalnizca en yeni tarihli bilgiyi kullan.")
         if _question_is_sports(q):
             search_context = "medium"
             q = (q + " Bugun dunyadaki en onemli futbol maclarini ara. "
@@ -2284,11 +2292,9 @@ def _ask_and_show(q):
     else:
         err = None
     if use_web and (err is not None or _answer_refuses_current(answer)):
-        answer, err = ask_question(q, True, "medium")
-    if use_web and (err is not None or _answer_refuses_current(answer)):
-        fallback_q = (q + " Canli veri yoksa en son bildigin bilgiyi ve "
-                      "bilginin tarihini belirterek dogrudan cevapla.")
-        answer, err = ask_question(fallback_q, False)
+        answer = None
+        if err is None:
+            err = "GUNCEL YANIT ALINAMADI"
     _gpt_wait_stop()
     apply_ans_size(ans_size_idx)
     if err is not None:
@@ -2336,6 +2342,47 @@ _gpt_wait_active = False
 _gpt_wait_phase = 0
 _gpt_wait_last = 0
 _GPT_WAIT_HEIGHTS = (8, 14, 22, 14)
+_GPT_WAIT_X = 6
+_GPT_WAIT_Y = 6
+_GPT_WAIT_W = 48
+_GPT_WAIT_H = 34
+_GPT_WAIT_INTERVAL_MS = 100
+_gpt_wait_buf = None
+_gpt_wait_bg = None
+_gpt_wait_rows = None
+
+
+def _gpt_wait_prepare():
+    global _gpt_wait_buf, _gpt_wait_bg, _gpt_wait_rows
+    bg_pixel = bytes((BG >> 8, BG & 0xFF))
+    fg_pixel = bytes((TITLE_COL >> 8, TITLE_COL & 0xFF))
+    _gpt_wait_bg = bg_pixel * (_GPT_WAIT_W * _GPT_WAIT_H)
+    _gpt_wait_buf = bytearray(_gpt_wait_bg)
+    _gpt_wait_rows = (
+        fg_pixel * 2,
+        fg_pixel * 4,
+        fg_pixel * 6,
+    )
+
+
+def _gpt_wait_bar(buf, x, height):
+    top = (_GPT_WAIT_H - height) // 2
+    for row in range(height):
+        edge = row
+        bottom_edge = height - 1 - row
+        if bottom_edge < edge:
+            edge = bottom_edge
+        if edge <= 0:
+            inset = 2
+            pixels = _gpt_wait_rows[0]
+        elif edge == 1:
+            inset = 1
+            pixels = _gpt_wait_rows[1]
+        else:
+            inset = 0
+            pixels = _gpt_wait_rows[2]
+        pos = ((top + row) * _GPT_WAIT_W + x + inset) * 2
+        buf[pos:pos + len(pixels)] = pixels
 
 
 def _gpt_wait_step(force=False):
@@ -2343,16 +2390,24 @@ def _gpt_wait_step(force=False):
     if not _gpt_wait_active or lcd is None:
         return
     now = time.ticks_ms()
-    if not force and time.ticks_diff(now, _gpt_wait_last) < 90:
+    if (not force and
+            time.ticks_diff(now, _gpt_wait_last) < _GPT_WAIT_INTERVAL_MS):
         return
     _gpt_wait_last = now
+    if _gpt_wait_buf is None:
+        _gpt_wait_prepare()
+    _gpt_wait_buf[:] = _gpt_wait_bg
     for i in range(4):
-        x = 10 + i * 10
-        lcd.fill_rect(x - 1, 8, 8, 30, BG)
         h = _GPT_WAIT_HEIGHTS[(_gpt_wait_phase + i) % 4]
-        y = 23 - h // 2
-        _draw_round_rect(x, y, 6, h, 3, TITLE_COL)
-    _gpt_wait_phase = (_gpt_wait_phase + 1) % 4
+        _gpt_wait_bar(_gpt_wait_buf, 4 + i * 10, h)
+    lcd.set_window(_GPT_WAIT_X, _GPT_WAIT_Y,
+                   _GPT_WAIT_X + _GPT_WAIT_W - 1,
+                   _GPT_WAIT_Y + _GPT_WAIT_H - 1)
+    lcd.dc.value(1)
+    lcd.cs.value(0)
+    lcd.spi.write(_gpt_wait_buf)
+    lcd.cs.value(1)
+    _gpt_wait_phase = (_gpt_wait_phase - 1) % 4
 
 
 def _gpt_wait_start():
@@ -2360,15 +2415,20 @@ def _gpt_wait_start():
     _gpt_wait_active = True
     _gpt_wait_phase = 0
     _gpt_wait_last = 0
-    lcd.fill_rect(6, 6, 48, 34, BG)
+    _gpt_wait_prepare()
     _gpt_wait_step(True)
 
 
 def _gpt_wait_stop():
-    global _gpt_wait_active
+    global _gpt_wait_active, _gpt_wait_buf, _gpt_wait_bg, _gpt_wait_rows
     _gpt_wait_active = False
     if lcd is not None:
-        lcd.fill_rect(6, 6, 48, 34, BG)
+        lcd.fill_rect(_GPT_WAIT_X, _GPT_WAIT_Y,
+                      _GPT_WAIT_W, _GPT_WAIT_H, BG)
+    _gpt_wait_buf = None
+    _gpt_wait_bg = None
+    _gpt_wait_rows = None
+    gc.collect()
 
 
 # ===================== WIFI DOSYA / TARAMA =====================
