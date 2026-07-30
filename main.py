@@ -27,14 +27,14 @@ MANUAL_LOCATION = ""    # ORNEK: "Mugla"
 
 # ==== SOR (ChatGPT) AYARLARI ====
 OPENAI_API_KEY = ""
-QA_MODEL = "gpt-5-nano"
+QA_MODEL = "gpt-5.4-nano"
 WEB_SEARCH_MODEL = "gpt-5.4-nano"
 WEB_MAX_TOKENS = 500
 WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.20"
+APP_VERSION = "1.0.21"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1005,7 +1005,7 @@ def https_post(host, path, api_key, body_str, timeout=45):
         while True:
             if poller is not None:
                 try:
-                    ready = poller.poll(90)
+                    ready = poller.poll(40)
                 except Exception:
                     poller = None
                     ready = None
@@ -2363,23 +2363,36 @@ _GPT_WAIT_X = 6
 _GPT_WAIT_Y = 6
 _GPT_WAIT_W = 48
 _GPT_WAIT_H = 34
-_GPT_WAIT_INTERVAL_MS = 100
-_gpt_wait_buf = None
-_gpt_wait_bg = None
+_GPT_WAIT_INTERVAL_MS = 40
+_gpt_wait_frames = None
 _gpt_wait_rows = None
 
 
 def _gpt_wait_prepare():
-    global _gpt_wait_buf, _gpt_wait_bg, _gpt_wait_rows
+    global _gpt_wait_frames, _gpt_wait_rows
     bg_pixel = bytes((BG >> 8, BG & 0xFF))
     fg_pixel = bytes((TITLE_COL >> 8, TITLE_COL & 0xFF))
-    _gpt_wait_bg = bg_pixel * (_GPT_WAIT_W * _GPT_WAIT_H)
-    _gpt_wait_buf = bytearray(_gpt_wait_bg)
+    background = bg_pixel * (_GPT_WAIT_W * _GPT_WAIT_H)
     _gpt_wait_rows = (
         fg_pixel * 2,
         fg_pixel * 4,
         fg_pixel * 6,
     )
+    frames = []
+    for step in range(8):
+        phase = (-(step // 2)) % 4
+        next_phase = (phase - 1) % 4
+        between = step & 1
+        buf = bytearray(background)
+        for i in range(4):
+            height = _GPT_WAIT_HEIGHTS[(phase + i) % 4]
+            if between:
+                next_height = _GPT_WAIT_HEIGHTS[(next_phase + i) % 4]
+                height = (height + next_height) // 2
+            _gpt_wait_bar(buf, 4 + i * 10, height)
+        frames.append(bytes(buf))
+    _gpt_wait_frames = tuple(frames)
+    _gpt_wait_rows = None
 
 
 def _gpt_wait_bar(buf, x, height):
@@ -2411,20 +2424,16 @@ def _gpt_wait_step(force=False):
             time.ticks_diff(now, _gpt_wait_last) < _GPT_WAIT_INTERVAL_MS):
         return
     _gpt_wait_last = now
-    if _gpt_wait_buf is None:
+    if _gpt_wait_frames is None:
         _gpt_wait_prepare()
-    _gpt_wait_buf[:] = _gpt_wait_bg
-    for i in range(4):
-        h = _GPT_WAIT_HEIGHTS[(_gpt_wait_phase + i) % 4]
-        _gpt_wait_bar(_gpt_wait_buf, 4 + i * 10, h)
     lcd.set_window(_GPT_WAIT_X, _GPT_WAIT_Y,
                    _GPT_WAIT_X + _GPT_WAIT_W - 1,
                    _GPT_WAIT_Y + _GPT_WAIT_H - 1)
     lcd.dc.value(1)
     lcd.cs.value(0)
-    lcd.spi.write(_gpt_wait_buf)
+    lcd.spi.write(_gpt_wait_frames[_gpt_wait_phase])
     lcd.cs.value(1)
-    _gpt_wait_phase = (_gpt_wait_phase - 1) % 4
+    _gpt_wait_phase = (_gpt_wait_phase + 1) % len(_gpt_wait_frames)
 
 
 def _gpt_wait_start():
@@ -2437,13 +2446,12 @@ def _gpt_wait_start():
 
 
 def _gpt_wait_stop():
-    global _gpt_wait_active, _gpt_wait_buf, _gpt_wait_bg, _gpt_wait_rows
+    global _gpt_wait_active, _gpt_wait_frames, _gpt_wait_rows
     _gpt_wait_active = False
     if lcd is not None:
         lcd.fill_rect(_GPT_WAIT_X, _GPT_WAIT_Y,
                       _GPT_WAIT_W, _GPT_WAIT_H, BG)
-    _gpt_wait_buf = None
-    _gpt_wait_bg = None
+    _gpt_wait_frames = None
     _gpt_wait_rows = None
     gc.collect()
 
