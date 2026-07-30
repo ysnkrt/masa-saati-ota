@@ -34,10 +34,13 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.21"
+APP_VERSION = "1.0.22"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
+LIVE_CACHE_SECONDS = 180
+LIVE_CACHE_LIMIT = 6
+LIVE_CACHE_PREFIX = "guncel_"
 
 USER_COUNTRY = "TR"
 USER_CITY = "Istanbul"
@@ -298,6 +301,7 @@ RAW_X_MIN = 300
 RAW_X_MAX = 3900
 RAW_Y_MIN = 300
 RAW_Y_MAX = 3900
+TOUCH_CAL_FILE = "touch_cal.txt"
 
 
 def clamp(v, mn, mx):
@@ -312,6 +316,38 @@ def map_value(v, in_min, in_max, out_min, out_max):
     if in_max == in_min:
         return out_min
     return int((v - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
+
+
+def load_touch_cal():
+    global RAW_X_MIN, RAW_X_MAX, RAW_Y_MIN, RAW_Y_MAX
+    f = None
+    try:
+        f = open(TOUCH_CAL_FILE, "r")
+        values = [int(v) for v in f.read().split()]
+        f.close()
+        f = None
+        if len(values) != 4:
+            return False
+        x_min, x_max, y_min, y_max = values
+        if (100 <= x_min < x_max <= 4050 and
+                100 <= y_min < y_max <= 4050 and
+                x_max - x_min >= 1200 and y_max - y_min >= 1200):
+            RAW_X_MIN, RAW_X_MAX = x_min, x_max
+            RAW_Y_MIN, RAW_Y_MAX = y_min, y_max
+            return True
+    except Exception:
+        if f is not None:
+            try:
+                f.close()
+            except Exception:
+                pass
+    return False
+
+
+def save_touch_cal():
+    return safe_write_text(
+        TOUCH_CAL_FILE, "%d %d %d %d\n" %
+        (RAW_X_MIN, RAW_X_MAX, RAW_Y_MIN, RAW_Y_MAX))
 
 
 GUNLER = ["PAZARTESI", "SALI", "CARSAMBA", "PERSEMBE", "CUMA", "CUMARTESI", "PAZAR"]
@@ -1069,6 +1105,341 @@ def https_post(host, path, api_key, body_str, timeout=45):
         gc.collect()
 
 
+class _SocketStreamReader:
+    def __init__(self, stream, timeout):
+        self.stream = stream
+        self.timeout_ms = timeout * 1000
+        self.started = time.ticks_ms()
+        self.buf = bytearray()
+        self.pos = 0
+        self.eof = False
+        self.poller = None
+        if select is not None:
+            try:
+                self.poller = select.poll()
+                self.poller.register(stream, select.POLLIN)
+            except Exception:
+                self.poller = None
+
+    def _compact(self):
+        if self.pos == 0:
+            return
+        if self.pos >= len(self.buf):
+            self.buf = bytearray()
+            self.pos = 0
+        elif self.pos >= 512:
+            self.buf = self.buf[self.pos:]
+            self.pos = 0
+
+    def _fill(self):
+        if self.eof:
+            return False
+        read_errors = 0
+        while time.ticks_diff(time.ticks_ms(), self.started) < self.timeout_ms:
+            if self.poller is not None:
+                try:
+                    ready = self.poller.poll(40)
+                except Exception:
+                    self.poller = None
+                    ready = None
+                if self.poller is not None and not ready:
+                    _gpt_wait_step()
+                    continue
+            try:
+                data = self.stream.read(512)
+            except Exception:
+                read_errors += 1
+                if self.poller is not None and read_errors < 200:
+                    _gpt_wait_step()
+                    time.sleep_ms(10)
+                    continue
+                raise
+            if data is None:
+                _gpt_wait_step()
+                time.sleep_ms(10)
+                continue
+            if len(data) == 0:
+                self.eof = True
+                return False
+            self._compact()
+            self.buf.extend(data)
+            return True
+        self.eof = True
+        return False
+
+    def read_some(self, maximum=512):
+        while self.pos >= len(self.buf):
+            self._compact()
+            if not self._fill():
+                return b""
+        count = min(maximum, len(self.buf) - self.pos)
+        out = bytes(self.buf[self.pos:self.pos + count])
+        self.pos += count
+        return out
+
+    def read_exact(self, count):
+        out = bytearray()
+        while len(out) < count:
+            part = self.read_some(count - len(out))
+            if not part:
+                break
+            out.extend(part)
+        return bytes(out)
+
+    def readline(self, limit=2048):
+        out = bytearray()
+        truncated = False
+        while True:
+            while self.pos < len(self.buf):
+                value = self.buf[self.pos]
+                self.pos += 1
+                if value == 10:
+                    if out and out[-1] == 13:
+                        out = out[:-1]
+                    return bytes(out), truncated
+                if len(out) < limit:
+                    out.append(value)
+                else:
+                    truncated = True
+            self._compact()
+            if not self._fill():
+                return bytes(out), truncated
+
+
+class _HTTPBodyStream:
+    def __init__(self, reader, chunked=False, content_length=-1):
+        self.reader = reader
+        self.chunked = chunked
+        self.remaining = content_length
+        self.chunk_left = 0
+        self.done = False
+
+    def read_some(self, maximum=512):
+        if self.done:
+            return b""
+        if not self.chunked:
+            if self.remaining == 0:
+                self.done = True
+                return b""
+            count = maximum
+            if self.remaining > 0:
+                count = min(count, self.remaining)
+            data = self.reader.read_some(count)
+            if not data:
+                self.done = True
+                return b""
+            if self.remaining > 0:
+                self.remaining -= len(data)
+            return data
+
+        while self.chunk_left == 0:
+            line, _truncated = self.reader.readline(64)
+            if not line and self.reader.eof:
+                self.done = True
+                return b""
+            if not line:
+                continue
+            try:
+                self.chunk_left = int(line.split(b";", 1)[0], 16)
+            except Exception:
+                self.done = True
+                return b""
+            if self.chunk_left == 0:
+                self.done = True
+                return b""
+        data = self.reader.read_exact(min(maximum, self.chunk_left))
+        if not data:
+            self.done = True
+            return b""
+        self.chunk_left -= len(data)
+        if self.chunk_left == 0:
+            self.reader.read_exact(2)
+        return data
+
+
+class _BodyLineReader:
+    def __init__(self, body):
+        self.body = body
+        self.pending = bytearray()
+
+    def readline(self, limit=6144):
+        out = bytearray()
+        truncated = False
+        while True:
+            newline = _buffer_find(self.pending, b"\n")
+            if newline >= 0:
+                take = min(newline, max(0, limit - len(out)))
+                if take:
+                    out.extend(self.pending[:take])
+                if newline > take:
+                    truncated = True
+                self.pending = self.pending[newline + 1:]
+                if out and out[-1] == 13:
+                    out = out[:-1]
+                return bytes(out), truncated
+            if self.pending:
+                take = min(len(self.pending), max(0, limit - len(out)))
+                if take:
+                    out.extend(self.pending[:take])
+                if len(self.pending) > take:
+                    truncated = True
+                self.pending = bytearray()
+            part = self.body.read_some(256)
+            if not part:
+                return bytes(out), truncated
+            self.pending.extend(part)
+
+
+def https_post_stream(host, path, api_key, body_str, timeout=45,
+                      on_delta=None):
+    body = body_str.encode("utf-8")
+    body_str = None
+    s = None
+    ss = None
+    fragments = []
+    stream_error = None
+    try:
+        gc.collect()
+        addr = socket.getaddrinfo(host, 443)[0][-1]
+        s = socket.socket()
+        try:
+            s.settimeout(timeout)
+        except Exception:
+            pass
+        s.connect(addr)
+        try:
+            ss = ssl.wrap_socket(s, server_hostname=host)
+        except TypeError:
+            ss = ssl.wrap_socket(s)
+        request = (
+            "POST " + path + " HTTP/1.1\r\n"
+            "Host: " + host + "\r\n"
+            "Authorization: Bearer " + api_key + "\r\n"
+            "Content-Type: application/json\r\n"
+            "Accept: text/event-stream\r\n"
+            "Content-Length: " + str(len(body)) + "\r\n"
+            "Connection: close\r\n\r\n")
+        ss.write(request.encode("utf-8"))
+        ss.write(body)
+        body = None
+
+        reader = _SocketStreamReader(ss, timeout)
+        status_line, _truncated = reader.readline(256)
+        try:
+            status = int(status_line.split(b" ")[1])
+        except Exception:
+            status = 0
+        chunked = False
+        content_length = -1
+        while True:
+            line, _truncated = reader.readline(512)
+            if not line:
+                break
+            lower = line.lower()
+            if lower.startswith(b"transfer-encoding:"):
+                chunked = lower.find(b"chunked") >= 0
+            elif lower.startswith(b"content-length:"):
+                try:
+                    content_length = int(line.split(b":", 1)[1].strip())
+                except Exception:
+                    content_length = -1
+
+        response_body = _HTTPBodyStream(reader, chunked, content_length)
+        lines = _BodyLineReader(response_body)
+        if status != 200:
+            error_body = bytearray()
+            while len(error_body) < 4096:
+                part = response_body.read_some(min(512, 4096 - len(error_body)))
+                if not part:
+                    break
+                error_body.extend(part)
+            try:
+                data = json.loads(_decode_buffer(error_body))
+                stream_error = data.get("error", {}).get("message")
+            except Exception:
+                stream_error = None
+            return status, None, stream_error
+
+        event_name = ""
+        while True:
+            line, truncated = lines.readline()
+            if not line and response_body.done:
+                break
+            if not line:
+                event_name = ""
+                continue
+            if line.startswith(b"event:"):
+                event_name = _decode_buffer(line[6:]).strip()
+                continue
+            if not line.startswith(b"data:"):
+                continue
+            if truncated:
+                if event_name in ("response.error", "error"):
+                    stream_error = "API HATA CEVABI COK UZUN"
+                continue
+            payload = line[5:].strip()
+            if payload == b"[DONE]":
+                break
+            if event_name in (
+                    "response.created", "response.in_progress",
+                    "response.completed", "response.web_search_call.in_progress",
+                    "response.web_search_call.searching",
+                    "response.web_search_call.completed"):
+                continue
+            if event_name and event_name not in (
+                    "response.output_text.delta",
+                    "response.output_text.done",
+                    "response.failed", "response.incomplete",
+                    "response.error", "error"):
+                continue
+            try:
+                event = json.loads(_decode_buffer(payload))
+            except Exception:
+                continue
+            event_type = event_name or event.get("type", "")
+            if event_type == "response.output_text.delta":
+                delta = event.get("delta", "")
+                if delta:
+                    fragments.append(delta)
+                    if on_delta is not None:
+                        on_delta(delta)
+            elif event_type == "response.output_text.done" and not fragments:
+                text = event.get("text", "")
+                if text:
+                    fragments.append(text)
+                    if on_delta is not None:
+                        on_delta(text)
+            elif event_type in (
+                    "response.failed", "response.incomplete",
+                    "response.error", "error"):
+                try:
+                    stream_error = (
+                        event.get("error", {}).get("message") or
+                        event.get("response", {}).get("error", {}).get("message") or
+                        event.get("message"))
+                except Exception:
+                    stream_error = None
+
+        answer = "".join(fragments)
+        if answer:
+            return status, answer, None
+        return status, None, stream_error or "GPT BOS YANIT VERDI"
+    finally:
+        body = None
+        fragments = None
+        if ss is not None:
+            try:
+                ss.close()
+            except Exception:
+                pass
+        elif s is not None:
+            try:
+                s.close()
+            except Exception:
+                pass
+        gc.collect()
+
+
 
 def https_get(host, path, timeout=25):
     if socket is None or ssl is None:
@@ -1483,7 +1854,7 @@ def ota_restore_trial():
 
 
 def openai_chat(messages, model, web_search, timeout, max_tok=None,
-                reasoning=None, search_context="low"):
+                reasoning=None, search_context="low", on_delta=None):
     if socket is None or ssl is None:
         return None, "AG MODULU YOK"
     api_key = OPENAI_API_KEY.strip()
@@ -1521,10 +1892,46 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
             },
         }]
     endpoint = "/v1/responses"
+    if on_delta is not None:
+        body["stream"] = True
     payload = json.dumps(body)
     transient_status = (0, 408, 429, 500, 502, 503, 504)
     last_error = "BAGLANTI HATASI"
     attempt_count = 1 if web_search else GPT_RETRY_COUNT + 1
+
+    if on_delta is not None:
+        body = None
+        messages = None
+        request_input = None
+        instructions = None
+        gc.collect()
+        for attempt in range(attempt_count):
+            gc.collect()
+            status = 0
+            answer = None
+            stream_error = None
+            try:
+                status, answer, stream_error = https_post_stream(
+                    "api.openai.com", endpoint, api_key, payload, timeout,
+                    on_delta)
+            except Exception as exc:
+                stream_error = "BAGLANTI HATASI: " + str(exc)
+            finally:
+                gc.collect()
+            if answer:
+                return answer, None
+            if stream_error:
+                last_error = stream_error
+            elif status in transient_status:
+                last_error = "API GECICI HATA " + str(status)
+            else:
+                last_error = "API HATASI KOD " + str(status)
+            if status not in transient_status and status != 200:
+                return None, last_error
+            if attempt + 1 < attempt_count:
+                time.sleep_ms(GPT_RETRY_DELAY_MS)
+        return None, last_error
+
     for attempt in range(attempt_count):
         gc.collect()
         status = 0
@@ -1609,11 +2016,6 @@ SPORTS_QUERY_HINTS = (
     "lig", "ligler", "fikstur", "fiksturler",
 )
 
-_fast_live_q = ""
-_fast_live_answer = ""
-_fast_live_at = 0
-
-
 def _normalize_question(q):
     text = str(q).lower()
     for src, dst in (
@@ -1639,6 +2041,89 @@ def _question_is_sports(q):
         if " " + hint + " " in text:
             return True
     return False
+
+
+def _live_cache_path(q):
+    text = _normalize_question(q)
+    value = 2166136261
+    for ch in text:
+        value ^= ord(ch) & 0xFF
+        value = (value * 16777619) & 0xFFFFFFFF
+    return LIVE_CACHE_PREFIX + ("%08x" % value) + ".txt", text
+
+
+def _live_cache_get(q):
+    path, normalized = _live_cache_path(q)
+    f = None
+    try:
+        now = int(time.time())
+        if now < 100000:
+            return None
+        f = open(path, "r")
+        saved = int(f.readline().strip())
+        stored_q = f.readline().rstrip("\r\n")
+        if stored_q != normalized or now < saved or now - saved > LIVE_CACHE_SECONDS:
+            f.close()
+            f = None
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+            return None
+        answer = f.read(4096)
+        f.close()
+        return answer if answer else None
+    except Exception:
+        if f is not None:
+            try:
+                f.close()
+            except Exception:
+                pass
+        return None
+
+
+def _live_cache_trim():
+    try:
+        entries = []
+        for name in os.listdir():
+            if not name.startswith(LIVE_CACHE_PREFIX) or not name.endswith(".txt"):
+                continue
+            stamp = 0
+            f = None
+            try:
+                f = open(name, "r")
+                stamp = int(f.readline().strip())
+                f.close()
+                f = None
+            except Exception:
+                if f is not None:
+                    try:
+                        f.close()
+                    except Exception:
+                        pass
+            entries.append((stamp, name))
+        entries.sort()
+        while len(entries) > LIVE_CACHE_LIMIT:
+            _stamp, name = entries.pop(0)
+            try:
+                os.remove(name)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+def _live_cache_put(q, answer):
+    try:
+        now = int(time.time())
+        if now < 100000 or not answer:
+            return
+        path, normalized = _live_cache_path(q)
+        safe_write_text(path, "%d\n%s\n%s" % (
+            now, normalized, str(answer)[:4096]))
+        _live_cache_trim()
+    except Exception:
+        pass
 
 
 def _answer_refuses_current(answer):
@@ -1984,12 +2469,7 @@ def _fast_crypto_answer(text):
 
 
 def fast_live_answer(q):
-    global _fast_live_q, _fast_live_answer, _fast_live_at
     text = _normalize_question(q)
-    now = time.ticks_ms()
-    if (text == _fast_live_q and _fast_live_answer and
-            time.ticks_diff(now, _fast_live_at) < 60000):
-        return _fast_live_answer
     answer = None
     try:
         if _question_is_sports(text):
@@ -2009,14 +2489,10 @@ def fast_live_answer(q):
     except Exception:
         answer = None
     gc.collect()
-    if answer:
-        _fast_live_q = text
-        _fast_live_answer = answer
-        _fast_live_at = now
     return answer
 
 
-def ask_question(q, web_search=None, search_context="medium"):
+def ask_question(q, web_search=None, search_context="medium", on_delta=None):
     if web_search is None:
         web_search = question_needs_web(q)
     if web_search:
@@ -2038,7 +2514,7 @@ def ask_question(q, web_search=None, search_context="medium"):
          {"role": "user", "content": q}],
         QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
         reasoning="none" if web_search else "minimal",
-        search_context=search_context)
+        search_context=search_context, on_delta=on_delta)
 
 
 def is_online():
@@ -2292,20 +2768,94 @@ def _fmt_int(v):
         return "--"
 
 
+_STREAM_Y = 42
+_STREAM_LINE_H = 10
+_STREAM_CHARS = 50
+_STREAM_ROWS = (ANS_BOTTOM - _STREAM_Y) // _STREAM_LINE_H
+_STREAM_DRAW_MS = 70
+_stream_line = ""
+_stream_row = 0
+_stream_last_draw = 0
+_stream_started = False
+
+
+def _stream_preview_start():
+    global _stream_line, _stream_row, _stream_last_draw, _stream_started
+    _stream_line = ""
+    _stream_row = 0
+    _stream_last_draw = 0
+    _stream_started = False
+
+
+def _stream_preview_draw(force=False):
+    global _stream_last_draw
+    if lcd is None or not _stream_started or _stream_row >= _STREAM_ROWS:
+        return
+    now = time.ticks_ms()
+    if (not force and
+            time.ticks_diff(now, _stream_last_draw) < _STREAM_DRAW_MS):
+        return
+    _stream_last_draw = now
+    y = _STREAM_Y + _stream_row * _STREAM_LINE_H
+    lcd.fill_rect(0, y, WIDTH, _STREAM_LINE_H, BG)
+    lcd.text(_stream_line, 4, y + 1, FG, 1)
+
+
+def _stream_preview_next_line():
+    global _stream_line, _stream_row
+    _stream_preview_draw(True)
+    _stream_line = ""
+    _stream_row += 1
+
+
+def _stream_preview_delta(delta):
+    global _stream_line, _stream_started
+    if not delta or _stream_row >= _STREAM_ROWS:
+        return
+    if not _stream_started:
+        _gpt_wait_stop()
+        lcd.text("GPT:", 4, 4, GREEN, 2)
+        _stream_started = True
+    text = to_screen_text(delta)
+    for ch in text:
+        if _stream_row >= _STREAM_ROWS:
+            break
+        if ch == "\n":
+            _stream_preview_next_line()
+        elif ch == " " and not _stream_line:
+            continue
+        else:
+            _stream_line += ch
+            if len(_stream_line) >= _STREAM_CHARS:
+                _stream_preview_next_line()
+    _stream_preview_draw()
+
+
+def _stream_preview_finish():
+    if _stream_started:
+        _stream_preview_draw(True)
+
+
 
 def _ask_and_show(q):
     # Guncel sorularda web arar, digerlerini dogrudan GPT'ye sorar.
     release_answer_buffers()
     gc.collect()
     use_web = question_needs_web(q)
+    cached_answer = _live_cache_get(q) if use_web else None
     draw_answer_frame()
-    if use_web:
+    if use_web and cached_answer is None:
         _gpt_wait_start()
-    answer = fast_live_answer(q) if use_web else None
+    answer = cached_answer
+    if answer is None:
+        answer = fast_live_answer(q) if use_web else None
     if answer is None:
         if not _gpt_wait_active:
             _gpt_wait_start()
-        answer, err = ask_question(q, use_web)
+        _stream_preview_start()
+        answer, err = ask_question(
+            q, use_web, on_delta=_stream_preview_delta)
+        _stream_preview_finish()
     else:
         err = None
     if use_web and (err is not None or _answer_refuses_current(answer)):
@@ -2313,6 +2863,9 @@ def _ask_and_show(q):
         if err is None:
             err = "GUNCEL YANIT ALINAMADI"
     _gpt_wait_stop()
+    if use_web and err is None and answer:
+        answer = strip_urls(answer)
+        _live_cache_put(q, answer)
     apply_ans_size(ans_size_idx)
     if err is not None:
         txt = to_screen_text(err)
@@ -4658,13 +5211,194 @@ def run_prayer_settings():
             _prayer_menu_draw()
 
 
+# ---- BAGLANTI / DEPOLAMA TESHISI ----
+def _storage_kb():
+    try:
+        info = os.statvfs("/")
+        block = int(info[0])
+        return (int(info[2]) * block // 1024,
+                int(info[3]) * block // 1024)
+    except Exception:
+        return 0, 0
+
+
+def _cache_file_count():
+    count = 0
+    try:
+        for name in os.listdir():
+            if name.startswith(LIVE_CACHE_PREFIX) and name.endswith(".txt"):
+                count += 1
+    except Exception:
+        pass
+    return count
+
+
+def _diagnostic_values():
+    gc.collect()
+    online = is_online()
+    ip = "-"
+    rssi = None
+    if online:
+        try:
+            station = wlan if wlan is not None else network.WLAN(network.STA_IF)
+            ip = station.ifconfig()[0]
+            try:
+                rssi = station.status("rssi")
+            except Exception:
+                rssi = None
+        except Exception:
+            pass
+    dns_ok = False
+    if online:
+        try:
+            socket.getaddrinfo("api.openai.com", 443)
+            dns_ok = True
+        except Exception:
+            pass
+    https_ok = False
+    if dns_ok:
+        try:
+            status, _text = https_get(
+                "raw.githubusercontent.com",
+                "/ysnkrt/masa-saati-ota/main/ota.json", 12)
+            https_ok = (status == 200)
+            _text = None
+        except Exception:
+            pass
+    total_kb, free_kb = _storage_kb()
+    try:
+        ram_kb = gc.mem_free() // 1024
+    except Exception:
+        ram_kb = 0
+    return (
+        ("WIFI", "OK" if online else "YOK", GREEN if online else RED),
+        ("IP", ip, FG),
+        ("SINYAL", (str(rssi) + " dBm") if rssi is not None else "-", FG),
+        ("DNS", "OK" if dns_ok else "HATA", GREEN if dns_ok else RED),
+        ("HTTPS", "OK" if https_ok else "HATA", GREEN if https_ok else RED),
+        ("NTP", "OK" if ntp_ok else "BEKLIYOR", GREEN if ntp_ok else AMBER),
+        ("API ANAHTARI", "HAZIR" if OPENAI_API_KEY.strip() else "YOK",
+         GREEN if OPENAI_API_KEY.strip() else RED),
+        ("BOS RAM", str(ram_kb) + " KB", FG),
+        ("BOS DEPO", str(free_kb) + "/" + str(total_kb) + " KB", FG),
+        ("ONBELLEK", str(_cache_file_count()) + "/" +
+         str(LIVE_CACHE_LIMIT), FG),
+    )
+
+
+def _diagnostic_draw(rows=None):
+    lcd.fill(BG)
+    lcd.text("BAGLANTI TESHISI", 64, 8, TITLE_COL, 2)
+    lcd.hline(0, 32, WIDTH, DARKGRAY)
+    if rows is None:
+        lcd.text("TEST EDILIYOR", 118, 108, AMBER, 1)
+    else:
+        y = 39
+        for label, value, color in rows:
+            lcd.text(label, 8, y, GRAY, 1)
+            width = len(value) * 6
+            lcd.text(value, WIDTH - width - 8, y, color, 1)
+            y += 16
+        lcd.text("SURUM " + APP_VERSION, 8, 199, GRAY, 1)
+    lcd.fill_rect(0, 214, 158, 26, DARKGRAY)
+    lcd.fill_rect(162, 214, 158, 26, DARKGRAY)
+    lcd.vline(160, 214, 26, GRAY)
+    lcd.text("YENILE", 61, 223, WHITE, 1)
+    lcd.text("GERI", 230, 223, WHITE, 1)
+
+
+def run_connection_diagnostics():
+    _wait_touch_release()
+    while True:
+        _diagnostic_draw()
+        rows = _diagnostic_values()
+        _diagnostic_draw(rows)
+        _wait_touch_release()
+        while True:
+            p = touch.read_fast()
+            if p is None:
+                time.sleep_ms(20)
+                continue
+            x, y = p
+            if y >= 210:
+                _wait_touch_release()
+                if x >= WIDTH // 2:
+                    return
+                break
+
+
+# ---- DOKUNMATIK KALIBRASYONU ----
+def _calibration_target(x, y, step):
+    lcd.fill(BG)
+    lcd.text("DOKUNMATIK KALIBRASYONU", 22, 8, TITLE_COL, 2)
+    lcd.text("HEDEFIN ORTASINA DOKUN", 92, 34, GRAY, 1)
+    lcd.text("%d/3" % step, 296, 34, GRAY, 1)
+    lcd.circle(x, y, 12, TITLE_COL)
+    lcd.circle(x, y, 5, FG)
+    lcd.hline(x - 18, y, 37, FG)
+    lcd.vline(x, y - 18, 37, FG)
+
+
+def _calibration_capture_raw():
+    while True:
+        raw = touch.read_raw()
+        if raw is not None:
+            while touch.read_raw() is not None:
+                time.sleep_ms(15)
+            time.sleep_ms(120)
+            return raw
+        time.sleep_ms(20)
+
+
+def _calibration_range(first, second, pixels, margin):
+    low = min(first, second)
+    high = max(first, second)
+    inside = pixels - 1 - margin * 2
+    if inside <= 0:
+        return low, high
+    extra = (high - low) * margin // inside
+    return clamp(low - extra, 100, 4050), clamp(high + extra, 100, 4050)
+
+
+def run_touch_calibration():
+    global RAW_X_MIN, RAW_X_MAX, RAW_Y_MIN, RAW_Y_MAX
+    old = (RAW_X_MIN, RAW_X_MAX, RAW_Y_MIN, RAW_Y_MAX)
+    margin = 28
+    _wait_touch_release()
+    _calibration_target(margin, margin, 1)
+    first = _calibration_capture_raw()
+    _calibration_target(WIDTH - 1 - margin, HEIGHT - 1 - margin, 2)
+    second = _calibration_capture_raw()
+    x_min, x_max = _calibration_range(
+        first[0], second[0], HEIGHT, margin)
+    y_min, y_max = _calibration_range(
+        first[1], second[1], WIDTH, margin)
+    RAW_X_MIN, RAW_X_MAX = x_min, x_max
+    RAW_Y_MIN, RAW_Y_MAX = y_min, y_max
+
+    _calibration_target(WIDTH // 2, HEIGHT // 2, 3)
+    check = touch.read_screen()
+    while check is None:
+        time.sleep_ms(20)
+        check = touch.read_screen()
+    while touch.read_fast() is not None:
+        time.sleep_ms(15)
+    if abs(check[2] - WIDTH // 2) <= 42 and abs(check[3] - HEIGHT // 2) <= 42:
+        save_touch_cal()
+        show_status_screen("KALIBRASYON KAYDEDILDI", GREEN)
+    else:
+        RAW_X_MIN, RAW_X_MAX, RAW_Y_MIN, RAW_Y_MAX = old
+        show_status_screen("KALIBRASYON BASARISIZ", RED)
+    time.sleep_ms(1400)
+
+
 # ---- DIGER AYARLAR PANELI ----
-# 24 saat bicimi sabit; burada sadece ekran donme, namaz ve GPT cevap
-# ayarlari kaldi.
 _EBTN = [
-    (80, 90, "DON"),
-    (80, 170, "NAMAZ"),
-    (240, 170, "SOR"),
+    (53, 86, "DON"),
+    (160, 86, "NET"),
+    (267, 86, "CAL"),
+    (107, 169, "NAMAZ"),
+    (213, 169, "SOR"),
 ]
 
 
@@ -4683,9 +5417,11 @@ def _extra_panel_draw():
     lcd.text(title, (WIDTH - len(title) * 12) // 2, 8, TITLE_COL, 2)
     lcd.hline(0, 33, WIDTH, DARKGRAY)
 
-    _draw_rotate_icon(80, 90, screen_flip)
-    _draw_circle_button(80, 170, 24, "NM", prayer_mode_idx != 0, "NAMAZ")
-    _draw_circle_button(240, 170, 24, "SOR", False, "GPT AYARI")
+    _draw_rotate_icon(53, 86, screen_flip)
+    _draw_circle_button(160, 86, 24, "NET", is_online(), "BAGLANTI")
+    _draw_circle_button(267, 86, 24, "CAL", False, "DOKUNMA")
+    _draw_circle_button(107, 169, 24, "NM", prayer_mode_idx != 0, "NAMAZ")
+    _draw_circle_button(213, 169, 24, "SOR", False, "GPT AYARI")
 
     lcd.fill_rect(0, 214, WIDTH, 26, DARKGRAY)
     lcd.hline(0, 214, WIDTH, GRAY)
@@ -4720,9 +5456,15 @@ def run_extra_settings():
             save_cfg()
             _extra_panel_draw()
         elif sel == 1:
-            run_prayer_settings()
+            run_connection_diagnostics()
             _extra_panel_draw()
         elif sel == 2:
+            run_touch_calibration()
+            _extra_panel_draw()
+        elif sel == 3:
+            run_prayer_settings()
+            _extra_panel_draw()
+        elif sel == 4:
             run_sor_settings()
             _extra_panel_draw()
 
@@ -5128,6 +5870,7 @@ def main():
     touch = XPT2046(spi, TP_CS)
 
     load_cfg()
+    load_touch_cal()
     load_wifi()
     if WIFI_SSID and network is not None:
         wifi_reconnect_start(WIFI_SSID, WIFI_PASS)
