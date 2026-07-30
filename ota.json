@@ -1,7 +1,7 @@
 {
   "version": "1.0.22",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "36b515a8890ab715ff0ef6bdf2b1421e317b27924ff44885788b89899af41c00",
+  "sha256": "b570e12f6d09dc67beb1e115c63adccd9383dca90c815acc9437fe376add258e",
   "notes": [
     "GPT yaniti geldikce ekranda gorunur",
     "Guncel veriler 3 dakika onbellekte tutulur",
