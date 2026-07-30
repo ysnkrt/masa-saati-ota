@@ -34,7 +34,7 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.14"
+APP_VERSION = "1.0.15"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -956,6 +956,7 @@ def https_post(host, path, api_key, body_str, timeout=45):
         except Exception:
             poller = None
     read_started = time.ticks_ms()
+    read_errors = 0
     while True:
         if poller is not None:
             try:
@@ -971,9 +972,16 @@ def https_post(host, path, api_key, body_str, timeout=45):
         try:
             d = ss.read(512)
         except Exception:
+            read_errors += 1
+            if (poller is not None and read_errors < 200 and
+                    time.ticks_diff(time.ticks_ms(), read_started) < timeout * 1000):
+                _gpt_wait_step()
+                time.sleep_ms(10)
+                continue
             break
         if not d:
             break
+        read_errors = 0
         parts.append(d)
         _gpt_wait_step()
     try:
@@ -1436,6 +1444,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
         status = 0
         text = ""
         limit_reached = False
+        empty_answer = False
         try:
             status, text = https_post("api.openai.com", endpoint,
                                        api_key, payload, timeout)
@@ -1470,6 +1479,7 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
                     limit_reached = True
                 else:
                     last_error = "GPT BOS YANIT VERDI"
+                    empty_answer = True
             except Exception:
                 last_error = "BEKLENMEYEN BICIM"
         elif status in transient_status and status != 0:
@@ -1481,13 +1491,10 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
                 return None, "API HATASI KOD " + str(status)
 
         if attempt < GPT_RETRY_COUNT:
-            if limit_reached:
+            if limit_reached or empty_answer:
                 body["max_output_tokens"] = (
                     WEB_RETRY_TOKENS if web_search else GPT_RETRY_OUTPUT_BUDGET)
                 payload = json.dumps(body)
-            if lcd is not None:
-                retry_msg = "GPT YANITI TAMAMLIYOR..." if limit_reached else "GPT TEKRAR DENIYOR..."
-                show_status_screen(retry_msg, AMBER)
             time.sleep_ms(GPT_RETRY_DELAY_MS)
 
     return None, last_error
@@ -2197,8 +2204,7 @@ def _ask_and_show(q):
     # Guncel sorularda web arar, digerlerini dogrudan GPT'ye sorar.
     apply_ans_size(ans_size_idx)
     use_web = question_needs_web(q)
-    status = "INTERNETTEN ARASTIRIYOR..." if use_web else "GPT CEVAPLIYOR..."
-    show_status_screen(status, TITLE_COL)
+    draw_answer_frame()
     answer = fast_live_answer(q) if use_web else None
     if answer is None:
         _gpt_wait_start()
@@ -2206,12 +2212,8 @@ def _ask_and_show(q):
     else:
         err = None
     if use_web and (err is not None or _answer_refuses_current(answer)):
-        show_status_screen("GUNCEL VERI TEKRAR ARANIYOR...", TITLE_COL)
-        _gpt_wait_start()
         answer, err = ask_question(q, True, "medium")
     if use_web and (err is not None or _answer_refuses_current(answer)):
-        show_status_screen("GPT BILGISIYLE CEVAPLIYOR...", TITLE_COL)
-        _gpt_wait_start()
         fallback_q = (q + " Canli veri yoksa en son bildigin bilgiyi ve "
                       "bilginin tarihini belirterek dogrudan cevapla.")
         answer, err = ask_question(fallback_q, False)
