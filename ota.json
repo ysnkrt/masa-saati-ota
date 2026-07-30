@@ -1,11 +1,11 @@
 {
-  "version": "1.0.15",
+  "version": "1.0.16",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "6a5552045e8bd154c5d945ffad54f918c2880fa9f1d3d80b8f67b6e48b767a34",
+  "sha256": "7fbd30abeb0f72bd15b18eda611f124192b33559fe1016b77420041f874df46b",
   "notes": [
-    "GPT bos cevap sorunu giderildi",
-    "SSL okuma dongusu duzeltildi",
-    "Tekrar deneme yazilari kaldirildi",
-    "Animasyon cevap ekraninda oynar"
+    "ENOMEM bellek hatasi giderildi",
+    "Haber aramasinda RAM bosaltildi",
+    "HTTP yaniti kopyalanmadan okunur",
+    "Yalniz secili yazi boyutu tutulur"
   ]
 }
