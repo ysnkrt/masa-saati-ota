@@ -34,7 +34,7 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.17"
+APP_VERSION = "1.0.18"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1031,7 +1031,7 @@ def https_post(host, path, api_key, body_str, timeout=45):
         if he < 0:
             return 0, ""
         head = bytes(raw[:he])
-        del raw[:he + 4]
+        raw = raw[he + 4:]
         try:
             status = int(head.split(b"\r\n")[0].split(b" ")[1])
         except Exception:
@@ -1097,7 +1097,7 @@ def https_get(host, path, timeout=25):
         if he < 0:
             return 0, ""
         head = bytes(raw[:he])
-        del raw[:he + 4]
+        raw = raw[he + 4:]
         try:
             status = int(head.split(b"\r\n")[0].split(b" ")[1])
         except Exception:
