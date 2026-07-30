@@ -1,11 +1,11 @@
 {
-  "version": "1.0.14",
+  "version": "1.0.15",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "8cf92a9a69922222583bd849860afc2bc98cba567977b73a16d90e773fdc9128",
+  "sha256": "6a5552045e8bd154c5d945ffad54f918c2880fa9f1d3d80b8f67b6e48b767a34",
   "notes": [
-    "Hava durumu tum ayrintilari verir",
-    "Yarin hava tahmini hizlandirildi",
-    "Veri yoksa GPT cevap vermeyi dener",
-    "GPT beklerken nabiz animasyonu var"
+    "GPT bos cevap sorunu giderildi",
+    "SSL okuma dongusu duzeltildi",
+    "Tekrar deneme yazilari kaldirildi",
+    "Animasyon cevap ekraninda oynar"
   ]
 }
