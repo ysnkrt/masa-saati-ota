@@ -1,7 +1,7 @@
 {
-  "version": "1.0.22",
-  "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/72eeee9e27866a86a99684d9583c51464e339cf1/main.py",
-  "sha256": "b570e12f6d09dc67beb1e115c63adccd9383dca90c815acc9437fe376add258e",
+  "version": "1.0.23",
+  "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e46341c724f64fba930754d9892b4a2644430d7b/main.py",
+  "sha256": "a7ee89479c2cb86065a89d4c6efea83aaa2924e885b0a9f6f9b48297ae135766",
   "notes": [
     "GPT yaniti geldikce ekranda gorunur",
     "Guncel veriler 3 dakika onbellekte tutulur",
