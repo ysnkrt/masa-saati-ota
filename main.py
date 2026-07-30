@@ -34,7 +34,7 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.19"
+APP_VERSION = "1.0.20"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -1024,7 +1024,13 @@ def https_post(host, path, api_key, body_str, timeout=45):
                     time.sleep_ms(10)
                     continue
                 raise
-            if not d:
+            if d is None:
+                if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
+                    break
+                _gpt_wait_step()
+                time.sleep_ms(10)
+                continue
+            if len(d) == 0:
                 break
             read_errors = 0
             raw.extend(d)
@@ -1090,11 +1096,19 @@ def https_get(host, path, timeout=25):
                "Connection: close\r\n\r\n")
         ss.write(req.encode("utf-8"))
         raw = bytearray()
+        read_started = time.ticks_ms()
         while True:
             d = ss.read(512)
-            if not d:
+            if d is None:
+                if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
+                    break
+                _gpt_wait_step()
+                time.sleep_ms(10)
+                continue
+            if len(d) == 0:
                 break
             raw.extend(d)
+            _gpt_wait_step()
         he = _buffer_find(raw, b"\r\n\r\n")
         if he < 0:
             return 0, ""
@@ -2285,9 +2299,12 @@ def _ask_and_show(q):
     gc.collect()
     use_web = question_needs_web(q)
     draw_answer_frame()
+    if use_web:
+        _gpt_wait_start()
     answer = fast_live_answer(q) if use_web else None
     if answer is None:
-        _gpt_wait_start()
+        if not _gpt_wait_active:
+            _gpt_wait_start()
         answer, err = ask_question(q, use_web)
     else:
         err = None
