@@ -1,7 +1,7 @@
 {
   "version": "1.0.17",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "5aaa7acc4893746519f1a96a00dac112c7d408e1d3a801e2a05d529a6a90a79a",
+  "sha256": "595f8fc9c98548d915fc57e6515971a10dba35d40b9699e930b3090c3e92eac6",
   "notes": [
     "OTA bytearray uyumluluk hatasi giderildi",
     "HTTPS baglantilari hatada tamamen kapatilir",
