@@ -1,11 +1,12 @@
 {
-  "version": "1.0.21",
+  "version": "1.0.22",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "c8c889cdf100c13c0dc5fd506db793a7d258e30aec42fd51f5178d1f1721cad7",
+  "sha256": "36b515a8890ab715ff0ef6bdf2b1421e317b27924ff44885788b89899af41c00",
   "notes": [
-    "Tum sorular GPT-5.4 nano kullanir",
-    "Animasyon 8 hazir ara kare kullanir",
-    "Kare cizimi yaklasik 4 kat hizlandi",
-    "Animasyon yenilemesi 40 ms yapildi"
+    "GPT yaniti geldikce ekranda gorunur",
+    "Guncel veriler 3 dakika onbellekte tutulur",
+    "Baglanti teshis ekrani eklendi",
+    "Dokunmatik kalibrasyonu eklendi",
+    "API yanitlari daha az RAM kullanir"
   ]
 }
