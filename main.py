@@ -688,7 +688,7 @@ class XPT2046:
                 x = self.read_axis(0xD0)
                 y = self.read_axis(0x90)
                 z1 = self.read_axis(0xB0)
-                if z1 > 50 and 300 <= x <= 3800 and 300 <= y <= 3800:
+                if z1 > 50 and 150 <= x <= 4050 and 150 <= y <= 4050:
                     xs.append(x); ys.append(y)
             if len(xs) < 3:
                 return None
