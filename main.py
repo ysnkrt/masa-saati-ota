@@ -34,7 +34,7 @@ WEB_RETRY_TOKENS = 700
 GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.15"
+APP_VERSION = "1.0.16"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -727,10 +727,9 @@ _EMPTY = []
 ANS_TOP = 24
 ANS_BOTTOM = 206
 
-# Her boyut icin glif tablosunu onceden hesapla. RAM'i korumak icin
-# satir tamponlarindan yalnizca secili boyuta ait olanlar tutulur.
-_GLYPH_TABLES = []
-for (_AGWp, _AGHp, _AADVp, _LHp) in SIZE_PROFILES:
+# Yalnizca secili cevap boyutunun glif tablosunu RAM'de tut.
+def _build_glyph_table(idx):
+    _AGWp, _AGHp, _AADVp, _LHp = SIZE_PROFILES[idx]
     _tbl = {}
     for _ch in FONT:
         _g = FONT[_ch]
@@ -743,11 +742,13 @@ for (_AGWp, _AGHp, _AADVp, _LHp) in SIZE_PROFILES:
                 if _row[_sx] == "1":
                     _pts.append((_dx, _dy))
         _tbl[_ch] = _pts
-    _GLYPH_TABLES.append(_tbl)
+    return _tbl
 
+_DEFAULT_ANS_IDX = 1
+_GLYPH_TABLES = [None] * len(SIZE_PROFILES)
+_GLYPH_TABLES[_DEFAULT_ANS_IDX] = _build_glyph_table(_DEFAULT_ANS_IDX)
 _BUFS = [None] * len(SIZE_PROFILES)
 _ZEROS = [None] * len(SIZE_PROFILES)
-_DEFAULT_ANS_IDX = 1
 _DEFAULT_ANS_BYTES = WIDTH * SIZE_PROFILES[_DEFAULT_ANS_IDX][3] * 2
 _BUFS[_DEFAULT_ANS_IDX] = bytearray(_DEFAULT_ANS_BYTES)
 _ZEROS[_DEFAULT_ANS_IDX] = bytearray(_DEFAULT_ANS_BYTES)
@@ -798,6 +799,13 @@ def apply_ans_size(idx):
     global _AADV, ANS_LINE_H, ANS_CHARS, ANS_VISIBLE, _AGLYPH, _ANS_BUF, _ANS_ZERO
     idx = idx % len(SIZE_PROFILES)
     AGW, AGH, AADV, LH = SIZE_PROFILES[idx]
+    if _GLYPH_TABLES[idx] is None:
+        _AGLYPH = None
+        for i in range(len(_GLYPH_TABLES)):
+            if i != idx:
+                _GLYPH_TABLES[i] = None
+        gc.collect()
+        _GLYPH_TABLES[idx] = _build_glyph_table(idx)
     if _BUFS[idx] is None or _ZEROS[idx] is None:
         release_answer_buffers()
         size = WIDTH * LH * 2
@@ -907,7 +915,7 @@ def show_answer(lines):
 
 
 def _dechunk(data):
-    out = b""
+    out = bytearray()
     i = 0
     L = len(data)
     while i < L:
@@ -921,13 +929,14 @@ def _dechunk(data):
         if n == 0:
             break
         start = j + 2
-        out += data[start:start + n]
+        out.extend(data[start:start + n])
         i = start + n + 2
     return out
 
 
 def https_post(host, path, api_key, body_str, timeout=45):
     body = body_str.encode("utf-8")
+    body_str = None
     addr = socket.getaddrinfo(host, 443)[0][-1]
     s = socket.socket()
     try:
@@ -947,7 +956,7 @@ def https_post(host, path, api_key, body_str, timeout=45):
            "Connection: close\r\n\r\n")
     ss.write(req.encode("utf-8"))
     ss.write(body)
-    parts = []
+    raw = bytearray()
     poller = None
     if select is not None:
         try:
@@ -982,24 +991,26 @@ def https_post(host, path, api_key, body_str, timeout=45):
         if not d:
             break
         read_errors = 0
-        parts.append(d)
+        raw.extend(d)
         _gpt_wait_step()
     try:
         ss.close()
     except Exception:
         pass
-    raw = b"".join(parts)
     he = raw.find(b"\r\n\r\n")
     if he < 0:
         return 0, ""
-    head = raw[:he]
-    body_bytes = raw[he + 4:]
+    head = bytes(raw[:he])
+    del raw[:he + 4]
     try:
         status = int(head.split(b"\r\n")[0].split(b" ")[1])
     except Exception:
         status = 0
     if head.lower().find(b"transfer-encoding: chunked") >= 0:
-        body_bytes = _dechunk(body_bytes)
+        body_bytes = _dechunk(raw)
+        raw = None
+    else:
+        body_bytes = raw
     try:
         return status, body_bytes.decode("utf-8")
     except Exception:
@@ -1027,7 +1038,7 @@ def https_get(host, path, timeout=25):
            "Accept: application/json\r\n"
            "Connection: close\r\n\r\n")
     ss.write(req.encode("utf-8"))
-    parts = []
+    raw = bytearray()
     while True:
         try:
             d = ss.read(512)
@@ -1035,23 +1046,25 @@ def https_get(host, path, timeout=25):
             break
         if not d:
             break
-        parts.append(d)
+        raw.extend(d)
     try:
         ss.close()
     except Exception:
         pass
-    raw = b"".join(parts)
     he = raw.find(b"\r\n\r\n")
     if he < 0:
         return 0, ""
-    head = raw[:he]
-    body_bytes = raw[he + 4:]
+    head = bytes(raw[:he])
+    del raw[:he + 4]
     try:
         status = int(head.split(b"\r\n")[0].split(b" ")[1])
     except Exception:
         status = 0
     if head.lower().find(b"transfer-encoding: chunked") >= 0:
-        body_bytes = _dechunk(body_bytes)
+        body_bytes = _dechunk(raw)
+        raw = None
+    else:
+        body_bytes = raw
     try:
         return status, body_bytes.decode("utf-8")
     except Exception:
@@ -1457,6 +1470,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
         if text:
             try:
                 data = json.loads(text)
+                text = None
+                gc.collect()
             except Exception:
                 last_error = "CEVAP COZULEMEDI"
         else:
@@ -2202,7 +2217,8 @@ def _fmt_int(v):
 
 def _ask_and_show(q):
     # Guncel sorularda web arar, digerlerini dogrudan GPT'ye sorar.
-    apply_ans_size(ans_size_idx)
+    release_answer_buffers()
+    gc.collect()
     use_web = question_needs_web(q)
     draw_answer_frame()
     answer = fast_live_answer(q) if use_web else None
@@ -2218,6 +2234,7 @@ def _ask_and_show(q):
                       "bilginin tarihini belirterek dogrudan cevapla.")
         answer, err = ask_question(fallback_q, False)
     _gpt_wait_stop()
+    apply_ans_size(ans_size_idx)
     if err is not None:
         txt = to_screen_text(err)
     else:
