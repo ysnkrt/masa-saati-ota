@@ -6,7 +6,7 @@
 #  - Buyuk 7-segment HH:MM, yanip sonen iki nokta, altinda saniye cubugu
 #  - Gun + tarih (Turkce, ASCII)
 #  - WiFi varsa NTP ile otomatik saat ayari (internetten dogru saat)
-#  - Dokunmatik: AYARLAR/KOYU-ACIK/GPT tuslari altta
+#  - Dokunmatik: AYARLAR/GPT tuslari altta
 #    her zaman gorunur.
 #    Saat bicimi sabit 24 saattir.
 #
@@ -25,14 +25,7 @@ MANUAL_LOCATION = ""
 
 # ==== SOR (ChatGPT) AYARLARI ====
 OPENAI_API_KEY = ""
-QA_MODEL = "gpt-5.4-nano"
-WEB_SEARCH_MODEL = "gpt-5.4-nano"
-WEB_MAX_TOKENS = 500
-WEB_RETRY_TOKENS = 700
-GPT_RETRY_COUNT = 1
-GPT_RETRY_DELAY_MS = 900
-GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.24"
+APP_VERSION = "1.0.30"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -45,34 +38,6 @@ USER_CITY = "Istanbul"
 USER_REGION = "Istanbul"
 USER_LAT = None
 USER_LON = None
-SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
-                 "kisaca topla. SADECE duz metin: madde isareti, yildiz (*), "
-                 "baslik (#) veya tablo KULLANMA. "
-                 "Kullaniciya kesinlikle soru sorma veya secenek sunma. "
-                 "Soru belirsizse en makul varsayimi yapip dogrudan cevapla. "
-                 "Guncel veriye erisemesen bile erisemiyorum deme; en son "
-                 "bildigin bilgiyi tarihini acikca belirterek cevapla. "
-                 "COK ONEMLI KURAL: Cevabinda kesinlikle URL, site adi veya "
-                 "kaynak belirtme. 'Kaynaklara gore', 'haberlere gore', "
-                 "'verilere gore', 'X sitesine gore', 'arastirmalara gore' "
-                 "gibi ifadeleri KULLANMA. Bilgiyi kaynak belirtmeden, sanki "
-                 "kendin biliyormus gibi dogrudan soyle. "
-                 "Cevabinin en sonunda, sadece verdigin bilginin hangi yila "
-                 "ait oldugunu kisa bir cumleyle belirt (kaynak degil, sadece yil).")
-WEB_SYSTEM_PROMPT = (
-    "Turkce ve yalnizca duz metin cevap ver. En fazla 1-3 kisa cumle kullan. "
-    "Web arama aracini mutlaka kullan; guncel sorularda model bellegine "
-    "dayanma. Yayin veya guncellenme tarihi en yeni olan sonucu sec. "
-    "Kullaniciya kesinlikle soru sorma veya secenek sunma. Belirsiz bir haber "
-    "sorusunda Turkiye ile ilgili en onemli guncel haberi secip cevapla. "
-    "Guncel veriyi bulamazsan erisemiyorum veya dogrulayamiyorum deme; web "
-    "aramasinda buldugun en yeni sonucu tarihini belirterek dogrudan ver. "
-    "Mac ve fikstur sorularini sadece Super Lig ile sinirlama; UEFA, Avrupa "
-    "ligleri, milli maclar ve Turkiye liglerinden en onemli maclari birlikte ver. "
-    "URL, site veya kaynak adi yazma. Bugunun tarihi %s. En yeni tarihli "
-    "guvenilir veriyi kullan; farkli tarihler varsa en guncelini sec. "
-    "Son cumlede verinin tam tarihini belirt.")
-MAX_TOKENS = 450
 # ============================
 
 
@@ -104,10 +69,11 @@ PRAYER_METHOD = 13
 PRAYER_EVERY_MS = 21600000
 PRAYER_MODE_NAMES = ["KAPALI", "YAKIN", "HEPSI"]
 prayer_mode_idx = 1
-PRAYER_SIZE_NAMES = ["NORMAL", "BUYUK"]
-prayer_size_idx = 0
-PRAYER_THICK_NAMES = ["INCE", "ORTA", "KALIN"]
-prayer_thick_idx = 1
+PRAYER_SIZE_NAMES = ["KUCUK", "ORTA", "BUYUK"]
+PRAYER_SIZE_STYLES = ((5, 7, 6), (7, 10, 8), (9, 13, 10))
+prayer_size_idx = 1
+PRAYER_THICK_NAMES = ["INCE"]
+prayer_thick_idx = 0
 PRAYER_GAP_NAMES = ["SIK", "NORMAL", "GENIS"]
 prayer_gap_idx = 1
 
@@ -120,6 +86,14 @@ try:
     import os
 except Exception:
     import uos as os
+if not OPENAI_API_KEY.strip():
+    try:
+        _key_file = open("openai_key.txt")
+        OPENAI_API_KEY = _key_file.read().strip()
+        _key_file.close()
+        _key_file = None
+    except Exception:
+        pass
 try:
     import json
 except Exception:
@@ -235,7 +209,6 @@ LIME = 0x87E0
 LGRAY = 0xC618
 
 
-MODE_NAMES = ["KOYU", "ACIK"]
 mode_idx = 0
 
 BG = BLACK
@@ -252,28 +225,15 @@ LOCK_CLOSED_COL = GRAY
 def apply_mode():
     global BG, FG, FG_DIM, RAIN_COL, RING_FULL, RING_EMPTY, TAB_UNSEL
     global TITLE_COL, LOCK_CLOSED_COL
-    if mode_idx == 1:
-        BG = WHITE
-        FG = BLACK
-        FG_DIM = LGRAY
-        RAIN_COL = BLACK
-        RING_FULL = BLACK
-        RING_EMPTY = LGRAY
-
-
-        TAB_UNSEL = GRAY
-        TITLE_COL = BLACK
-        LOCK_CLOSED_COL = BLACK
-    else:
-        BG = BLACK
-        FG = WHITE
-        FG_DIM = DGRAY
-        RAIN_COL = CYAN
-        RING_FULL = WHITE
-        RING_EMPTY = DARKGRAY
-        TAB_UNSEL = DARKGRAY
-        TITLE_COL = CYAN
-        LOCK_CLOSED_COL = GRAY
+    BG = BLACK
+    FG = WHITE
+    FG_DIM = DGRAY
+    RAIN_COL = CYAN
+    RING_FULL = WHITE
+    RING_EMPTY = DARKGRAY
+    TAB_UNSEL = DARKGRAY
+    TITLE_COL = CYAN
+    LOCK_CLOSED_COL = GRAY
     _rebuild_ans_zero_buffers()
 
 
@@ -754,40 +714,18 @@ def wrap_full(text, width):
     return lines
 
 
-_EMPTY = []
 ANS_TOP = 24
 ANS_BOTTOM = 206
 
 
-def _build_glyph_table(idx):
-    _AGWp, _AGHp, _AADVp, _LHp = SIZE_PROFILES[idx]
-    _tbl = {}
-    for _ch in FONT:
-        _g = FONT[_ch]
-        _pts = []
-        for _dy in range(_AGHp):
-            _sy = _dy * 7 // _AGHp
-            _row = _g[_sy]
-            for _dx in range(_AGWp):
-                _sx = _dx * 5 // _AGWp
-                if _row[_sx] == "1":
-                    _pts.append((_dx, _dy))
-        _tbl[_ch] = _pts
-    return _tbl
-
-_DEFAULT_ANS_IDX = 1
-_GLYPH_TABLES = [None] * len(SIZE_PROFILES)
-_BUFS = [None] * len(SIZE_PROFILES)
-_ZEROS = [None] * len(SIZE_PROFILES)
-
-
+_AGW = 8
+_AGH = 11
 _AADV = 9
 ANS_LINE_H = 16
 ANS_CHARS = (WIDTH - 8) // _AADV
 ANS_VISIBLE = (ANS_BOTTOM - ANS_TOP) // ANS_LINE_H
-_AGLYPH = None
 _ANS_BUF = None
-_ANS_ZERO = None
+_ANS_BUF_IDX = -1
 
 
 def _fill_answer_background(zero):
@@ -797,62 +735,48 @@ def _fill_answer_background(zero):
     lo = BG & 0xFF
     chunk = bytes([hi, lo]) * 32
     chunk_len = len(chunk)
-    for start in range(0, len(zero), chunk_len):
-        end = min(start + chunk_len, len(zero))
-        zero[start:end] = chunk[:end - start]
+    full = len(zero) - len(zero) % chunk_len
+    for start in range(0, full, chunk_len):
+        zero[start:start + chunk_len] = chunk
+    if full < len(zero):
+        zero[full:] = chunk[:len(zero) - full]
 
 
 def _rebuild_ans_zero_buffers():
-
-    global _ANS_ZERO
-    for zero in _ZEROS:
-        _fill_answer_background(zero)
-    active = _ZEROS[ans_size_idx % len(SIZE_PROFILES)]
-    if active is not None:
-        _ANS_ZERO = active
+    _fill_answer_background(_ANS_BUF)
 
 
 def release_answer_buffers():
-    global _AGLYPH, _ANS_BUF, _ANS_ZERO
-    _AGLYPH = None
+    global _ANS_BUF, _ANS_BUF_IDX
     _ANS_BUF = None
-    _ANS_ZERO = None
-    for i in range(len(_BUFS)):
-        _BUFS[i] = None
-        _ZEROS[i] = None
-        _GLYPH_TABLES[i] = None
+    _ANS_BUF_IDX = -1
     gc.collect()
 
 
 def apply_ans_size(idx):
-    global _AADV, ANS_LINE_H, ANS_CHARS, ANS_VISIBLE, _AGLYPH, _ANS_BUF, _ANS_ZERO
+    global _AGW, _AGH, _AADV, ANS_LINE_H, ANS_CHARS, ANS_VISIBLE
+    global _ANS_BUF, _ANS_BUF_IDX
     idx = idx % len(SIZE_PROFILES)
     AGW, AGH, AADV, LH = SIZE_PROFILES[idx]
-    if _GLYPH_TABLES[idx] is None:
-        _AGLYPH = None
-        for i in range(len(_GLYPH_TABLES)):
-            if i != idx:
-                _GLYPH_TABLES[i] = None
+    if _ANS_BUF is None or _ANS_BUF_IDX != idx:
+        _ANS_BUF = None
+        _ANS_BUF_IDX = -1
         gc.collect()
-        _GLYPH_TABLES[idx] = _build_glyph_table(idx)
-    if _BUFS[idx] is None or _ZEROS[idx] is None:
-        release_answer_buffers()
         size = WIDTH * LH * 2
-        _BUFS[idx] = bytearray(size)
-        _ZEROS[idx] = bytearray(size)
-        _fill_answer_background(_ZEROS[idx])
+        _ANS_BUF = bytearray(size)
+        _ANS_BUF_IDX = idx
+    _fill_answer_background(_ANS_BUF)
+    _AGW = AGW
+    _AGH = AGH
     _AADV = AADV
     ANS_LINE_H = LH
     ANS_CHARS = (WIDTH - 8) // AADV
     ANS_VISIBLE = (ANS_BOTTOM - ANS_TOP) // LH
-    _AGLYPH = _GLYPH_TABLES[idx]
-    _ANS_BUF = _BUFS[idx]
-    _ANS_ZERO = _ZEROS[idx]
 
 
 def render_answer_line(text, screen_y):
     buf = _ANS_BUF
-    buf[:] = _ANS_ZERO
+    _fill_answer_background(buf)
     w = WIDTH
     cx = 4
     limit = w - _AADV
@@ -860,13 +784,15 @@ def render_answer_line(text, screen_y):
     hi = th >> 8
     lo = th & 0xFF
     for ch in text:
-        pts = _AGLYPH.get(ch)
-        if pts is None:
-            pts = _AGLYPH.get(ch.upper(), _EMPTY)
-        for (dx, dy) in pts:
-            idx = (dy * w + cx + dx) * 2
-            buf[idx] = hi
-            buf[idx + 1] = lo
+        glyph = FONT[ch] if ch in FONT else FONT.get(ch.upper(), FONT[" "])
+        for dy in range(_AGH):
+            row = glyph[dy * 7 // _AGH]
+            base = dy * w + cx
+            for dx in range(_AGW):
+                if row[dx * 5 // _AGW] == "1":
+                    pos = (base + dx) * 2
+                    buf[pos] = hi
+                    buf[pos + 1] = lo
         cx += _AADV
         if cx > limit:
             break
@@ -991,339 +917,12 @@ def _dechunk(data):
     return out
 
 
-class _SocketStreamReader:
-    def __init__(self, stream, timeout):
-        self.stream = stream
-        self.timeout_ms = timeout * 1000
-        self.started = time.ticks_ms()
-        self.buf = bytearray()
-        self.pos = 0
-        self.eof = False
-        self.poller = None
-        if select is not None:
-            try:
-                self.poller = select.poll()
-                self.poller.register(stream, select.POLLIN)
-            except Exception:
-                self.poller = None
-
-    def _compact(self):
-        if self.pos == 0:
-            return
-        if self.pos >= len(self.buf):
-            self.buf = bytearray()
-            self.pos = 0
-        elif self.pos >= 512:
-            self.buf = self.buf[self.pos:]
-            self.pos = 0
-
-    def _fill(self):
-        if self.eof:
-            return False
-        read_errors = 0
-        while time.ticks_diff(time.ticks_ms(), self.started) < self.timeout_ms:
-            if self.poller is not None:
-                try:
-                    ready = self.poller.poll(40)
-                except Exception:
-                    self.poller = None
-                    ready = None
-                if self.poller is not None and not ready:
-                    _gpt_wait_step()
-                    continue
-            try:
-                data = self.stream.read(512)
-            except Exception:
-                read_errors += 1
-                if self.poller is not None and read_errors < 200:
-                    _gpt_wait_step()
-                    time.sleep_ms(10)
-                    continue
-                raise
-            if data is None:
-                _gpt_wait_step()
-                time.sleep_ms(10)
-                continue
-            if len(data) == 0:
-                self.eof = True
-                return False
-            self._compact()
-            self.buf.extend(data)
-            return True
-        self.eof = True
-        return False
-
-    def read_some(self, maximum=512):
-        while self.pos >= len(self.buf):
-            self._compact()
-            if not self._fill():
-                return b""
-        count = min(maximum, len(self.buf) - self.pos)
-        out = bytes(self.buf[self.pos:self.pos + count])
-        self.pos += count
-        return out
-
-    def read_exact(self, count):
-        out = bytearray()
-        while len(out) < count:
-            part = self.read_some(count - len(out))
-            if not part:
-                break
-            out.extend(part)
-        return bytes(out)
-
-    def readline(self, limit=2048):
-        out = bytearray()
-        truncated = False
-        while True:
-            while self.pos < len(self.buf):
-                value = self.buf[self.pos]
-                self.pos += 1
-                if value == 10:
-                    if out and out[-1] == 13:
-                        out = out[:-1]
-                    return bytes(out), truncated
-                if len(out) < limit:
-                    out.append(value)
-                else:
-                    truncated = True
-            self._compact()
-            if not self._fill():
-                return bytes(out), truncated
 
 
-class _HTTPBodyStream:
-    def __init__(self, reader, chunked=False, content_length=-1):
-        self.reader = reader
-        self.chunked = chunked
-        self.remaining = content_length
-        self.chunk_left = 0
-        self.done = False
-
-    def read_some(self, maximum=512):
-        if self.done:
-            return b""
-        if not self.chunked:
-            if self.remaining == 0:
-                self.done = True
-                return b""
-            count = maximum
-            if self.remaining > 0:
-                count = min(count, self.remaining)
-            data = self.reader.read_some(count)
-            if not data:
-                self.done = True
-                return b""
-            if self.remaining > 0:
-                self.remaining -= len(data)
-            return data
-
-        while self.chunk_left == 0:
-            line, _truncated = self.reader.readline(64)
-            if not line and self.reader.eof:
-                self.done = True
-                return b""
-            if not line:
-                continue
-            try:
-                self.chunk_left = int(line.split(b";", 1)[0], 16)
-            except Exception:
-                self.done = True
-                return b""
-            if self.chunk_left == 0:
-                self.done = True
-                return b""
-        data = self.reader.read_exact(min(maximum, self.chunk_left))
-        if not data:
-            self.done = True
-            return b""
-        self.chunk_left -= len(data)
-        if self.chunk_left == 0:
-            self.reader.read_exact(2)
-        return data
 
 
-class _BodyLineReader:
-    def __init__(self, body):
-        self.body = body
-        self.pending = bytearray()
-
-    def readline(self, limit=6144):
-        out = bytearray()
-        truncated = False
-        while True:
-            newline = _buffer_find(self.pending, b"\n")
-            if newline >= 0:
-                take = min(newline, max(0, limit - len(out)))
-                if take:
-                    out.extend(self.pending[:take])
-                if newline > take:
-                    truncated = True
-                self.pending = self.pending[newline + 1:]
-                if out and out[-1] == 13:
-                    out = out[:-1]
-                return bytes(out), truncated
-            if self.pending:
-                take = min(len(self.pending), max(0, limit - len(out)))
-                if take:
-                    out.extend(self.pending[:take])
-                if len(self.pending) > take:
-                    truncated = True
-                self.pending = bytearray()
-            part = self.body.read_some(256)
-            if not part:
-                return bytes(out), truncated
-            self.pending.extend(part)
 
 
-def https_post_stream(host, path, api_key, body_str, timeout=45,
-                      on_delta=None):
-    body = body_str.encode("utf-8")
-    body_str = None
-    s = None
-    ss = None
-    fragments = []
-    stream_error = None
-    try:
-        gc.collect()
-        addr = socket.getaddrinfo(host, 443)[0][-1]
-        s = socket.socket()
-        try:
-            s.settimeout(timeout)
-        except Exception:
-            pass
-        s.connect(addr)
-        try:
-            ss = ssl.wrap_socket(s, server_hostname=host)
-        except TypeError:
-            ss = ssl.wrap_socket(s)
-        request = (
-            "POST " + path + " HTTP/1.1\r\n"
-            "Host: " + host + "\r\n"
-            "Authorization: Bearer " + api_key + "\r\n"
-            "Content-Type: application/json\r\n"
-            "Accept: text/event-stream\r\n"
-            "Content-Length: " + str(len(body)) + "\r\n"
-            "Connection: close\r\n\r\n")
-        ss.write(request.encode("utf-8"))
-        ss.write(body)
-        body = None
-
-        reader = _SocketStreamReader(ss, timeout)
-        status_line, _truncated = reader.readline(256)
-        try:
-            status = int(status_line.split(b" ")[1])
-        except Exception:
-            status = 0
-        chunked = False
-        content_length = -1
-        while True:
-            line, _truncated = reader.readline(512)
-            if not line:
-                break
-            lower = line.lower()
-            if lower.startswith(b"transfer-encoding:"):
-                chunked = lower.find(b"chunked") >= 0
-            elif lower.startswith(b"content-length:"):
-                try:
-                    content_length = int(line.split(b":", 1)[1].strip())
-                except Exception:
-                    content_length = -1
-
-        response_body = _HTTPBodyStream(reader, chunked, content_length)
-        lines = _BodyLineReader(response_body)
-        if status != 200:
-            error_body = bytearray()
-            while len(error_body) < 4096:
-                part = response_body.read_some(min(512, 4096 - len(error_body)))
-                if not part:
-                    break
-                error_body.extend(part)
-            try:
-                data = json.loads(_decode_buffer(error_body))
-                stream_error = data.get("error", {}).get("message")
-            except Exception:
-                stream_error = None
-            return status, None, stream_error
-
-        event_name = ""
-        while True:
-            line, truncated = lines.readline()
-            if not line and response_body.done:
-                break
-            if not line:
-                event_name = ""
-                continue
-            if line.startswith(b"event:"):
-                event_name = _decode_buffer(line[6:]).strip()
-                continue
-            if not line.startswith(b"data:"):
-                continue
-            if truncated:
-                if event_name in ("response.error", "error"):
-                    stream_error = "API HATA CEVABI COK UZUN"
-                continue
-            payload = line[5:].strip()
-            if payload == b"[DONE]":
-                break
-            if event_name in (
-                    "response.created", "response.in_progress",
-                    "response.completed", "response.web_search_call.in_progress",
-                    "response.web_search_call.searching",
-                    "response.web_search_call.completed"):
-                continue
-            if event_name and event_name not in (
-                    "response.output_text.delta",
-                    "response.output_text.done",
-                    "response.failed", "response.incomplete",
-                    "response.error", "error"):
-                continue
-            try:
-                event = json.loads(_decode_buffer(payload))
-            except Exception:
-                continue
-            event_type = event_name or event.get("type", "")
-            if event_type == "response.output_text.delta":
-                delta = event.get("delta", "")
-                if delta:
-                    fragments.append(delta)
-                    if on_delta is not None:
-                        on_delta(delta)
-            elif event_type == "response.output_text.done" and not fragments:
-                text = event.get("text", "")
-                if text:
-                    fragments.append(text)
-                    if on_delta is not None:
-                        on_delta(text)
-            elif event_type in (
-                    "response.failed", "response.incomplete",
-                    "response.error", "error"):
-                try:
-                    stream_error = (
-                        event.get("error", {}).get("message") or
-                        event.get("response", {}).get("error", {}).get("message") or
-                        event.get("message"))
-                except Exception:
-                    stream_error = None
-
-        answer = "".join(fragments)
-        if answer:
-            return status, answer, None
-        return status, None, stream_error or "GPT BOS YANIT VERDI"
-    finally:
-        body = None
-        fragments = None
-        if ss is not None:
-            try:
-                ss.close()
-            except Exception:
-                pass
-        elif s is not None:
-            try:
-                s.close()
-            except Exception:
-                pass
-        gc.collect()
 
 
 def https_get(host, path, timeout=25):
@@ -1402,312 +1001,54 @@ OTA_RAW_FILE = "main.py.ota.raw"
 OTA_READY_FILE = "main.py.ota"
 OTA_BACKUP_FILE = "main.py.bak"
 OTA_STATE_FILE = "ota_state.txt"
+OTA_APP_FILE = "clock_app.py"
+OTA_APP_BACKUP_FILE = "clock_app.py.bak"
+OTA_MODULE_FILE = "gpt_stream.py"
+OTA_MODULE_BACKUP_FILE = "gpt_stream.py.bak"
 
 
-def _ota_parse_url(url):
-    prefix = "https://"
-    if not url.startswith(prefix):
-        return None, None
-    rest = url[len(prefix):]
-    slash = rest.find("/")
-    if slash < 0:
-        return rest, "/"
-    return rest[:slash], rest[slash:]
 
 
-def _ota_version_parts(value):
-    parts = []
-    for item in str(value).split("."):
-        digits = ""
-        for ch in item:
-            if "0" <= ch <= "9":
-                digits += ch
-            else:
-                break
-        parts.append(int(digits) if digits else 0)
-    while len(parts) < 4:
-        parts.append(0)
-    return tuple(parts[:4])
 
 
-def ota_check_manifest():
-    host, path = _ota_parse_url(OTA_MANIFEST_URL)
-    if not host:
-        return None, "OTA ADRESI GECERSIZ"
-    try:
-        gc.collect()
-        status, text = https_get(host, path, 20)
-    except Exception as exc:
-        return None, "OTA BAGLANTI: " + str(exc)
-    if status != 200:
-        return None, "OTA SUNUCU KODU " + str(status)
-    try:
-        data = json.loads(text)
-        version = str(data["version"]).strip()
-        url = str(data["url"]).strip()
-        sha256 = str(data["sha256"]).strip().lower()
-        raw_notes = data.get("notes", [])
-    except Exception:
-        return None, "OTA BILGISI GECERSIZ"
-    if not version or not url.startswith("https://") or len(sha256) != 64:
-        return None, "OTA ALANLARI EKSIK"
-    if isinstance(raw_notes, str):
-        raw_notes = [raw_notes]
-    notes = []
-    for item in raw_notes:
-        note = str(item).strip()
-        if note:
-            notes.append(note)
-        if len(notes) >= 4:
-            break
-    return {"version": version, "url": url, "sha256": sha256,
-            "notes": notes}, None
 
 
-def _ota_digest_hex(hasher):
-    return "".join("%02x" % b for b in hasher.digest())
 
 
-def _ota_draw_progress(done, total):
-    x = 28
-    y = 146
-    width = WIDTH - 56
-    lcd.rect(x, y, width, 14, GRAY)
-    inner = width - 4
-    fill = done * inner // total if total > 0 else (done // 1024) % inner
-    if fill < 0:
-        fill = 0
-    if fill > inner:
-        fill = inner
-    lcd.fill_rect(x + 2, y + 2, fill, 10, GREEN)
-    if fill < inner:
-        lcd.fill_rect(x + 2 + fill, y + 2, inner - fill, 10, DARKGRAY)
-    text = "%d KB" % (done // 1024)
-    lcd.fill_rect(0, 170, WIDTH, 14, BG)
-    lcd.text(text, (WIDTH - len(text) * 6) // 2, 173, FG, 1)
 
 
-def ota_download(url, expected_sha):
-    if hashlib is None:
-        return False, "SHA256 MODULU YOK"
-    host, path = _ota_parse_url(url)
-    if not host:
-        return False, "DOSYA ADRESI GECERSIZ"
-    raw = None
-    ss = None
-    f = None
-    try:
-        gc.collect()
-        try:
-            os.remove(OTA_RAW_FILE)
-        except Exception:
-            pass
-        addr = socket.getaddrinfo(host, 443)[0][-1]
-        raw = socket.socket()
-        try:
-            raw.settimeout(30)
-        except Exception:
-            pass
-        raw.connect(addr)
-        try:
-            ss = ssl.wrap_socket(raw, server_hostname=host)
-        except TypeError:
-            ss = ssl.wrap_socket(raw)
-        req = ("GET " + path + " HTTP/1.1\r\n"
-               "Host: " + host + "\r\n"
-               "User-Agent: masa-saati/" + APP_VERSION + "\r\n"
-               "Accept: application/octet-stream\r\n"
-               "Connection: close\r\n\r\n")
-        ss.write(req.encode("utf-8"))
-        status_line = ss.readline()
-        try:
-            status = int(status_line.split(b" ")[1])
-        except Exception:
-            status = 0
-        chunked = False
-        expected_size = 0
-        while True:
-            line = ss.readline()
-            if not line or line in (b"\r\n", b"\n"):
-                break
-            low = line.lower()
-            if low.startswith(b"transfer-encoding:") and b"chunked" in low:
-                chunked = True
-            elif low.startswith(b"content-length:"):
-                try:
-                    expected_size = int(line.split(b":", 1)[1].strip())
-                except Exception:
-                    expected_size = 0
-        if status != 200:
-            return False, "DOSYA SUNUCU KODU " + str(status)
-        if expected_size > OTA_MAX_BYTES:
-            return False, "GUNCELLEME COK BUYUK"
-
-        f = open(OTA_RAW_FILE, "wb")
-        hasher = hashlib.sha256()
-        done = 0
-        shown = -4096
-        if chunked:
-            while True:
-                line = ss.readline()
-                if not line:
-                    raise OSError("chunk basligi yok")
-                size = int(line.split(b";", 1)[0].strip(), 16)
-                if size == 0:
-                    break
-                remaining = size
-                while remaining > 0:
-                    block = ss.read(min(512, remaining))
-                    if not block:
-                        raise OSError("dosya yarim kaldi")
-                    done += len(block)
-                    if done > OTA_MAX_BYTES:
-                        raise OSError("dosya cok buyuk")
-                    f.write(block)
-                    hasher.update(block)
-                    remaining -= len(block)
-                    if done - shown >= 4096:
-                        _ota_draw_progress(done, expected_size)
-                        shown = done
-                ss.read(2)
-        else:
-            while True:
-                block = ss.read(512)
-                if not block:
-                    break
-                done += len(block)
-                if done > OTA_MAX_BYTES:
-                    raise OSError("dosya cok buyuk")
-                f.write(block)
-                hasher.update(block)
-                if done - shown >= 4096:
-                    _ota_draw_progress(done, expected_size)
-                    shown = done
-        try:
-            f.flush()
-        except Exception:
-            pass
-        f.close()
-        f = None
-        _ota_draw_progress(done, expected_size if expected_size else done)
-        if done < 1024:
-            return False, "GUNCELLEME DOSYASI COK KUCUK"
-        if expected_size and done != expected_size:
-            return False, "GUNCELLEME DOSYASI YARIM"
-        if _ota_digest_hex(hasher) != expected_sha:
-            return False, "SHA256 DOGRULANAMADI"
-        return True, None
-    except Exception as exc:
-        return False, "INDIRME HATASI: " + str(exc)
-    finally:
-        if f is not None:
-            try:
-                f.close()
-            except Exception:
-                pass
-        if ss is not None:
-            try:
-                ss.close()
-            except Exception:
-                pass
-        elif raw is not None:
-            try:
-                raw.close()
-            except Exception:
-                pass
-        gc.collect()
 
 
-def ota_prepare_with_local_key():
-    src = None
-    dst = None
-    replaced = False
-    try:
-        try:
-            os.remove(OTA_READY_FILE)
-        except Exception:
-            pass
-        src = open(OTA_RAW_FILE, "r")
-        dst = open(OTA_READY_FILE, "w")
-        for line in src:
-            if line.startswith("OPENAI_API_KEY ="):
-                dst.write("OPENAI_API_KEY = " + repr(OPENAI_API_KEY.strip()) + "\n")
-                replaced = True
-            else:
-                dst.write(line)
-        try:
-            dst.flush()
-        except Exception:
-            pass
-        src.close()
-        src = None
-        dst.close()
-        dst = None
-        if not replaced:
-            return False, "API ANAHTAR SATIRI BULUNAMADI"
-        return True, None
-    except Exception as exc:
-        return False, "DOSYA HAZIRLAMA: " + str(exc)
-    finally:
-        if src is not None:
-            try:
-                src.close()
-            except Exception:
-                pass
-        if dst is not None:
-            try:
-                dst.close()
-            except Exception:
-                pass
-        try:
-            os.remove(OTA_RAW_FILE)
-        except Exception:
-            pass
 
 
-def ota_install_ready():
-    if not safe_write_text(OTA_STATE_FILE, "installing\n"):
-        return False, "OTA DURUMU YAZILAMADI"
-    try:
-        try:
-            os.remove(OTA_BACKUP_FILE)
-        except Exception:
-            pass
-        os.rename("main.py", OTA_BACKUP_FILE)
-        try:
-            os.rename(OTA_READY_FILE, "main.py")
-        except Exception:
-            os.rename(OTA_BACKUP_FILE, "main.py")
-            raise
-        if not safe_write_text(OTA_STATE_FILE, "trial\n"):
-            try:
-                os.remove("main.py")
-            except Exception:
-                pass
-            os.rename(OTA_BACKUP_FILE, "main.py")
-            raise OSError("deneme durumu yazilamadi")
-        return True, None
-    except Exception as exc:
-        try:
-            os.remove(OTA_STATE_FILE)
-        except Exception:
-            pass
-        return False, "KURULUM HATASI: " + str(exc)
 
 
 def ota_confirm_boot():
+    paths = (
+            OTA_STATE_FILE, OTA_BACKUP_FILE, OTA_RAW_FILE, OTA_READY_FILE,
+            "main.py.usb", OTA_APP_BACKUP_FILE, "clock_app.py.ota",
+            "clock_app.py.usb", OTA_MODULE_BACKUP_FILE, "gpt_stream.py.ota",
+            "gpt_stream.py.usb", "main.actual.raw", "main.actual",
+            "clock_app.mpy.bak", "gpt_stream.mpy.bak",
+            "sor_feature.mpy.bak", "ota_feature.mpy.bak",
+            "sor_feature.py.bak", "ota_feature.py.bak",
+            "sor_feature.py.ota", "ota_feature.py.ota",
+            "sor_feature.py.usb", "ota_feature.py.usb",
+            "sor_feature.mpy.usb", "ota_feature.mpy.usb",
+            "clock_test.py", "clock_test.mpy",
+            "main.y", "rassbrry pi pico 2 w.py")
     try:
-        f = open(OTA_STATE_FILE)
-        state = f.read().strip()
-        f.close()
+        os.stat("clock_app.mpy")
+        paths += ("clock_app.py", "clock_app.py.bak",
+                  "gpt_stream.py", "gpt_stream.py.bak",
+                  "sor_feature.py", "ota_feature.py")
     except Exception:
-        return
-    if state == "trial":
-        for path in (OTA_STATE_FILE, OTA_BACKUP_FILE, OTA_RAW_FILE):
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+        pass
+    for path in paths:
+        try:
+            os.remove(path)
+        except Exception:
+            pass
 
 
 def ota_restore_trial():
@@ -1731,6 +1072,23 @@ def ota_restore_trial():
         os.rename(OTA_BACKUP_FILE, "main.py")
     except Exception:
         return False
+    for current, backup in (
+            (OTA_APP_FILE, OTA_APP_BACKUP_FILE),
+            (OTA_MODULE_FILE, OTA_MODULE_BACKUP_FILE),
+            ("sor_feature.py", "sor_feature.py.bak"),
+            ("ota_feature.py", "ota_feature.py.bak"),
+            ("clock_app.mpy", "clock_app.mpy.bak"),
+            ("gpt_stream.mpy", "gpt_stream.mpy.bak"),
+            ("sor_feature.mpy", "sor_feature.mpy.bak"),
+            ("ota_feature.mpy", "ota_feature.mpy.bak")):
+        try:
+            os.remove(current)
+        except Exception:
+            pass
+        try:
+            os.rename(backup, current)
+        except Exception:
+            pass
     try:
         os.remove(OTA_STATE_FILE)
     except Exception:
@@ -1738,602 +1096,54 @@ def ota_restore_trial():
     return True
 
 
-def openai_chat(messages, model, web_search, timeout, max_tok=None,
-                reasoning=None, search_context="low", on_delta=None):
-    if socket is None or ssl is None:
-        return None, "AG MODULU YOK"
-    api_key = OPENAI_API_KEY.strip()
-    if not api_key or api_key.startswith("sk-BURAYA"):
-        return None, "API ANAHTARI GIRILMEMIS"
-    mt = max_tok if max_tok is not None else MAX_TOKENS
-    instructions = []
-    request_input = []
-    for message in messages:
-        if message.get("role") == "system":
-            instructions.append(message.get("content", ""))
-        else:
-            request_input.append(message)
-    body = {
-        "model": WEB_SEARCH_MODEL if web_search else model,
-        "input": request_input,
-        "max_output_tokens": min(mt, WEB_MAX_TOKENS) if web_search else mt,
-    }
-    if instructions:
-        body["instructions"] = "\n".join(instructions)
-    if reasoning:
-        body["reasoning"] = {"effort": reasoning}
-    if web_search:
-        body["text"] = {"verbosity": "low"}
-        body["tool_choice"] = "required"
-        body["max_tool_calls"] = 1
-        body["tools"] = [{
-            "type": "web_search",
-            "search_context_size": search_context,
-            "user_location": {
-                "type": "approximate",
-                "country": USER_COUNTRY,
-                "city": USER_CITY,
-                "region": USER_REGION,
-            },
-        }]
-    body["stream"] = True
-    payload = json.dumps(body)
-    body = None
-    messages = None
-    request_input = None
-    instructions = None
-    gc.collect()
-    transient_status = (0, 408, 429, 500, 502, 503, 504)
-    last_error = "BAGLANTI HATASI"
-    attempt_count = 1 if web_search else GPT_RETRY_COUNT + 1
-    for attempt in range(attempt_count):
-        gc.collect()
-        status = 0
-        answer = None
-        stream_error = None
-        try:
-            status, answer, stream_error = https_post_stream(
-                "api.openai.com", "/v1/responses", api_key, payload,
-                timeout, on_delta)
-        except Exception as exc:
-            stream_error = "BAGLANTI HATASI: " + str(exc)
-        finally:
-            gc.collect()
-        if answer:
-            return answer, None
-        if stream_error:
-            last_error = stream_error
-        elif status in transient_status:
-            last_error = "API GECICI HATA " + str(status)
-        else:
-            last_error = "API HATASI KOD " + str(status)
-        if status not in transient_status and status != 200:
-            return None, last_error
-        if attempt + 1 < attempt_count:
-            time.sleep_ms(GPT_RETRY_DELAY_MS)
-    return None, last_error
 
 
-WEB_QUERY_HINTS = (
-    "bugun", "bugunku", "yarin", "yarinki", "dun", "dunku", "guncel",
-    "canli", "son durum", "son dakika", "su an", "simdi",
-    "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
-    "sicaklik", "sogukluk", "nem", "ruzgar", "basinc", "uv", "gorus",
-    "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
-    "hisse", "bitcoin", "btc", "ethereum", "eth", "kripto", "fiyat", "kac tl", "ne kadar",
-    "haber", "haberler", "mac", "maclar", "skor", "skorlar",
-    "puan durumu", "lig", "ligler", "fikstur", "fiksturler",
-    "deprem", "depremler",
-    "trafik", "kim kazandi", "secim", "sonuc", "sonuclar", "piyasa",
-    "doviz", "enflasyon", "faiz", "zam", "resmi gazete",
-    "cumhurbaskani", "baskani", "bakani", "ceo",
-    "internetten", "webden", "ara", "kontrol et",
-)
-
-SPORTS_QUERY_HINTS = (
-    "mac", "maclar", "skor", "skorlar", "puan durumu",
-    "lig", "ligler", "fikstur", "fiksturler",
-)
-
-def _normalize_question(q):
-    text = str(q).lower()
-    for src, dst in (
-            ("ı", "i"), ("ş", "s"), ("ğ", "g"),
-            ("ü", "u"), ("ö", "o"), ("ç", "c")):
-        text = text.replace(src, dst)
-    for separator in ".,?!:;()[]{}-/\\'\"":
-        text = text.replace(separator, " ")
-    return " " + " ".join(text.split()) + " "
 
 
-def question_needs_web(q):
-    text = _normalize_question(q)
-    for hint in WEB_QUERY_HINTS:
-        if " " + hint + " " in text:
-            return True
-    return False
 
 
-def _question_is_sports(q):
-    text = _normalize_question(q)
-    for hint in SPORTS_QUERY_HINTS:
-        if " " + hint + " " in text:
-            return True
-    return False
 
 
-def _live_cache_path(q):
-    text = _normalize_question(q)
-    value = 2166136261
-    for ch in text:
-        value ^= ord(ch) & 0xFF
-        value = (value * 16777619) & 0xFFFFFFFF
-    return LIVE_CACHE_PREFIX + ("%08x" % value) + ".txt", text
 
 
-def _live_cache_get(q):
-    path, normalized = _live_cache_path(q)
-    f = None
-    try:
-        now = int(time.time())
-        if now < 100000:
-            return None
-        f = open(path, "r")
-        saved = int(f.readline().strip())
-        stored_q = f.readline().rstrip("\r\n")
-        if stored_q != normalized or now < saved or now - saved > LIVE_CACHE_SECONDS:
-            f.close()
-            f = None
-            try:
-                os.remove(path)
-            except Exception:
-                pass
-            return None
-        answer = f.read(4096)
-        f.close()
-        return answer if answer else None
-    except Exception:
-        if f is not None:
-            try:
-                f.close()
-            except Exception:
-                pass
-        return None
 
 
-def _live_cache_trim():
-    try:
-        entries = []
-        for name in os.listdir():
-            if not name.startswith(LIVE_CACHE_PREFIX) or not name.endswith(".txt"):
-                continue
-            stamp = 0
-            f = None
-            try:
-                f = open(name, "r")
-                stamp = int(f.readline().strip())
-                f.close()
-                f = None
-            except Exception:
-                if f is not None:
-                    try:
-                        f.close()
-                    except Exception:
-                        pass
-            entries.append((stamp, name))
-        entries.sort()
-        while len(entries) > LIVE_CACHE_LIMIT:
-            _stamp, name = entries.pop(0)
-            try:
-                os.remove(name)
-            except Exception:
-                pass
-    except Exception:
-        pass
 
 
-def _live_cache_put(q, answer):
-    try:
-        now = int(time.time())
-        if now < 100000 or not answer:
-            return
-        path, normalized = _live_cache_path(q)
-        safe_write_text(path, "%d\n%s\n%s" % (
-            now, normalized, str(answer)[:4096]))
-        _live_cache_trim()
-    except Exception:
-        pass
 
 
-def _answer_refuses_current(answer):
-    text = _normalize_question(answer)
-    markers = (
-        " dogrulayamiyorum ", " guncel veri alamiyorum ",
-        " guncel veriye erisemiyorum ", " canli veriye erisimim yok ",
-        " gercek zamanli veriye erisemiyorum ", " web erisimim yok ",
-        " internete erisemiyorum ", " hangi kanal ", " hangi lig ",
-    )
-    for marker in markers:
-        if marker in text:
-            return True
-    return False
 
 
-def _today_text():
-    try:
-        lt = time.localtime()
-        if 2024 <= lt[0] <= 2100:
-            return "%04d-%02d-%02d" % (lt[0], lt[1], lt[2])
-    except Exception:
-        pass
-    return "bilinmiyor"
 
 
-def _display_date(value):
-    try:
-        parts = str(value)[:10].split("-")
-        return "%s/%s/%s" % (parts[2], parts[1], parts[0])
-    except Exception:
-        return str(value)
 
 
-def _weather_condition(code):
-    try:
-        code = int(code)
-    except Exception:
-        return ""
-    if code == 0:
-        return "acik"
-    if code <= 2:
-        return "parcali bulutlu"
-    if code == 3:
-        return "kapali"
-    if code in (45, 48):
-        return "sisli"
-    if 51 <= code <= 57:
-        return "ciseleyen"
-    if 61 <= code <= 67:
-        return "yagmurlu"
-    if 71 <= code <= 77:
-        return "karli"
-    if 80 <= code <= 82:
-        return "saganak yagisli"
-    if code in (85, 86):
-        return "kar saganakli"
-    if 95 <= code <= 99:
-        return "gok gurultulu"
-    return ""
 
 
-def _event_local_date_time(stamp):
-    try:
-        year = int(stamp[0:4])
-        month = int(stamp[5:7])
-        day = int(stamp[8:10])
-        hour = int(stamp[11:13]) + 3
-        minute = int(stamp[14:16])
-        if hour >= 24:
-            hour -= 24
-            day += 1
-            month_days = (31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30,
-                          31, 31, 30, 31, 30, 31)
-            if day > month_days[month - 1]:
-                day = 1
-                month += 1
-                if month > 12:
-                    month = 1
-                    year += 1
-        return ("%04d-%02d-%02d" % (year, month, day),
-                "%02d:%02d" % (hour, minute))
-    except Exception:
-        return "", ""
 
 
-def _fast_sports_answer():
-    date_key = _today_text()
-    if date_key == "bilinmiyor":
-        return None
-    path = ("/apis/site/v2/sports/soccer/all/scoreboard?dates=" +
-            date_key.replace("-", "") + "&limit=8")
-    status, raw = https_get("site.api.espn.com", path, 12)
-    if status != 200 or not raw:
-        return None
-    gc.collect()
-    data = json.loads(raw)
-    raw = None
-    matches = []
-    for event in data.get("events") or []:
-        local_date, local_time = _event_local_date_time(event.get("date", ""))
-        if local_date != date_key:
-            continue
-        competitions = event.get("competitions") or []
-        if not competitions:
-            continue
-        competition = competitions[0]
-        home = None
-        away = None
-        home_score = ""
-        away_score = ""
-        for competitor in competition.get("competitors") or []:
-            team = competitor.get("team") or {}
-            name = team.get("shortDisplayName") or team.get("displayName")
-            if competitor.get("homeAway") == "home":
-                home = name
-                home_score = str(competitor.get("score", ""))
-            elif competitor.get("homeAway") == "away":
-                away = name
-                away_score = str(competitor.get("score", ""))
-        if not home or not away:
-            continue
-        status_type = ((competition.get("status") or {}).get("type") or {})
-        state = status_type.get("state")
-        line = local_time + " " + home + " - " + away
-        if state in ("in", "post"):
-            line += " " + home_score + "-" + away_score
-        matches.append((local_time, line))
-    data = None
-    gc.collect()
-    if not matches:
-        return None
-    matches.sort()
-    return "Bugunun onemli maclari: " + "; ".join(
-        item[1] for item in matches[:6]) + "."
 
 
-def _daily_item(daily, key, index):
-    values = daily.get(key) or []
-    if index < len(values):
-        return values[index]
-    return None
 
 
-def _wind_direction_name(value):
-    try:
-        names = ("K", "KD", "D", "GD", "G", "GB", "B", "KB")
-        return names[int((float(value) + 22.5) // 45) % 8]
-    except Exception:
-        return ""
 
 
-def _fast_weather_answer(text):
-    if USER_LAT is None or USER_LON is None:
-        return None
-    path = ("/v1/forecast?latitude=%s&longitude=%s"
-            "&current=temperature_2m,relative_humidity_2m,"
-            "apparent_temperature,precipitation,rain,snowfall,weather_code,"
-            "cloud_cover,surface_pressure,visibility,wind_speed_10m,"
-            "wind_direction_10m,wind_gusts_10m"
-            "&daily=weather_code,temperature_2m_max,temperature_2m_min,"
-            "apparent_temperature_max,apparent_temperature_min,"
-            "precipitation_probability_max,uv_index_max,sunrise,sunset"
-            "&timezone=auto&forecast_days=3") % (str(USER_LAT), str(USER_LON))
-    status, raw = https_get("api.open-meteo.com", path, 10)
-    if status != 200 or not raw:
-        return None
-    data = json.loads(raw)
-    daily = data.get("daily") or {}
-    place = USER_REGION if USER_REGION else USER_CITY
-    if " yarin " in text:
-        index = 1
-        date_value = _daily_item(daily, "time", index)
-        low = _daily_item(daily, "temperature_2m_min", index)
-        high = _daily_item(daily, "temperature_2m_max", index)
-        feels_low = _daily_item(daily, "apparent_temperature_min", index)
-        feels_high = _daily_item(daily, "apparent_temperature_max", index)
-        rain_chance = _daily_item(
-            daily, "precipitation_probability_max", index)
-        uv = _daily_item(daily, "uv_index_max", index)
-        condition = _weather_condition(
-            _daily_item(daily, "weather_code", index))
-        if date_value is None or low is None or high is None:
-            return None
-        answer = "Yarin %s: %s, en dusuk %.1f C, en yuksek %.1f C" % (
-            place, condition, float(low), float(high))
-        if feels_low is not None and feels_high is not None:
-            answer += ", hissedilen %.1f-%.1f C" % (
-                float(feels_low), float(feels_high))
-        if rain_chance is not None:
-            answer += ". Yagis ihtimali %%%d" % int(float(rain_chance))
-        if uv is not None:
-            answer += ", UV en fazla %.1f" % float(uv)
-        sunrise = _daily_item(daily, "sunrise", index)
-        sunset = _daily_item(daily, "sunset", index)
-        if sunrise and sunset:
-            answer += ". Gun dogumu %s, gun batimi %s" % (
-                sunrise[11:16], sunset[11:16])
-        return answer + ". Tahmin tarihi " + _display_date(date_value) + "."
-
-    current = data.get("current") or {}
-    temp = current.get("temperature_2m")
-    feels = current.get("apparent_temperature")
-    if temp is None:
-        return None
-    condition = _weather_condition(current.get("weather_code"))
-    answer = "%s: %.1f C" % (place, float(temp))
-    if feels is not None:
-        answer += ", hissedilen %.1f C" % float(feels)
-    if condition:
-        answer += ", " + condition
-    low = _daily_item(daily, "temperature_2m_min", 0)
-    high = _daily_item(daily, "temperature_2m_max", 0)
-    if low is not None and high is not None:
-        answer += ". Bugun en dusuk %.1f C, en yuksek %.1f C" % (
-            float(low), float(high))
-    humidity = current.get("relative_humidity_2m")
-    if humidity is not None:
-        answer += ". Nem %%%d" % int(float(humidity))
-    precipitation = current.get("precipitation")
-    if precipitation is not None:
-        answer += ", yagis %.1f mm" % float(precipitation)
-    wind = current.get("wind_speed_10m")
-    if wind is not None:
-        direction = _wind_direction_name(current.get("wind_direction_10m"))
-        answer += ". Ruzgar %s %.1f km/s" % (direction, float(wind))
-        gust = current.get("wind_gusts_10m")
-        if gust is not None:
-            answer += ", hamle %.1f km/s" % float(gust)
-    pressure = current.get("surface_pressure")
-    if pressure is not None:
-        answer += ". Basinc %.0f hPa" % float(pressure)
-    cloud = current.get("cloud_cover")
-    if cloud is not None:
-        answer += ", bulut %%%d" % int(float(cloud))
-    visibility = current.get("visibility")
-    if visibility is not None:
-        answer += ", gorus %.1f km" % (float(visibility) / 1000.0)
-    uv = _daily_item(daily, "uv_index_max", 0)
-    if uv is not None:
-        answer += ". UV en fazla %.1f" % float(uv)
-    sunrise = _daily_item(daily, "sunrise", 0)
-    sunset = _daily_item(daily, "sunset", 0)
-    if sunrise and sunset:
-        answer += ", gun dogumu %s, gun batimi %s" % (
-            sunrise[11:16], sunset[11:16])
-    stamp = current.get("time")
-    if stamp:
-        answer += ". Veri zamani " + _display_date(stamp[:10]) + " " + stamp[11:16]
-    return answer + "."
 
 
-def _tr_money(value):
-    return float(str(value).replace(".", "").replace(",", "."))
 
 
-def _fast_market_data():
-    status, raw = https_get("finans.truncgil.com", "/today.json", 10)
-    if status != 200 or not raw:
-        return None
-    return json.loads(raw)
 
 
-def _fast_currency_answer(text, data=None):
-    wants_usd = " dolar " in text or " usd " in text
-    wants_eur = " euro " in text or " avro " in text or " eur " in text
-    if not (wants_usd or wants_eur or " kur " in text):
-        return None
-    if data is None:
-        data = _fast_market_data()
-    if data is None:
-        return None
-    parts = []
-    for wanted, key, label in (
-            (wants_usd or not wants_eur, "USD", "Dolar"),
-            (wants_eur or not wants_usd, "EUR", "Euro")):
-        rate = data.get(key) or {}
-        buying = rate.get("Al\u0131\u015f")
-        selling = rate.get("Sat\u0131\u015f")
-        if wanted and buying and selling:
-            buying = _tr_money(buying)
-            selling = _tr_money(selling)
-            parts.append("%s alis %.2f, satis %.2f TL" %
-                         (label, buying, selling))
-    if not parts:
-        return None
-    stamp = str(data.get("Update_Date", ""))
-    return ", ".join(parts) + ". Veri zamani " + stamp + "."
 
 
-def _fast_gold_answer(text):
-    choices = []
-    if " ceyrek " in text:
-        choices.append(("ceyrek-altin", "Ceyrek altin"))
-    elif " yarim " in text:
-        choices.append(("yarim-altin", "Yarim altin"))
-    elif " tam " in text:
-        choices.append(("tam-altin", "Tam altin"))
-    elif " gumus " in text:
-        choices.append(("gumus", "Gumus"))
-    else:
-        choices.append(("gram-altin", "Gram altin"))
-    data = _fast_market_data()
-    if data is None:
-        return None
-    parts = []
-    for key, label in choices:
-        rate = data.get(key) or {}
-        buying = rate.get("Al\u0131\u015f")
-        selling = rate.get("Sat\u0131\u015f")
-        if buying and selling:
-            parts.append("%s alis %.2f, satis %.2f TL" %
-                         (label, _tr_money(buying), _tr_money(selling)))
-    if not parts:
-        return None
-    return ", ".join(parts) + ". Veri zamani " + str(data.get("Update_Date", "")) + "."
 
 
-def _fast_crypto_answer(text):
-    wants_btc = " bitcoin " in text or " btc " in text
-    wants_eth = " ethereum " in text or " eth " in text
-    if not (wants_btc or wants_eth):
-        return None
-    ids = []
-    if wants_btc:
-        ids.append("bitcoin")
-    if wants_eth:
-        ids.append("ethereum")
-    path = ("/api/v3/simple/price?ids=" + ",".join(ids) +
-            "&vs_currencies=try&include_last_updated_at=true")
-    status, raw = https_get("api.coingecko.com", path, 10)
-    if status != 200 or not raw:
-        return None
-    data = json.loads(raw)
-    parts = []
-    if wants_btc and (data.get("bitcoin") or {}).get("try") is not None:
-        parts.append("Bitcoin %d TL" % int(float(data["bitcoin"]["try"]) + 0.5))
-    if wants_eth and (data.get("ethereum") or {}).get("try") is not None:
-        parts.append("Ethereum %d TL" % int(float(data["ethereum"]["try"]) + 0.5))
-    if not parts:
-        return None
-    return ", ".join(parts) + ". Kontrol tarihi " + _display_date(_today_text()) + "."
 
 
-def fast_live_answer(q):
-    text = _normalize_question(q)
-    answer = None
-    try:
-        if _question_is_sports(text):
-            answer = _fast_sports_answer()
-        elif any((" " + hint + " ") in text for hint in (
-                "hava", "sicaklik", "sogukluk", "yagmur", "nem",
-                "ruzgar", "basinc", "uv", "gorus")):
-            answer = _fast_weather_answer(text)
-        elif (" bitcoin " in text or " btc " in text or
-              " ethereum " in text or " eth " in text):
-            answer = _fast_crypto_answer(text)
-        elif " altin " in text or " gumus " in text:
-            answer = _fast_gold_answer(text)
-        elif (" dolar " in text or " usd " in text or " euro " in text or
-              " avro " in text or " eur " in text or " kur " in text):
-            answer = _fast_currency_answer(text)
-    except Exception:
-        answer = None
-    gc.collect()
-    return answer
 
 
-def ask_question(q, web_search=None, search_context="medium", on_delta=None):
-    if web_search is None:
-        web_search = question_needs_web(q)
-    if web_search:
-        sp = WEB_SYSTEM_PROMPT % _today_text()
-        tok = WEB_MAX_TOKENS
-        q = (q + " Bugunun tarihi " + _today_text() +
-             ". Web'de ara ve yalnizca en yeni tarihli bilgiyi kullan.")
-        if _question_is_sports(q):
-            search_context = "medium"
-            q = (q + " Bugun dunyadaki en onemli futbol maclarini ara. "
-                 "UEFA, Sampiyonlar Ligi, Avrupa Ligi, Avrupa buyuk ligleri, "
-                 "milli maclar ve Super Lig arasindan en fazla 6 mac ver.")
-    else:
-        extra = LEN_PROFILES[ans_len_idx][2]
-        tok = LEN_PROFILES[ans_len_idx][1]
-        sp = SYSTEM_PROMPT + " " + extra
-    return openai_chat(
-        [{"role": "system", "content": sp},
-         {"role": "user", "content": q}],
-        QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
-        reasoning="none" if web_search else "minimal",
-        search_context=search_context, on_delta=on_delta)
+
+
 
 
 def is_online():
@@ -2581,116 +1391,6 @@ def _fmt_int(v):
         return "--"
 
 
-_STREAM_Y = 42
-_STREAM_LINE_H = 10
-_STREAM_CHARS = 50
-_STREAM_ROWS = (ANS_BOTTOM - _STREAM_Y) // _STREAM_LINE_H
-_STREAM_DRAW_MS = 70
-_stream_line = ""
-_stream_row = 0
-_stream_last_draw = 0
-_stream_started = False
-
-
-def _stream_preview_start():
-    global _stream_line, _stream_row, _stream_last_draw, _stream_started
-    _stream_line = ""
-    _stream_row = 0
-    _stream_last_draw = 0
-    _stream_started = False
-
-
-def _stream_preview_draw(force=False):
-    global _stream_last_draw
-    if lcd is None or not _stream_started or _stream_row >= _STREAM_ROWS:
-        return
-    now = time.ticks_ms()
-    if (not force and
-            time.ticks_diff(now, _stream_last_draw) < _STREAM_DRAW_MS):
-        return
-    _stream_last_draw = now
-    y = _STREAM_Y + _stream_row * _STREAM_LINE_H
-    lcd.fill_rect(0, y, WIDTH, _STREAM_LINE_H, BG)
-    lcd.text(_stream_line, 4, y + 1, FG, 1)
-
-
-def _stream_preview_next_line():
-    global _stream_line, _stream_row
-    _stream_preview_draw(True)
-    _stream_line = ""
-    _stream_row += 1
-
-
-def _stream_preview_delta(delta):
-    global _stream_line, _stream_started
-    if not delta or _stream_row >= _STREAM_ROWS:
-        return
-    if not _stream_started:
-        _gpt_wait_stop()
-        lcd.text("GPT:", 4, 4, GREEN, 2)
-        _stream_started = True
-    text = to_screen_text(delta)
-    for ch in text:
-        if _stream_row >= _STREAM_ROWS:
-            break
-        if ch == "\n":
-            _stream_preview_next_line()
-        elif ch == " " and not _stream_line:
-            continue
-        else:
-            _stream_line += ch
-            if len(_stream_line) >= _STREAM_CHARS:
-                _stream_preview_next_line()
-    _stream_preview_draw()
-
-
-def _stream_preview_finish():
-    if _stream_started:
-        _stream_preview_draw(True)
-
-
-def _ask_and_show(q):
-
-    release_answer_buffers()
-    gc.collect()
-    use_web = question_needs_web(q)
-    cached_answer = _live_cache_get(q) if use_web else None
-    draw_answer_frame()
-    if use_web and cached_answer is None:
-        _gpt_wait_start()
-    answer = cached_answer
-    if answer is None:
-        answer = fast_live_answer(q) if use_web else None
-    if answer is None:
-        if not _gpt_wait_active:
-            _gpt_wait_start()
-        _stream_preview_start()
-        answer, err = ask_question(
-            q, use_web, on_delta=_stream_preview_delta)
-        _stream_preview_finish()
-    else:
-        err = None
-    if use_web and (err is not None or _answer_refuses_current(answer)):
-        answer = None
-        if err is None:
-            err = "GUNCEL YANIT ALINAMADI"
-    _gpt_wait_stop()
-    if use_web and err is None and answer:
-        answer = strip_urls(answer)
-        _live_cache_put(q, answer)
-    apply_ans_size(ans_size_idx)
-    if err is not None:
-        txt = to_screen_text(err)
-    else:
-        txt = to_screen_text(strip_urls(answer))
-    lines = wrap_full(txt, ANS_CHARS)
-    if not lines:
-        lines = [""]
-    action = show_answer(lines)
-    release_answer_buffers()
-    return action
-
-
 # ===================== DURUM =====================
 wlan = None
 ntp_ok = False
@@ -2729,56 +1429,14 @@ _GPT_WAIT_X = 6
 _GPT_WAIT_Y = 6
 _GPT_WAIT_W = 48
 _GPT_WAIT_H = 34
-_GPT_WAIT_INTERVAL_MS = 40
-_gpt_wait_frames = None
-_gpt_wait_rows = None
+_GPT_WAIT_INTERVAL_MS = 140
 
 
-def _gpt_wait_prepare():
-    global _gpt_wait_frames, _gpt_wait_rows
-    bg_pixel = bytes((BG >> 8, BG & 0xFF))
-    fg_pixel = bytes((TITLE_COL >> 8, TITLE_COL & 0xFF))
-    background = bg_pixel * (_GPT_WAIT_W * _GPT_WAIT_H)
-    _gpt_wait_rows = (
-        fg_pixel * 2,
-        fg_pixel * 4,
-        fg_pixel * 6,
-    )
-    frames = []
-    for step in range(8):
-        phase = (-(step // 2)) % 4
-        next_phase = (phase - 1) % 4
-        between = step & 1
-        buf = bytearray(background)
-        for i in range(4):
-            height = _GPT_WAIT_HEIGHTS[(phase + i) % 4]
-            if between:
-                next_height = _GPT_WAIT_HEIGHTS[(next_phase + i) % 4]
-                height = (height + next_height) // 2
-            _gpt_wait_bar(buf, 4 + i * 10, height)
-        frames.append(bytes(buf))
-    _gpt_wait_frames = tuple(frames)
-    _gpt_wait_rows = None
-
-
-def _gpt_wait_bar(buf, x, height):
-    top = (_GPT_WAIT_H - height) // 2
-    for row in range(height):
-        edge = row
-        bottom_edge = height - 1 - row
-        if bottom_edge < edge:
-            edge = bottom_edge
-        if edge <= 0:
-            inset = 2
-            pixels = _gpt_wait_rows[0]
-        elif edge == 1:
-            inset = 1
-            pixels = _gpt_wait_rows[1]
-        else:
-            inset = 0
-            pixels = _gpt_wait_rows[2]
-        pos = ((top + row) * _GPT_WAIT_W + x + inset) * 2
-        buf[pos:pos + len(pixels)] = pixels
+def _gpt_wait_bar(x, height):
+    top = _GPT_WAIT_Y + (_GPT_WAIT_H - height) // 2
+    lcd.fill_rect(x + 1, top, 4, height, TITLE_COL)
+    if height > 4:
+        lcd.fill_rect(x, top + 2, 6, height - 4, TITLE_COL)
 
 
 def _gpt_wait_step(force=False):
@@ -2790,16 +1448,17 @@ def _gpt_wait_step(force=False):
             time.ticks_diff(now, _gpt_wait_last) < _GPT_WAIT_INTERVAL_MS):
         return
     _gpt_wait_last = now
-    if _gpt_wait_frames is None:
-        _gpt_wait_prepare()
-    lcd.set_window(_GPT_WAIT_X, _GPT_WAIT_Y,
-                   _GPT_WAIT_X + _GPT_WAIT_W - 1,
-                   _GPT_WAIT_Y + _GPT_WAIT_H - 1)
-    lcd.dc.value(1)
-    lcd.cs.value(0)
-    lcd.spi.write(_gpt_wait_frames[_gpt_wait_phase])
-    lcd.cs.value(1)
-    _gpt_wait_phase = (_gpt_wait_phase + 1) % len(_gpt_wait_frames)
+    lcd.fill_rect(_GPT_WAIT_X, _GPT_WAIT_Y, _GPT_WAIT_W, _GPT_WAIT_H, BG)
+    phase = (-(_gpt_wait_phase // 2)) % 4
+    next_phase = (phase - 1) % 4
+    between = _gpt_wait_phase & 1
+    for i in range(4):
+        height = _GPT_WAIT_HEIGHTS[(phase + i) % 4]
+        if between:
+            next_height = _GPT_WAIT_HEIGHTS[(next_phase + i) % 4]
+            height = (height + next_height) // 2
+        _gpt_wait_bar(_GPT_WAIT_X + 4 + i * 10, height)
+    _gpt_wait_phase = (_gpt_wait_phase + 1) % 8
 
 
 def _gpt_wait_start():
@@ -2807,18 +1466,15 @@ def _gpt_wait_start():
     _gpt_wait_active = True
     _gpt_wait_phase = 0
     _gpt_wait_last = 0
-    _gpt_wait_prepare()
     _gpt_wait_step(True)
 
 
 def _gpt_wait_stop():
-    global _gpt_wait_active, _gpt_wait_frames, _gpt_wait_rows
+    global _gpt_wait_active
     _gpt_wait_active = False
     if lcd is not None:
         lcd.fill_rect(_GPT_WAIT_X, _GPT_WAIT_Y,
                       _GPT_WAIT_W, _GPT_WAIT_H, BG)
-    _gpt_wait_frames = None
-    _gpt_wait_rows = None
     gc.collect()
 
 
@@ -3330,28 +1986,41 @@ def draw_date(lt):
     lcd.text(ds, (WIDTH - len(ds) * 12) // 2, dy2, GRAY, 2)
 
 
-def _text_thick(txt, x, y, color, size=1, thick=0):
-
-    lcd.text(txt, x, y, color, size)
-    step = 1
-    if thick >= 1:
-        lcd.text(txt, x + step, y, color, size)
-    if thick >= 2:
-        lcd.text(txt, x, y + step, color, size)
+def _scaled_text_width(txt, style):
+    glyph_w, _glyph_h, advance = style
+    return 0 if not txt else (len(txt) - 1) * advance + glyph_w
 
 
-def _prayer_draw_size(txt):
+def _draw_scaled_text(txt, x, y, color, style):
+    glyph_w, glyph_h, advance = style
+    for ch in txt:
+        data = FONT[ch] if ch in FONT else FONT.get(ch.upper(), FONT[" "])
+        for dy in range(glyph_h):
+            bits = data[dy * 7 // glyph_h]
+            dx = 0
+            while dx < glyph_w:
+                src_x = dx * 5 // glyph_w
+                if bits[src_x] == "1":
+                    lcd.fill_rect(x + dx, y + dy, 1, 1, color)
+                dx += 1
+        x += advance
 
-    size = 2 if prayer_size_idx == 1 else 1
-    if prayer_mode_idx == 2 and len(txt) * 6 * size > WIDTH:
-        size = 1
-    return size
+
+def _prayer_text_style(txt, max_width):
+    idx = prayer_size_idx
+    while idx > 0 and _scaled_text_width(txt, PRAYER_SIZE_STYLES[idx]) > max_width:
+        idx -= 1
+    return PRAYER_SIZE_STYLES[idx]
 
 
-OTA_TOP_TXT = "OTA"
-OTA_TOP_W = len(OTA_TOP_TXT) * 6
+OTA_IDLE_TXT = "OTA"
+OTA_UPDATE_TXT = "GUNCELLE"
+OTA_TOP_W = len(OTA_UPDATE_TXT) * 6
 OTA_TOP_X = WIDTH - OTA_TOP_W - 4
 OTA_TOP_HIT_X0 = OTA_TOP_X - 10
+OTA_CHECK_EVERY_MS = 21600000
+ota_update_available = False
+last_ota_check = 0
 TOPBTN_TXT = "MANUEL"
 TOPBTN_W = len(TOPBTN_TXT) * 6
 TOPBTN_X = OTA_TOP_X - TOPBTN_W - 12
@@ -3363,7 +2032,9 @@ def draw_status():
 
     lcd.fill_rect(0, 0, WIDTH, 18, BG)
     online = is_online()
-    lcd.text(OTA_TOP_TXT, OTA_TOP_X, 3, GREEN if online else GRAY, 1)
+    ota_text = OTA_UPDATE_TXT if ota_update_available else OTA_IDLE_TXT
+    ota_x = WIDTH - len(ota_text) * 6 - 4
+    lcd.text(ota_text, ota_x, 3, WHITE, 1)
     if online:
         return
     lt = time.localtime()
@@ -3384,7 +2055,7 @@ def draw_bottom():
     lcd.fill_rect(0, BTN_Y, WIDTH, BTN_H, BG)
 
     lcd.hline(0, BTN_Y, WIDTH, GRAY)
-    labels = ("AYARLAR", MODE_NAMES[mode_idx], "GPT")
+    labels = ("AYARLAR", "GPT")
     q = WIDTH // len(labels)
     for i, lbl in enumerate(labels):
         if i:
@@ -3522,19 +2193,24 @@ def analog_prayer_panel(lt, force=False):
         name = parts[0] if parts else "--"
         tm = parts[1] if len(parts) > 1 else "--:--"
         lcd.text("YAKIN", AN_PR_X + 4, AN_PR_Y + 10, head, 1)
-        _text_thick(name, AN_PR_X + 6, AN_PR_Y + 30, val, 1, prayer_thick_idx)
-        _text_thick(tm, AN_PR_X + 6, AN_PR_Y + 48, val, 1, prayer_thick_idx)
+        name_style = _prayer_text_style(name, AN_PR_W - 8)
+        time_style = _prayer_text_style(tm, AN_PR_W - 8)
+        name_x = AN_PR_X + (AN_PR_W - _scaled_text_width(name, name_style)) // 2
+        time_x = AN_PR_X + (AN_PR_W - _scaled_text_width(tm, time_style)) // 2
+        _draw_scaled_text(name, name_x, AN_PR_Y + 30, val, name_style)
+        _draw_scaled_text(tm, time_x, AN_PR_Y + 50, val, time_style)
         return
 
 
     lcd.text("NAMAZ", AN_PR_X + 4, AN_PR_Y + 2, head, 1)
     y = AN_PR_Y + 18
-    line_h = 14 + prayer_gap_idx * 3
     for name, tm in prayer_times:
-        if y > AN_PR_Y + AN_PR_H - 12:
+        text = name + " " + tm
+        style = _prayer_text_style(text, AN_PR_W - 6)
+        if y + style[1] > AN_PR_Y + AN_PR_H:
             break
-        _text_thick(name + " " + tm, AN_PR_X + 4, y, val, 1, prayer_thick_idx)
-        y += line_h
+        _draw_scaled_text(text, AN_PR_X + 3, y, val, style)
+        y += style[1] + 7 + prayer_gap_idx * 3
 
 
 def analog_center_time(lt, force=False):
@@ -4204,7 +2880,7 @@ CFG_FILE = "saat_cfg.txt"
 
 
 def save_cfg():
-    data = "%d %d %d %d %d %d %d %d %d %d %d %d %d\n" % (
+    data = "%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n" % (
         mode_idx, face_idx, bright_idx,
         1 if screen_flip else 0,
         1 if USE_24H else 0,
@@ -4213,7 +2889,8 @@ def save_cfg():
         prayer_size_idx,
         prayer_thick_idx,
         prayer_gap_idx,
-        bright_value)
+        bright_value,
+        2)
     safe_write_text(CFG_FILE, data)
 
 
@@ -4228,7 +2905,7 @@ def load_cfg():
         f.close()
         p = d.split()
         if len(p) >= 5:
-            mode_idx = int(p[0]) % len(MODE_NAMES)
+            mode_idx = 0
             face_idx = int(p[1]) % FACE_COUNT
             bright_idx = int(p[2]) % len(BRIGHT_LEVELS)
             screen_flip = (p[3] == "1")
@@ -4242,9 +2919,13 @@ def load_cfg():
         if len(p) >= 9:
             prayer_mode_idx = int(p[8]) % len(PRAYER_MODE_NAMES)
         if len(p) >= 10:
-            prayer_size_idx = int(p[9]) % len(PRAYER_SIZE_NAMES)
-        if len(p) >= 11:
-            prayer_thick_idx = int(p[10]) % len(PRAYER_THICK_NAMES)
+            saved_prayer_size = int(p[9])
+            if len(p) >= 14 and p[13] == "2":
+                prayer_size_idx = saved_prayer_size % len(PRAYER_SIZE_NAMES)
+            else:
+                prayer_size_idx = min(saved_prayer_size + 1,
+                                      len(PRAYER_SIZE_NAMES) - 1)
+        prayer_thick_idx = 0
         if len(p) >= 12:
             prayer_gap_idx = int(p[11]) % len(PRAYER_GAP_NAMES)
         bright_value = BRIGHT_LEVELS[bright_idx]
@@ -4262,6 +2943,8 @@ def load_cfg():
                 bright_value = BRIGHT_LEVELS[bright_idx]
     except Exception:
         pass
+    mode_idx = 0
+    prayer_thick_idx = 0
     USE_24H = True
     apply_mode()
 
@@ -4285,6 +2968,12 @@ def _settings_col_text(col, text, y, color, size=1):
     lcd.text(text, x, y, color, size)
 
 
+def _settings_col_scaled_text(col, text, y, color, style):
+    width = _scaled_text_width(text, style)
+    x = col * _SET_COL_W + (_SET_COL_W - width) // 2
+    _draw_scaled_text(text, x, y, color, style)
+
+
 def _settings_clear_col(col):
     x = col * _SET_COL_W
     lcd.fill_rect(x + 1, 39, _SET_COL_W - 1, _SET_BACK_Y - 39, BG)
@@ -4303,17 +2992,13 @@ def _settings_draw_sor(clear=True):
 def _settings_draw_prayer(clear=True):
     if clear:
         _settings_clear_col(1)
-    prayer_values = [
-        ("MOD", PRAYER_MODE_NAMES[prayer_mode_idx], True),
-        ("BOYUT", PRAYER_SIZE_NAMES[prayer_size_idx], True),
-        ("KALIN", PRAYER_THICK_NAMES[prayer_thick_idx], True),
-    ]
-    prayer_y = (52, 110, 168)
-    for i, (label, value, enabled) in enumerate(prayer_values):
-        if i:
-            lcd.hline(_SET_COL_W, prayer_y[i] - 14, _SET_COL_W, DARKGRAY)
-        _settings_col_text(1, label, prayer_y[i], GRAY)
-        _settings_col_text(1, value, prayer_y[i] + 21, FG if enabled else GRAY)
+    _settings_col_text(1, "MOD", 59, GRAY)
+    _settings_col_text(1, PRAYER_MODE_NAMES[prayer_mode_idx], 82, FG)
+    lcd.hline(_SET_COL_W, 123, _SET_COL_W, DARKGRAY)
+    _settings_col_text(1, "BOYUT", 143, GRAY)
+    name = PRAYER_SIZE_NAMES[prayer_size_idx]
+    style = PRAYER_SIZE_STYLES[prayer_size_idx]
+    _settings_col_scaled_text(1, name, 166, FG, style)
 
 
 def _brightness_slider_y(value=None):
@@ -4366,10 +3051,10 @@ def _settings_draw_direction(preview_flip, clear=True):
         _settings_clear_col(3)
     direction = "TERS" if preview_flip else "NORMAL"
     ex = 3 * _SET_COL_W + _SET_COL_W // 2
-    device_x = ex - 32
-    device_y = 91 if preview_flip else 72
-    device_w = 65
-    device_h = 49
+    device_x = ex - 29
+    device_y = 60 if preview_flip else 47
+    device_w = 59
+    device_h = 40
     port_x = ex + 12 if preview_flip else ex - 12
     lcd.rect(device_x, device_y, device_w, device_h, FG)
     lcd.rect(device_x + 4, device_y + 4, device_w - 8, device_h - 8, GRAY)
@@ -4392,7 +3077,17 @@ def _settings_draw_direction(preview_flip, clear=True):
                       3 * _SET_COL_W + _SET_COL_W - (port_x + 9), 5, GRAY)
         lcd.hline(port_x + 9, port_y + 5,
                   3 * _SET_COL_W + _SET_COL_W - (port_x + 9), FG)
-    _settings_col_text(3, direction, 180, FG)
+    actions = (
+        (112, "YON " + direction),
+        (145, "KALIBRE"),
+        (178, "AG TEST"),
+    )
+    x = 3 * _SET_COL_W + 6
+    w = _SET_COL_W - 12
+    for y, label in actions:
+        lcd.fill_rect(x, y, w, 27, DARKGRAY)
+        lcd.rect(x, y, w, 27, GRAY)
+        lcd.text(label, x + (w - len(label) * 6) // 2, y + 10, WHITE, 1)
 
 
 def _settings_draw(preview_flip):
@@ -4417,7 +3112,7 @@ def _settings_draw(preview_flip):
 
 
 def _settings_change(col, y):
-    global prayer_mode_idx, prayer_size_idx, prayer_thick_idx, prayer_gap_idx
+    global prayer_mode_idx, prayer_size_idx, prayer_gap_idx
     global ans_size_idx, ans_len_idx
 
     if col == 0:
@@ -4426,13 +3121,10 @@ def _settings_change(col, y):
         else:
             ans_len_idx = (ans_len_idx + 1) % len(LEN_PROFILES)
     elif col == 1:
-        zone = (y - 38) // 59
-        if zone <= 0:
+        if y < 123:
             prayer_mode_idx = (prayer_mode_idx + 1) % len(PRAYER_MODE_NAMES)
-        elif zone == 1:
-            prayer_size_idx = (prayer_size_idx + 1) % len(PRAYER_SIZE_NAMES)
         else:
-            prayer_thick_idx = (prayer_thick_idx + 1) % len(PRAYER_THICK_NAMES)
+            prayer_size_idx = (prayer_size_idx + 1) % len(PRAYER_SIZE_NAMES)
     else:
         return False
     save_cfg()
@@ -4459,95 +3151,27 @@ def _settings_set_brightness(y):
     _settings_draw_brightness(False, old_y)
 
 
-def _ota_confirm_screen(version, notes):
-    lcd.fill(BG)
-    lcd.text("YAZILIM GUNCELLEMESI", 34, 14, TITLE_COL, 2)
-    incoming = "SURUM  v" + version
-    lcd.text(incoming, (WIDTH - len(incoming) * 6) // 2, 51, GREEN, 1)
-    lcd.hline(24, 72, WIDTH - 48, DARKGRAY)
-    lcd.text("YENILIKLER", 127, 84, TITLE_COL, 1)
-    shown_notes = notes if notes else ["Genel iyilestirmeler"]
-    y = 106
-    for note in shown_notes[:4]:
-        line = "- " + to_screen_text(note)
-        if len(line) > 50:
-            line = line[:47] + "..."
-        lcd.text(line, 10, y, FG, 1)
-        y += 16
-    lcd.fill_rect(0, 198, 158, 42, DARKGRAY)
-    lcd.rect(0, 198, 158, 42, GRAY)
-    lcd.text("IPTAL", 64, 215, WHITE, 1)
-    lcd.fill_rect(162, 198, 158, 42, GREEN)
-    lcd.rect(162, 198, 158, 42, GRAY)
-    lcd.text("GUNCELLE", 215, 215, BLACK, 1)
-    _wait_touch_release()
-    while True:
-        p = touch.read_fast()
-        if p is None:
-            time.sleep_ms(20)
-            continue
-        x, y = p
-        if y >= 198:
-            _wait_touch_release()
-            return x >= WIDTH // 2
 
 
-def run_ota_update():
+def ota_check_available():
+    global ota_update_available, last_ota_check
+    last_ota_check = time.ticks_ms()
     if not is_online():
-        show_status_screen("OTA ICIN WIFI GEREKLI", AMBER)
-        time.sleep_ms(1400)
-        return
-    show_status_screen("GUNCELLEME KONTROL EDILIYOR", TITLE_COL)
-    release_answer_buffers()
+        ota_update_available = False
+        return False
+    try:
+        manifest, err = ota_check_manifest()
+        ota_update_available = (
+            err is None and manifest is not None
+            and _ota_version_parts(manifest["version"])
+            > _ota_version_parts(APP_VERSION)
+        )
+    except Exception:
+        ota_update_available = False
     gc.collect()
-    manifest, err = ota_check_manifest()
-    if err is not None:
-        show_status_screen(to_screen_text(err)[:48], RED)
-        time.sleep_ms(1800)
-        return
-    if _ota_version_parts(manifest["version"]) <= _ota_version_parts(APP_VERSION):
-        show_status_screen("SURUM GUNCEL: v" + APP_VERSION, GREEN)
-        time.sleep_ms(1400)
-        return
-    if not _ota_confirm_screen(manifest["version"], manifest.get("notes", [])):
-        return
+    return ota_update_available
 
-    download_url = manifest["url"]
-    expected_sha = manifest["sha256"]
-    manifest = None
-    release_answer_buffers()
-    gc.collect()
 
-    lcd.fill(BG)
-    lcd.text("YAZILIM GUNCELLENIYOR", 28, 76, TITLE_COL, 2)
-    _ota_draw_progress(0, 1)
-    ok, err = ota_download(download_url, expected_sha)
-    if not ok:
-        show_status_screen(to_screen_text(err)[:48], RED)
-        time.sleep_ms(2200)
-        return
-    download_url = None
-    expected_sha = None
-    gc.collect()
-    show_status_screen("API ANAHTARI KORUNUYOR", TITLE_COL)
-    ok, err = ota_prepare_with_local_key()
-    if not ok:
-        show_status_screen(to_screen_text(err)[:48], RED)
-        time.sleep_ms(2200)
-        return
-    gc.collect()
-    show_status_screen("DOGRULANDI, KURULUYOR", GREEN)
-    ok, err = ota_install_ready()
-    if not ok:
-        show_status_screen(to_screen_text(err)[:48], RED)
-        time.sleep_ms(2200)
-        return
-    show_status_screen("TAMAM, YENIDEN BASLIYOR", GREEN)
-    time.sleep_ms(1200)
-    if machine_reset is not None:
-        machine_reset()
-    while True:
-        time.sleep_ms(1000)
 
 
 def run_all_settings():
@@ -4587,10 +3211,17 @@ def run_all_settings():
             continue
         _wait_touch_release()
         if col == 3:
-            screen_flip = not screen_flip
-            lcd.set_rotation(screen_flip)
-            save_cfg()
-            _settings_draw(screen_flip)
+            if y < 145:
+                screen_flip = not screen_flip
+                lcd.set_rotation(screen_flip)
+                save_cfg()
+                _settings_draw(screen_flip)
+            elif y < 178:
+                run_touch_calibration()
+                _settings_draw(screen_flip)
+            else:
+                run_connection_diagnostics()
+                _settings_draw(screen_flip)
         elif _settings_change(col, y):
             if col == 0:
                 _settings_draw_sor()
@@ -4834,9 +3465,8 @@ def run_sor_settings():
 _PRAYER_MODE_Y0 = 38
 _PRAYER_MODE_H = 25
 _PRAYER_MODE_GAP = 30
-_PRAYER_SIZE_Y = 132
-_PRAYER_THICK_Y = 160
-_PRAYER_GAP_Y = 188
+_PRAYER_SIZE_Y = 138
+_PRAYER_GAP_Y = 178
 
 
 def _draw_prayer_mode_row(i):
@@ -4862,7 +3492,6 @@ def _draw_prayer_option_row(y, label, value, enabled=True):
 
 def _draw_prayer_action_rows():
     _draw_prayer_option_row(_PRAYER_SIZE_Y, "BUYUKLUK", PRAYER_SIZE_NAMES[prayer_size_idx], True)
-    _draw_prayer_option_row(_PRAYER_THICK_Y, "KALINLIK", PRAYER_THICK_NAMES[prayer_thick_idx], True)
     if prayer_mode_idx == 2:
         _draw_prayer_option_row(_PRAYER_GAP_Y, "BOSLUK", PRAYER_GAP_NAMES[prayer_gap_idx], True)
     else:
@@ -4886,12 +3515,10 @@ def _prayer_menu_hit(x, y):
             return i
     if 22 <= x <= WIDTH - 22 and _PRAYER_SIZE_Y <= y <= _PRAYER_SIZE_Y + 24:
         return 3
-    if 22 <= x <= WIDTH - 22 and _PRAYER_THICK_Y <= y <= _PRAYER_THICK_Y + 24:
-        return 4
     if 22 <= x <= WIDTH - 22 and _PRAYER_GAP_Y <= y <= _PRAYER_GAP_Y + 24:
-        return 5
+        return 4
     if y >= 216:
-        return 6
+        return 5
     return None
 
 
@@ -4900,30 +3527,18 @@ def _draw_prayer_slider_screen(title, value, count, mode):
     lcd.fill_rect(0, 48, WIDTH, 72, BG)
     col = FG
     if mode == "size":
-        size = 2 if value == 1 else 1
-        txt = "YAKIN IM 05:20"
-        x = (WIDTH - len(txt) * 6 * size) // 2
-        if x < 2:
-            x = 2
-        y = 70 if size == 1 else 62
-        _text_thick(txt, x, y, col, size, prayer_thick_idx)
+        txt = PRAYER_SIZE_NAMES[value]
+        style = PRAYER_SIZE_STYLES[value]
+        x = (WIDTH - _scaled_text_width(txt, style)) // 2
+        y = 82 - style[1] // 2
+        _draw_scaled_text(txt, x, y, col, style)
         hint = "Namaz yazisi boyutu icin kaydir"
-    elif mode == "thick":
-        txt = "YAKIN IM 05:20"
-        size = 2 if prayer_size_idx == 1 else 1
-        x = (WIDTH - len(txt) * 6 * size) // 2
-        if x < 2:
-            x = 2
-        y = 70 if size == 1 else 62
-        _text_thick(txt, x, y, col, size, value)
-        hint = "Namaz yazisi kalinligi icin kaydir"
     else:
         gap = " " * (value + 1)
         txt = "IM 05:20" + gap + "OG 13:10" + gap + "IK 16:45" + gap + "AK 20:20"
-        x = (WIDTH - len(txt) * 6) // 2
-        if x < 2:
-            x = 2
-        _text_thick(txt, x, 78, col, 1, prayer_thick_idx)
+        style = _prayer_text_style(txt, WIDTH - 4)
+        x = (WIDTH - _scaled_text_width(txt, style)) // 2
+        _draw_scaled_text(txt, x, 78, col, style)
         hint = "HEPSI modunda bosluk icin kaydir"
     lcd.text(hint, (WIDTH - len(hint) * 6) // 2, 198, GRAY, 1)
 
@@ -4962,7 +3577,7 @@ def _run_prayer_slider(title, start_value, count, mode):
 
 
 def run_prayer_settings():
-    global prayer_mode_idx, prayer_size_idx, prayer_thick_idx, prayer_gap_idx
+    global prayer_mode_idx, prayer_size_idx, prayer_gap_idx
     if prayer_mode_idx != 0:
         prayer_sync()
     _prayer_menu_draw()
@@ -4982,7 +3597,7 @@ def run_prayer_settings():
         if sel is None:
             continue
         _wait_touch_release()
-        if sel == 6:
+        if sel == 5:
             return
         if 0 <= sel <= 2:
             if sel != prayer_mode_idx:
@@ -4999,12 +3614,7 @@ def run_prayer_settings():
                                                  len(PRAYER_SIZE_NAMES), "size")
             save_cfg()
             _prayer_menu_draw()
-        elif sel == 4:
-            prayer_thick_idx = _run_prayer_slider("YAZI KALINLIGI", prayer_thick_idx,
-                                                  len(PRAYER_THICK_NAMES), "thick")
-            save_cfg()
-            _prayer_menu_draw()
-        elif sel == 5 and prayer_mode_idx == 2:
+        elif sel == 4 and prayer_mode_idx == 2:
             prayer_gap_idx = _run_prayer_slider("BOSLUK", prayer_gap_idx,
                                                 len(PRAYER_GAP_NAMES), "gap")
             save_cfg()
@@ -5272,25 +3882,6 @@ def run_extra_settings():
 # ---- SOR MENUSU: KLAVYE / HAZIR SORULAR ----
 
 
-PRESET_Q = [
-    ("BUGUN HAVA NASIL",
-     lambda: USER_CITY + " icin bugunku hava durumunu TUM detaylariyla ver: "
-             "su anki sicaklik, hissedilen sicaklik, gunun en yuksek ve en "
-             "dusuk sicakligi, ruzgar hizini km/h olarak, ani ruzgar (gust) "
-             "hizini km/h olarak ve yagis/yagmur ihtimalini soyle."),
-    ("DOLAR VE EURO NE KADAR",
-     "Dolar ve Euro'nun bugunku guncel alis ve satis kurlari ne kadar?"),
-    ("GRAM ALTIN NE KADAR",
-     "Gram altinin bugunku guncel fiyati ne kadar?"),
-    ("SON DAKIKA HABERLER",
-     "Turkiye'de bugunku onemli son dakika haberleri nelerdir?"),
-    ("BUGUN NELER OLDU",
-     "Bugun Turkiye'de ve dunyada onemli olarak neler oldu?"),
-    ("BU HAFTA MACLAR",
-     "Onumuzdeki bir hafta icinde oynanacak onemli futbol maclarini "
-     "(ozellikle Turkiye Super Lig ve varsa milli mac / Avrupa kupalari) "
-     "gun, tarih ve TSI baslama saatiyle birlikte liste halinde ver."),
-]
 
 _SOR_PILL_Y0 = 44
 _SOR_PILL_H = 26
@@ -5300,54 +3891,10 @@ _SOR_GAP_Y = 8
 _SOR_MARGIN_X = 10
 
 
-def _half_ring(cx, cy, r, color, side):
 
 
-    x = r; y = 0; err = 0
-    while x >= y:
-        for (px, py) in ((x, y), (y, x), (-y, x), (-x, y),
-                         (-x, -y), (-y, -x), (y, -x), (x, -y)):
-            if (side < 0 and px <= 0) or (side > 0 and px >= 0):
-                lcd.fill_rect(cx + px, cy + py, 1, 1, color)
-        y += 1
-        if err <= 0:
-            err += 2 * y + 1
-        if err > 0:
-            x -= 1
-            err -= 2 * x + 1
 
 
-def _draw_pill(x, y, w, h, fill_col, border_col, txt, txt_col):
-
-
-    r = h // 2
-    lcd.fill_rect(x + r, y, w - 2 * r, h, fill_col)
-    _fast_disc(x + r, y + r, r, fill_col)
-    _fast_disc(x + w - r, y + r, r, fill_col)
-    _half_ring(x + r, y + r, r, border_col, -1)
-    _half_ring(x + w - r, y + r, r, border_col, 1)
-    lcd.hline(x + r, y, w - 2 * r, border_col)
-    lcd.hline(x + r, y + h - 1, w - 2 * r, border_col)
-    tx = x + (w - len(txt) * 6) // 2
-    ty = y + (h - 7) // 2
-    lcd.text(txt, tx, ty, txt_col, 1)
-
-
-def _sor_pill_layout():
-
-
-    pills = []
-    x = _SOR_MARGIN_X
-    y = _SOR_PILL_Y0
-    max_x = WIDTH - _SOR_MARGIN_X
-    for label, question in PRESET_Q:
-        pw = len(label) * 6 + _SOR_PILL_PAD * 2
-        if x != _SOR_MARGIN_X and x + pw > max_x:
-            x = _SOR_MARGIN_X
-            y += _SOR_PILL_H + _SOR_GAP_Y
-        pills.append((x, y, pw, _SOR_PILL_H, label, question))
-        x += pw + _SOR_GAP_X
-    return pills
 
 
 _SOR_TABS_Y0 = 6
@@ -5355,43 +3902,14 @@ _SOR_TABS_H = 24
 _SOR_CONTENT_Y0 = _SOR_TABS_Y0 + _SOR_TABS_H + 6
 
 
-def _sor_tabs_draw(active):
 
 
-    labels = ["GPT", "HAZIR SORU"]
-    bw = WIDTH // 2 - 6
-    for slot in range(2):
-        idx = 1 - slot
-        bx = 3 + slot * (WIDTH // 2)
-        on = (idx == active)
-        bg = FG if on else TAB_UNSEL
-        fg = BG if on else WHITE
-        _draw_round_rect(bx, _SOR_TABS_Y0, bw, _SOR_TABS_H, 9, bg, GRAY)
-        lbl = labels[idx]
-        lcd.text(lbl, bx + (bw - len(lbl) * 12) // 2,
-                  _SOR_TABS_Y0 + (_SOR_TABS_H - 14) // 2, fg, 2)
-
-
-def _sor_hit_tab(x, y):
-
-
-    if y < _SOR_TABS_Y0 or y > _SOR_TABS_Y0 + _SOR_TABS_H:
-        return None
-    return 1 if x < WIDTH // 2 else 0
 
 
 _SOR_HAZIR_GERI_Y = 214
 _SOR_HAZIR_GERI_H = 26
 
 
-def _sor_hazir_draw():
-    lcd.fill_rect(0, 0, WIDTH, HEIGHT, BG)
-    _sor_tabs_draw(1)
-    for (x, y, w, h, label, question) in _sor_pill_layout():
-        _draw_pill(x, y, w, h, DARKGRAY, GRAY, label, WHITE)
-    lcd.fill_rect(0, _SOR_HAZIR_GERI_Y, WIDTH, _SOR_HAZIR_GERI_H, DARKGRAY)
-    lcd.hline(0, _SOR_HAZIR_GERI_Y, WIDTH, GRAY)
-    lcd.text("GERI", (WIDTH - 24) // 2, _SOR_HAZIR_GERI_Y + 9, WHITE, 1)
 
 
 # ---- SOR: KLAVYE sekmesi (ust cubukta sadece sekmeler, GERI klavyede) ----
@@ -5404,169 +3922,49 @@ _SOR_KB_GERI_Y = KB_TOP + 3 * (KEY_H + 2)
 _SOR_KB_GERI_W = WIDTH - _SOR_KB_GERI_X
 
 
-def _sor_in_pos(idx):
-    return _SOR_IN_X + (idx % IN_CPL) * IN_CW, _SOR_IN_Y + (idx // IN_CPL) * IN_CH
 
 
-def _sor_in_char_at(idx, ch):
-    x, y = _sor_in_pos(idx)
-    if y > KB_TOP - 12:
-        return
-    lcd.text(ch, x, y, FG, 1)
 
 
-def _sor_in_erase_at(idx):
-    x, y = _sor_in_pos(idx)
-    if y > KB_TOP - 12:
-        return
-    lcd.fill_rect(x, y, IN_CW, IN_CH, BG)
 
 
-def _sor_in_draw_all(text):
-    for i in range(len(text)):
-        _sor_in_char_at(i, text[i])
 
 
-def _sor_kb_build(mode):
 
 
-    keys = _kb_build(mode)
-    keys.append({"label": "GERI", "x": _SOR_KB_GERI_X, "y": _SOR_KB_GERI_Y,
-                 "w": _SOR_KB_GERI_W, "h": KEY_H, "kind": "geri"})
-    return keys
 
 
-def _run_sor_keyboard():
-
-
-    text = ""
-    mode = "low"
-    keys = _sor_kb_build(mode)
-    lcd.fill_rect(0, 0, WIDTH, HEIGHT, BG)
-    _sor_tabs_draw(0)
-    _kb_draw(keys)
-    _sor_in_draw_all(text)
-    last = 0
-    while True:
-        p = touch.read_fast()
-        if p is None:
-            time.sleep_ms(20)
-            continue
-        now = time.ticks_ms()
-        if time.ticks_diff(now, last) < 90:
-            continue
-        last = now
-        x, y = p
-        tab = _sor_hit_tab(x, y)
-        if tab is not None:
-            if tab == 1:
-                _wait_touch_release()
-                return "__switch__"
-            continue
-        if y < _SOR_CONTENT_Y0:
-            continue
-        k = None
-        for kk in keys:
-            if kk["x"] <= x <= kk["x"] + kk["w"] and kk["y"] <= y <= kk["y"] + kk["h"]:
-                k = kk
-                break
-        if k is None:
-            continue
-        _kb_key_draw(k, True)
-        time.sleep_ms(30)
-        _kb_key_draw(k, False)
-        kind = k["kind"]
-        if kind == "geri":
-            _wait_touch_release()
-            return None
-        elif kind == "char":
-            if len(text) < 64:
-                idx = len(text)
-                text += k["val"]
-                _sor_in_char_at(idx, k["val"])
-        elif kind == "space":
-            if len(text) < 64:
-                text += " "
-        elif kind == "back":
-            if text:
-                idx = len(text) - 1
-                text = text[:-1]
-                _sor_in_erase_at(idx)
-        elif kind == "case":
-            mode = "up" if mode == "low" else "low"
-            keys = _sor_kb_build(mode)
-            _kb_draw(keys)
-        elif kind == "sym":
-            mode = "sym"
-            keys = _sor_kb_build(mode)
-            _kb_draw(keys)
-        elif kind == "toletters":
-            mode = "low"
-            keys = _sor_kb_build(mode)
-            _kb_draw(keys)
-        elif kind == "send":
-            return text
-
-
-def run_sor():
-
-    view = 1
-    while True:
-        if view == 0:
-            q = _run_sor_keyboard()
-            if q is None:
-                return
-            if q == "__switch__":
-                view = 1
-                continue
-            q = q.strip()
-            if q:
-                act = _ask_and_show(q)
-                if act == "back":
-                    view = 1
-                    continue
-            continue
-
-        _sor_hazir_draw()
-        _wait_touch_release()
-        last = 0
-        next_view = None
-        while next_view is None:
-            p = touch.read_fast()
-            if p is None:
-                time.sleep_ms(20)
-                continue
-            now = time.ticks_ms()
-            if time.ticks_diff(now, last) < TOUCH_DEBOUNCE_MS:
-                continue
-            last = now
-            x, y = p
-            if y >= _SOR_HAZIR_GERI_Y:
-                _wait_touch_release()
-                return
-            tab = _sor_hit_tab(x, y)
-            if tab is not None:
-                if tab == 0:
-                    _wait_touch_release()
-                    next_view = 0
-                continue
-            for (px, py, pw, ph, label, question) in _sor_pill_layout():
-                if px <= x <= px + pw and py <= y <= py + ph:
-                    _wait_touch_release()
-                    q_text = question() if callable(question) else question
-                    _ask_and_show(q_text)
-                    next_view = 1
-                    break
-        view = next_view
 
 
 def open_sor():
-    if is_online():
-        run_sor()
-    else:
-        show_status_screen("ONCE WIFI BAGLAN", AMBER)
-        time.sleep_ms(1200)
-    draw_static()
+    try:
+        return _open_sor_impl()
+    finally:
+        release_answer_buffers()
+        gc.collect()
+
+
+def open_sor_safe():
+    try:
+        return open_sor()
+    except KeyboardInterrupt:
+        raise
+    except Exception as exc:
+        try:
+            safe_write_text("last_error.txt", "GPT: " + repr(exc) + "\n")
+        except Exception:
+            pass
+        try:
+            _gpt_wait_stop()
+        except Exception:
+            pass
+        release_answer_buffers()
+        show_status_screen("GPT HATASI", RED)
+        time.sleep_ms(1400)
+        draw_static()
+        return None
+
+
 
 
 _last_touch_deep = 0
@@ -5759,17 +4157,12 @@ def main():
                     save_cfg()
                     draw_static()
                 elif abs(dx) < 22 and abs(dy) < 22 and sy >= BTN_Y - 4:
-                    slot = sx * 3 // WIDTH
+                    slot = sx * 2 // WIDTH
                     if slot == 0:
                         run_all_settings()
                         draw_static()
-                    elif slot == 1:
-                        mode_idx = (mode_idx + 1) % len(MODE_NAMES)
-                        apply_mode()
-                        save_cfg()
-                        draw_static()
                     else:
-                        open_sor()
+                        open_sor_safe()
             press_start = None
             press_last = None
             long_done = False
@@ -5805,8 +4198,10 @@ def main():
                         prayer_sync()
                 elif network_sync_stage == 3:
                     sunset_sync()
+                elif network_sync_stage == 4:
+                    ota_check_available()
                 network_sync_stage += 1
-                if network_sync_stage > 3:
+                if network_sync_stage > 4:
                     network_sync_stage = -1
                 draw_status()
             if (WIFI_SSID and not online and
@@ -5826,6 +4221,10 @@ def main():
             if (online and network_sync_stage < 0 and not ran_network_stage
                     and _sunset_day_key != _prayer_key(lt)):
                 sunset_sync()
+            if (online and network_sync_stage < 0 and not ran_network_stage
+                    and time.ticks_diff(now, last_ota_check) > OTA_CHECK_EVERY_MS):
+                ota_check_available()
+                draw_status()
             was_online = online
             if (DIM_AT_MIN >= 0 and not _dimmed_today
                     and lt[3] * 60 + lt[4] >= DIM_AT_MIN):
@@ -5889,4 +4288,1661 @@ def run_clock():
         raise
 
 
-run_clock()
+# ===================== GPT AKIS MODULU =====================
+import gc
+import time
+
+try:
+    import json
+except Exception:
+    import ujson as json
+try:
+    import socket
+    import ssl
+except Exception:
+    socket = None
+    ssl = None
+try:
+    import select
+except Exception:
+    try:
+        import uselect as select
+    except Exception:
+        select = None
+
+
+def _find(data, needle):
+    limit = len(data) - len(needle)
+    pos = 0
+    while pos <= limit:
+        if data[pos:pos + len(needle)] == needle:
+            return pos
+        pos += 1
+    return -1
+
+
+def _text(data):
+    if isinstance(data, bytearray):
+        data = bytes(data)
+    try:
+        return data.decode("utf-8")
+    except Exception:
+        return data.decode()
+
+
+class _SocketReader:
+    def __init__(self, stream, timeout, wait):
+        self.stream = stream
+        self.timeout = timeout * 1000
+        self.started = time.ticks_ms()
+        self.wait = wait
+        self.buf = bytearray()
+        self.pos = 0
+        self.eof = False
+        self.poller = None
+        if select is not None:
+            try:
+                self.poller = select.poll()
+                self.poller.register(stream, select.POLLIN)
+            except Exception:
+                self.poller = None
+
+    def _compact(self):
+        if self.pos >= len(self.buf):
+            self.buf = bytearray()
+            self.pos = 0
+        elif self.pos >= 512:
+            self.buf = self.buf[self.pos:]
+            self.pos = 0
+
+    def _fill(self):
+        if self.eof:
+            return False
+        errors = 0
+        while time.ticks_diff(time.ticks_ms(), self.started) < self.timeout:
+            if self.poller is not None:
+                try:
+                    ready = self.poller.poll(40)
+                except Exception:
+                    self.poller = None
+                    ready = None
+                if self.poller is not None and not ready:
+                    if self.wait:
+                        self.wait()
+                    continue
+            try:
+                data = self.stream.read(512)
+            except Exception:
+                errors += 1
+                if self.poller is not None and errors < 200:
+                    if self.wait:
+                        self.wait()
+                    time.sleep_ms(10)
+                    continue
+                raise
+            if data is None:
+                if self.wait:
+                    self.wait()
+                time.sleep_ms(10)
+                continue
+            if not data:
+                self.eof = True
+                return False
+            self._compact()
+            self.buf.extend(data)
+            if self.wait:
+                self.wait()
+            return True
+        self.eof = True
+        return False
+
+    def read(self, maximum=512):
+        while self.pos >= len(self.buf):
+            self._compact()
+            if not self._fill():
+                return b""
+        count = min(maximum, len(self.buf) - self.pos)
+        out = bytes(self.buf[self.pos:self.pos + count])
+        self.pos += count
+        return out
+
+    def exact(self, count):
+        out = bytearray()
+        while len(out) < count:
+            part = self.read(count - len(out))
+            if not part:
+                break
+            out.extend(part)
+        return bytes(out)
+
+    def line(self, limit=2048):
+        out = bytearray()
+        cut = False
+        while True:
+            while self.pos < len(self.buf):
+                value = self.buf[self.pos]
+                self.pos += 1
+                if value == 10:
+                    if out and out[-1] == 13:
+                        out = out[:-1]
+                    return bytes(out), cut
+                if len(out) < limit:
+                    out.append(value)
+                else:
+                    cut = True
+            self._compact()
+            if not self._fill():
+                return bytes(out), cut
+
+
+class _Body:
+    def __init__(self, reader, chunked, length):
+        self.reader = reader
+        self.chunked = chunked
+        self.remaining = length
+        self.chunk_left = 0
+        self.done = False
+
+    def read(self, maximum=512):
+        if self.done:
+            return b""
+        if not self.chunked:
+            if self.remaining == 0:
+                self.done = True
+                return b""
+            count = maximum if self.remaining < 0 else min(maximum, self.remaining)
+            data = self.reader.read(count)
+            if not data:
+                self.done = True
+                return b""
+            if self.remaining > 0:
+                self.remaining -= len(data)
+            return data
+        while self.chunk_left == 0:
+            line, _cut = self.reader.line(64)
+            if not line and self.reader.eof:
+                self.done = True
+                return b""
+            if not line:
+                continue
+            try:
+                self.chunk_left = int(line.split(b";", 1)[0], 16)
+            except Exception:
+                self.done = True
+                return b""
+            if self.chunk_left == 0:
+                self.done = True
+                return b""
+        data = self.reader.exact(min(maximum, self.chunk_left))
+        if not data:
+            self.done = True
+            return b""
+        self.chunk_left -= len(data)
+        if self.chunk_left == 0:
+            self.reader.exact(2)
+        return data
+
+
+class _Lines:
+    def __init__(self, body):
+        self.body = body
+        self.pending = bytearray()
+
+    def line(self, limit=6144):
+        out = bytearray()
+        cut = False
+        while True:
+            pos = _find(self.pending, b"\n")
+            if pos >= 0:
+                take = min(pos, max(0, limit - len(out)))
+                if take:
+                    out.extend(self.pending[:take])
+                cut = cut or pos > take
+                self.pending = self.pending[pos + 1:]
+                if out and out[-1] == 13:
+                    out = out[:-1]
+                return bytes(out), cut
+            if self.pending:
+                take = min(len(self.pending), max(0, limit - len(out)))
+                if take:
+                    out.extend(self.pending[:take])
+                cut = cut or len(self.pending) > take
+                self.pending = bytearray()
+            part = self.body.read(256)
+            if not part:
+                return bytes(out), cut
+            self.pending.extend(part)
+
+
+def post(host, path, key, body_text, timeout=45, on_delta=None, wait=None):
+    body = body_text.encode("utf-8")
+    sock = None
+    secure = None
+    parts = []
+    error = None
+    try:
+        gc.collect()
+        addr = socket.getaddrinfo(host, 443)[0][-1]
+        sock = socket.socket()
+        try:
+            sock.settimeout(timeout)
+        except Exception:
+            pass
+        sock.connect(addr)
+        try:
+            secure = ssl.wrap_socket(sock, server_hostname=host)
+        except TypeError:
+            secure = ssl.wrap_socket(sock)
+        request = (
+            "POST " + path + " HTTP/1.1\r\nHost: " + host +
+            "\r\nAuthorization: Bearer " + key +
+            "\r\nContent-Type: application/json\r\nAccept: text/event-stream"
+            "\r\nContent-Length: " + str(len(body)) +
+            "\r\nConnection: close\r\n\r\n")
+        secure.write(request.encode("utf-8"))
+        secure.write(body)
+        body = None
+        reader = _SocketReader(secure, timeout, wait)
+        status_line, _cut = reader.line(256)
+        try:
+            status = int(status_line.split(b" ")[1])
+        except Exception:
+            status = 0
+        chunked = False
+        length = -1
+        while True:
+            line, _cut = reader.line(512)
+            if not line:
+                break
+            lower = line.lower()
+            if lower.startswith(b"transfer-encoding:"):
+                chunked = b"chunked" in lower
+            elif lower.startswith(b"content-length:"):
+                try:
+                    length = int(line.split(b":", 1)[1].strip())
+                except Exception:
+                    length = -1
+        response = _Body(reader, chunked, length)
+        lines = _Lines(response)
+        if status != 200:
+            raw = bytearray()
+            while len(raw) < 4096:
+                block = response.read(min(512, 4096 - len(raw)))
+                if not block:
+                    break
+                raw.extend(block)
+            try:
+                error = json.loads(_text(raw)).get("error", {}).get("message")
+            except Exception:
+                pass
+            return status, None, error
+        event_name = ""
+        accepted = (
+            "response.output_text.delta", "response.output_text.done",
+            "response.failed", "response.incomplete", "response.error", "error")
+        while True:
+            line, cut = lines.line()
+            if not line and response.done:
+                break
+            if not line:
+                event_name = ""
+                continue
+            if line.startswith(b"event:"):
+                event_name = _text(line[6:]).strip()
+                continue
+            if not line.startswith(b"data:") or (event_name and event_name not in accepted):
+                continue
+            if cut:
+                continue
+            payload = line[5:].strip()
+            if payload == b"[DONE]":
+                break
+            try:
+                event = json.loads(_text(payload))
+            except Exception:
+                continue
+            kind = event_name or event.get("type", "")
+            if kind == "response.output_text.delta":
+                delta = event.get("delta", "")
+                if delta:
+                    parts.append(delta)
+                    if on_delta:
+                        on_delta(delta)
+            elif kind == "response.output_text.done" and not parts:
+                text = event.get("text", "")
+                if text:
+                    parts.append(text)
+                    if on_delta:
+                        on_delta(text)
+            elif kind in accepted[2:]:
+                try:
+                    error = (event.get("error", {}).get("message") or
+                             event.get("response", {}).get("error", {}).get("message") or
+                             event.get("message"))
+                except Exception:
+                    pass
+        answer = "".join(parts)
+        return status, answer or None, None if answer else (error or "GPT BOS YANIT VERDI")
+    finally:
+        body = None
+        parts = None
+        if secure is not None:
+            try:
+                secure.close()
+            except Exception:
+                pass
+        elif sock is not None:
+            try:
+                sock.close()
+            except Exception:
+                pass
+        gc.collect()
+
+class _InlineGptStream:
+    pass
+
+
+_inline_gpt_stream = _InlineGptStream()
+_inline_gpt_stream.post = post
+
+
+# ===================== SOR MODULU =====================
+QA_MODEL = "gpt-5.4"
+
+WEB_SEARCH_MODEL = "gpt-5.4"
+
+WEB_MAX_TOKENS = 500
+
+GPT_RETRY_COUNT = 1
+
+GPT_RETRY_DELAY_MS = 900
+
+SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
+                 "kisaca topla. SADECE duz metin: madde isareti, yildiz (*), "
+                 "baslik (#) veya tablo KULLANMA. "
+                 "Kullaniciya kesinlikle soru sorma veya secenek sunma. "
+                 "Soru belirsizse en makul varsayimi yapip dogrudan cevapla. "
+                 "Guncel veriye erisemesen bile erisemiyorum deme; en son "
+                 "bildigin bilgiyi tarihini acikca belirterek cevapla. "
+                 "COK ONEMLI KURAL: Cevabinda kesinlikle URL, site adi veya "
+                 "kaynak belirtme. 'Kaynaklara gore', 'haberlere gore', "
+                 "'verilere gore', 'X sitesine gore', 'arastirmalara gore' "
+                 "gibi ifadeleri KULLANMA. Bilgiyi kaynak belirtmeden, sanki "
+                 "kendin biliyormus gibi dogrudan soyle. "
+                 "Cevabinin en sonunda, sadece verdigin bilginin hangi yila "
+                 "ait oldugunu kisa bir cumleyle belirt (kaynak degil, sadece yil).")
+
+WEB_SYSTEM_PROMPT = (
+    "Turkce ve yalnizca duz metin cevap ver. En fazla 1-3 kisa cumle kullan. "
+    "Web arama aracini mutlaka kullan; guncel sorularda model bellegine "
+    "dayanma. Yayin veya guncellenme tarihi en yeni olan sonucu sec. "
+    "Kullaniciya kesinlikle soru sorma veya secenek sunma. Belirsiz bir haber "
+    "sorusunda Turkiye ile ilgili en onemli guncel haberi secip cevapla. "
+    "Guncel veriyi bulamazsan erisemiyorum veya dogrulayamiyorum deme; web "
+    "aramasinda buldugun en yeni sonucu tarihini belirterek dogrudan ver. "
+    "Mac ve fikstur sorularini sadece Super Lig ile sinirlama; UEFA, Avrupa "
+    "ligleri, milli maclar ve Turkiye liglerinden en onemli maclari birlikte ver. "
+    "URL, site veya kaynak adi yazma. Bugunun tarihi %s. En yeni tarihli "
+    "guvenilir veriyi kullan; farkli tarihler varsa en guncelini sec. "
+    "Son cumlede verinin tam tarihini belirt.")
+
+MAX_TOKENS = 450
+
+WEB_QUERY_HINTS = (
+    "bugun", "bugunku", "yarin", "yarinki", "dun", "dunku", "guncel",
+    "canli", "son durum", "son dakika", "su an", "simdi",
+    "bu hafta", "bu ay", "bu yil", "en son", "hava", "yagmur",
+    "sicaklik", "sogukluk", "nem", "ruzgar", "basinc", "uv", "gorus",
+    "dolar", "euro", "avro", "altin", "gumus", "kur", "borsa",
+    "hisse", "bitcoin", "btc", "ethereum", "eth", "kripto", "fiyat", "kac tl", "ne kadar",
+    "haber", "haberler", "mac", "maclar", "skor", "skorlar",
+    "puan durumu", "lig", "ligler", "fikstur", "fiksturler",
+    "deprem", "depremler",
+    "trafik", "kim kazandi", "secim", "sonuc", "sonuclar", "piyasa",
+    "doviz", "enflasyon", "faiz", "zam", "resmi gazete",
+    "cumhurbaskani", "baskani", "bakani", "ceo",
+    "internetten", "webden", "ara", "kontrol et",
+)
+
+SPORTS_QUERY_HINTS = (
+    "mac", "maclar", "skor", "skorlar", "puan durumu",
+    "lig", "ligler", "fikstur", "fiksturler",
+)
+
+PRESET_Q = [
+    ("BUGUN HAVA NASIL",
+     lambda: USER_CITY + " icin bugunku hava durumunu TUM detaylariyla ver: "
+             "su anki sicaklik, hissedilen sicaklik, gunun en yuksek ve en "
+             "dusuk sicakligi, ruzgar hizini km/h olarak, ani ruzgar (gust) "
+             "hizini km/h olarak ve yagis/yagmur ihtimalini soyle."),
+    ("DOLAR VE EURO NE KADAR",
+     "Dolar ve Euro'nun bugunku guncel alis ve satis kurlari ne kadar?"),
+    ("GRAM ALTIN NE KADAR",
+     "Gram altinin bugunku guncel fiyati ne kadar?"),
+    ("SON DAKIKA HABERLER",
+     "Turkiye'de bugunku onemli son dakika haberleri nelerdir?"),
+    ("BUGUN NELER OLDU",
+     "Bugun Turkiye'de ve dunyada onemli olarak neler oldu?"),
+    ("BU HAFTA MACLAR",
+     "Onumuzdeki bir hafta icinde oynanacak onemli futbol maclarini "
+     "(ozellikle Turkiye Super Lig ve varsa milli mac / Avrupa kupalari) "
+     "gun, tarih ve TSI baslama saatiyle birlikte liste halinde ver."),
+]
+
+def openai_chat(messages, model, web_search, timeout, max_tok=None,
+                reasoning=None, search_context="low", on_delta=None):
+    if socket is None or ssl is None:
+        return None, "AG MODULU YOK"
+    api_key = OPENAI_API_KEY.strip()
+    if not api_key or api_key.startswith("sk-BURAYA"):
+        return None, "API ANAHTARI GIRILMEMIS"
+    mt = max_tok if max_tok is not None else MAX_TOKENS
+    instructions = []
+    request_input = []
+    for message in messages:
+        if message.get("role") == "system":
+            instructions.append(message.get("content", ""))
+        else:
+            request_input.append(message)
+    body = {
+        "model": WEB_SEARCH_MODEL if web_search else model,
+        "input": request_input,
+        "max_output_tokens": min(mt, WEB_MAX_TOKENS) if web_search else mt,
+    }
+    if instructions:
+        body["instructions"] = "\n".join(instructions)
+    if reasoning:
+        body["reasoning"] = {"effort": reasoning}
+    if web_search:
+        body["text"] = {"verbosity": "low"}
+        body["tool_choice"] = "required"
+        body["max_tool_calls"] = 1
+        body["tools"] = [{
+            "type": "web_search",
+            "search_context_size": search_context,
+            "user_location": {
+                "type": "approximate",
+                "country": USER_COUNTRY,
+                "city": USER_CITY,
+                "region": USER_REGION,
+            },
+        }]
+    body["stream"] = True
+    payload = json.dumps(body)
+    body = None
+    messages = None
+    request_input = None
+    instructions = None
+    gc.collect()
+    transient_status = (0, 408, 429, 500, 502, 503, 504)
+    last_error = "BAGLANTI HATASI"
+    attempt_count = 1 if web_search else GPT_RETRY_COUNT + 1
+    gpt_stream = _inline_gpt_stream
+    try:
+        for attempt in range(attempt_count):
+            gc.collect()
+            status = 0
+            answer = None
+            stream_error = None
+            try:
+                status, answer, stream_error = gpt_stream.post(
+                    "api.openai.com", "/v1/responses", api_key, payload,
+                    timeout, on_delta, _gpt_wait_step)
+            except Exception as exc:
+                stream_error = "BAGLANTI HATASI: " + str(exc)
+            gc.collect()
+            if answer:
+                return answer, None
+            if stream_error:
+                last_error = stream_error
+            elif status in transient_status:
+                last_error = "API GECICI HATA " + str(status)
+            else:
+                last_error = "API HATASI KOD " + str(status)
+            if status not in transient_status and status != 200:
+                return None, last_error
+            if attempt + 1 < attempt_count:
+                time.sleep_ms(GPT_RETRY_DELAY_MS)
+        return None, last_error
+    finally:
+        gpt_stream = None
+        try:
+            import sys
+            del sys.modules["gpt_stream"]
+        except Exception:
+            pass
+        gc.collect()
+
+def _normalize_question(q):
+    text = str(q).lower()
+    for src, dst in (
+            ("ı", "i"), ("ş", "s"), ("ğ", "g"),
+            ("ü", "u"), ("ö", "o"), ("ç", "c")):
+        text = text.replace(src, dst)
+    for separator in ".,?!:;()[]{}-/\\'\"":
+        text = text.replace(separator, " ")
+    return " " + " ".join(text.split()) + " "
+
+def question_needs_web(q):
+    text = _normalize_question(q)
+    for hint in WEB_QUERY_HINTS:
+        if " " + hint + " " in text:
+            return True
+    return False
+
+def _question_is_sports(q):
+    text = _normalize_question(q)
+    for hint in SPORTS_QUERY_HINTS:
+        if " " + hint + " " in text:
+            return True
+    return False
+
+def _live_cache_path(q):
+    text = _normalize_question(q)
+    value = 2166136261
+    for ch in text:
+        value ^= ord(ch) & 0xFF
+        value = (value * 16777619) & 0xFFFFFFFF
+    return LIVE_CACHE_PREFIX + ("%08x" % value) + ".txt", text
+
+def _live_cache_get(q):
+    path, normalized = _live_cache_path(q)
+    f = None
+    try:
+        now = int(time.time())
+        if now < 100000:
+            return None
+        f = open(path, "r")
+        saved = int(f.readline().strip())
+        stored_q = f.readline().rstrip("\r\n")
+        if stored_q != normalized or now < saved or now - saved > LIVE_CACHE_SECONDS:
+            f.close()
+            f = None
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+            return None
+        answer = f.read(4096)
+        f.close()
+        return answer if answer else None
+    except Exception:
+        if f is not None:
+            try:
+                f.close()
+            except Exception:
+                pass
+        return None
+
+def _live_cache_trim():
+    try:
+        entries = []
+        for name in os.listdir():
+            if not name.startswith(LIVE_CACHE_PREFIX) or not name.endswith(".txt"):
+                continue
+            stamp = 0
+            f = None
+            try:
+                f = open(name, "r")
+                stamp = int(f.readline().strip())
+                f.close()
+                f = None
+            except Exception:
+                if f is not None:
+                    try:
+                        f.close()
+                    except Exception:
+                        pass
+            entries.append((stamp, name))
+        entries.sort()
+        while len(entries) > LIVE_CACHE_LIMIT:
+            _stamp, name = entries.pop(0)
+            try:
+                os.remove(name)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+def _live_cache_put(q, answer):
+    try:
+        now = int(time.time())
+        if now < 100000 or not answer:
+            return
+        path, normalized = _live_cache_path(q)
+        safe_write_text(path, "%d\n%s\n%s" % (
+            now, normalized, str(answer)[:4096]))
+        _live_cache_trim()
+    except Exception:
+        pass
+
+def _answer_refuses_current(answer):
+    text = _normalize_question(answer)
+    markers = (
+        " dogrulayamiyorum ", " guncel veri alamiyorum ",
+        " guncel veriye erisemiyorum ", " canli veriye erisimim yok ",
+        " gercek zamanli veriye erisemiyorum ", " web erisimim yok ",
+        " internete erisemiyorum ", " hangi kanal ", " hangi lig ",
+    )
+    for marker in markers:
+        if marker in text:
+            return True
+    return False
+
+def _today_text():
+    try:
+        lt = time.localtime()
+        if 2024 <= lt[0] <= 2100:
+            return "%04d-%02d-%02d" % (lt[0], lt[1], lt[2])
+    except Exception:
+        pass
+    return "bilinmiyor"
+
+def _display_date(value):
+    try:
+        parts = str(value)[:10].split("-")
+        return "%s/%s/%s" % (parts[2], parts[1], parts[0])
+    except Exception:
+        return str(value)
+
+def _weather_condition(code):
+    try:
+        code = int(code)
+    except Exception:
+        return ""
+    if code == 0:
+        return "acik"
+    if code <= 2:
+        return "parcali bulutlu"
+    if code == 3:
+        return "kapali"
+    if code in (45, 48):
+        return "sisli"
+    if 51 <= code <= 57:
+        return "ciseleyen"
+    if 61 <= code <= 67:
+        return "yagmurlu"
+    if 71 <= code <= 77:
+        return "karli"
+    if 80 <= code <= 82:
+        return "saganak yagisli"
+    if code in (85, 86):
+        return "kar saganakli"
+    if 95 <= code <= 99:
+        return "gok gurultulu"
+    return ""
+
+def _event_local_date_time(stamp):
+    try:
+        year = int(stamp[0:4])
+        month = int(stamp[5:7])
+        day = int(stamp[8:10])
+        hour = int(stamp[11:13]) + 3
+        minute = int(stamp[14:16])
+        if hour >= 24:
+            hour -= 24
+            day += 1
+            month_days = (31, 29 if year % 4 == 0 else 28, 31, 30, 31, 30,
+                          31, 31, 30, 31, 30, 31)
+            if day > month_days[month - 1]:
+                day = 1
+                month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+        return ("%04d-%02d-%02d" % (year, month, day),
+                "%02d:%02d" % (hour, minute))
+    except Exception:
+        return "", ""
+
+def _fast_sports_answer():
+    date_key = _today_text()
+    if date_key == "bilinmiyor":
+        return None
+    path = ("/apis/site/v2/sports/soccer/all/scoreboard?dates=" +
+            date_key.replace("-", "") + "&limit=8")
+    status, raw = https_get("site.api.espn.com", path, 12)
+    if status != 200 or not raw:
+        return None
+    gc.collect()
+    data = json.loads(raw)
+    raw = None
+    matches = []
+    for event in data.get("events") or []:
+        local_date, local_time = _event_local_date_time(event.get("date", ""))
+        if local_date != date_key:
+            continue
+        competitions = event.get("competitions") or []
+        if not competitions:
+            continue
+        competition = competitions[0]
+        home = None
+        away = None
+        home_score = ""
+        away_score = ""
+        for competitor in competition.get("competitors") or []:
+            team = competitor.get("team") or {}
+            name = team.get("shortDisplayName") or team.get("displayName")
+            if competitor.get("homeAway") == "home":
+                home = name
+                home_score = str(competitor.get("score", ""))
+            elif competitor.get("homeAway") == "away":
+                away = name
+                away_score = str(competitor.get("score", ""))
+        if not home or not away:
+            continue
+        status_type = ((competition.get("status") or {}).get("type") or {})
+        state = status_type.get("state")
+        line = local_time + " " + home + " - " + away
+        if state in ("in", "post"):
+            line += " " + home_score + "-" + away_score
+        matches.append((local_time, line))
+    data = None
+    gc.collect()
+    if not matches:
+        return None
+    matches.sort()
+    return "Bugunun onemli maclari: " + "; ".join(
+        item[1] for item in matches[:6]) + "."
+
+def _daily_item(daily, key, index):
+    values = daily.get(key) or []
+    if index < len(values):
+        return values[index]
+    return None
+
+def _wind_direction_name(value):
+    try:
+        names = ("K", "KD", "D", "GD", "G", "GB", "B", "KB")
+        return names[int((float(value) + 22.5) // 45) % 8]
+    except Exception:
+        return ""
+
+def _fast_weather_answer(text):
+    if USER_LAT is None or USER_LON is None:
+        return None
+    path = ("/v1/forecast?latitude=%s&longitude=%s"
+            "&current=temperature_2m,relative_humidity_2m,"
+            "apparent_temperature,precipitation,rain,snowfall,weather_code,"
+            "cloud_cover,surface_pressure,visibility,wind_speed_10m,"
+            "wind_direction_10m,wind_gusts_10m"
+            "&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+            "apparent_temperature_max,apparent_temperature_min,"
+            "precipitation_probability_max,uv_index_max,sunrise,sunset"
+            "&timezone=auto&forecast_days=3") % (str(USER_LAT), str(USER_LON))
+    status, raw = https_get("api.open-meteo.com", path, 10)
+    if status != 200 or not raw:
+        return None
+    data = json.loads(raw)
+    daily = data.get("daily") or {}
+    place = USER_REGION if USER_REGION else USER_CITY
+    if " yarin " in text:
+        index = 1
+        date_value = _daily_item(daily, "time", index)
+        low = _daily_item(daily, "temperature_2m_min", index)
+        high = _daily_item(daily, "temperature_2m_max", index)
+        feels_low = _daily_item(daily, "apparent_temperature_min", index)
+        feels_high = _daily_item(daily, "apparent_temperature_max", index)
+        rain_chance = _daily_item(
+            daily, "precipitation_probability_max", index)
+        uv = _daily_item(daily, "uv_index_max", index)
+        condition = _weather_condition(
+            _daily_item(daily, "weather_code", index))
+        if date_value is None or low is None or high is None:
+            return None
+        answer = "Yarin %s: %s, en dusuk %.1f C, en yuksek %.1f C" % (
+            place, condition, float(low), float(high))
+        if feels_low is not None and feels_high is not None:
+            answer += ", hissedilen %.1f-%.1f C" % (
+                float(feels_low), float(feels_high))
+        if rain_chance is not None:
+            answer += ". Yagis ihtimali %%%d" % int(float(rain_chance))
+        if uv is not None:
+            answer += ", UV en fazla %.1f" % float(uv)
+        sunrise = _daily_item(daily, "sunrise", index)
+        sunset = _daily_item(daily, "sunset", index)
+        if sunrise and sunset:
+            answer += ". Gun dogumu %s, gun batimi %s" % (
+                sunrise[11:16], sunset[11:16])
+        return answer + ". Tahmin tarihi " + _display_date(date_value) + "."
+
+    current = data.get("current") or {}
+    temp = current.get("temperature_2m")
+    feels = current.get("apparent_temperature")
+    if temp is None:
+        return None
+    condition = _weather_condition(current.get("weather_code"))
+    answer = "%s: %.1f C" % (place, float(temp))
+    if feels is not None:
+        answer += ", hissedilen %.1f C" % float(feels)
+    if condition:
+        answer += ", " + condition
+    low = _daily_item(daily, "temperature_2m_min", 0)
+    high = _daily_item(daily, "temperature_2m_max", 0)
+    if low is not None and high is not None:
+        answer += ". Bugun en dusuk %.1f C, en yuksek %.1f C" % (
+            float(low), float(high))
+    humidity = current.get("relative_humidity_2m")
+    if humidity is not None:
+        answer += ". Nem %%%d" % int(float(humidity))
+    precipitation = current.get("precipitation")
+    if precipitation is not None:
+        answer += ", yagis %.1f mm" % float(precipitation)
+    wind = current.get("wind_speed_10m")
+    if wind is not None:
+        direction = _wind_direction_name(current.get("wind_direction_10m"))
+        answer += ". Ruzgar %s %.1f km/s" % (direction, float(wind))
+        gust = current.get("wind_gusts_10m")
+        if gust is not None:
+            answer += ", hamle %.1f km/s" % float(gust)
+    pressure = current.get("surface_pressure")
+    if pressure is not None:
+        answer += ". Basinc %.0f hPa" % float(pressure)
+    cloud = current.get("cloud_cover")
+    if cloud is not None:
+        answer += ", bulut %%%d" % int(float(cloud))
+    visibility = current.get("visibility")
+    if visibility is not None:
+        answer += ", gorus %.1f km" % (float(visibility) / 1000.0)
+    uv = _daily_item(daily, "uv_index_max", 0)
+    if uv is not None:
+        answer += ". UV en fazla %.1f" % float(uv)
+    sunrise = _daily_item(daily, "sunrise", 0)
+    sunset = _daily_item(daily, "sunset", 0)
+    if sunrise and sunset:
+        answer += ", gun dogumu %s, gun batimi %s" % (
+            sunrise[11:16], sunset[11:16])
+    stamp = current.get("time")
+    if stamp:
+        answer += ". Veri zamani " + _display_date(stamp[:10]) + " " + stamp[11:16]
+    return answer + "."
+
+def _tr_money(value):
+    return float(str(value).replace(".", "").replace(",", "."))
+
+def _fast_market_data():
+    status, raw = https_get("finans.truncgil.com", "/today.json", 10)
+    if status != 200 or not raw:
+        return None
+    return json.loads(raw)
+
+def _fast_currency_answer(text, data=None):
+    wants_usd = " dolar " in text or " usd " in text
+    wants_eur = " euro " in text or " avro " in text or " eur " in text
+    if not (wants_usd or wants_eur or " kur " in text):
+        return None
+    if data is None:
+        data = _fast_market_data()
+    if data is None:
+        return None
+    parts = []
+    for wanted, key, label in (
+            (wants_usd or not wants_eur, "USD", "Dolar"),
+            (wants_eur or not wants_usd, "EUR", "Euro")):
+        rate = data.get(key) or {}
+        buying = rate.get("Al\u0131\u015f")
+        selling = rate.get("Sat\u0131\u015f")
+        if wanted and buying and selling:
+            buying = _tr_money(buying)
+            selling = _tr_money(selling)
+            parts.append("%s alis %.2f, satis %.2f TL" %
+                         (label, buying, selling))
+    if not parts:
+        return None
+    stamp = str(data.get("Update_Date", ""))
+    return ", ".join(parts) + ". Veri zamani " + stamp + "."
+
+def _fast_gold_answer(text):
+    choices = []
+    if " ceyrek " in text:
+        choices.append(("ceyrek-altin", "Ceyrek altin"))
+    elif " yarim " in text:
+        choices.append(("yarim-altin", "Yarim altin"))
+    elif " tam " in text:
+        choices.append(("tam-altin", "Tam altin"))
+    elif " gumus " in text:
+        choices.append(("gumus", "Gumus"))
+    else:
+        choices.append(("gram-altin", "Gram altin"))
+    data = _fast_market_data()
+    if data is None:
+        return None
+    parts = []
+    for key, label in choices:
+        rate = data.get(key) or {}
+        buying = rate.get("Al\u0131\u015f")
+        selling = rate.get("Sat\u0131\u015f")
+        if buying and selling:
+            parts.append("%s alis %.2f, satis %.2f TL" %
+                         (label, _tr_money(buying), _tr_money(selling)))
+    if not parts:
+        return None
+    return ", ".join(parts) + ". Veri zamani " + str(data.get("Update_Date", "")) + "."
+
+def _fast_crypto_answer(text):
+    wants_btc = " bitcoin " in text or " btc " in text
+    wants_eth = " ethereum " in text or " eth " in text
+    if not (wants_btc or wants_eth):
+        return None
+    ids = []
+    if wants_btc:
+        ids.append("bitcoin")
+    if wants_eth:
+        ids.append("ethereum")
+    path = ("/api/v3/simple/price?ids=" + ",".join(ids) +
+            "&vs_currencies=try&include_last_updated_at=true")
+    status, raw = https_get("api.coingecko.com", path, 10)
+    if status != 200 or not raw:
+        return None
+    data = json.loads(raw)
+    parts = []
+    if wants_btc and (data.get("bitcoin") or {}).get("try") is not None:
+        parts.append("Bitcoin %d TL" % int(float(data["bitcoin"]["try"]) + 0.5))
+    if wants_eth and (data.get("ethereum") or {}).get("try") is not None:
+        parts.append("Ethereum %d TL" % int(float(data["ethereum"]["try"]) + 0.5))
+    if not parts:
+        return None
+    return ", ".join(parts) + ". Kontrol tarihi " + _display_date(_today_text()) + "."
+
+def fast_live_answer(q):
+    text = _normalize_question(q)
+    answer = None
+    try:
+        if _question_is_sports(text):
+            answer = _fast_sports_answer()
+        elif any((" " + hint + " ") in text for hint in (
+                "hava", "sicaklik", "sogukluk", "yagmur", "nem",
+                "ruzgar", "basinc", "uv", "gorus")):
+            answer = _fast_weather_answer(text)
+        elif (" bitcoin " in text or " btc " in text or
+              " ethereum " in text or " eth " in text):
+            answer = _fast_crypto_answer(text)
+        elif " altin " in text or " gumus " in text:
+            answer = _fast_gold_answer(text)
+        elif (" dolar " in text or " usd " in text or " euro " in text or
+              " avro " in text or " eur " in text or " kur " in text):
+            answer = _fast_currency_answer(text)
+    except Exception:
+        answer = None
+    gc.collect()
+    return answer
+
+def ask_question(q, web_search=None, search_context="medium", on_delta=None):
+    if web_search is None:
+        web_search = question_needs_web(q)
+    if web_search:
+        sp = WEB_SYSTEM_PROMPT % _today_text()
+        tok = WEB_MAX_TOKENS
+        q = (q + " Bugunun tarihi " + _today_text() +
+             ". Web'de ara ve yalnizca en yeni tarihli bilgiyi kullan.")
+        if _question_is_sports(q):
+            search_context = "medium"
+            q = (q + " Bugun dunyadaki en onemli futbol maclarini ara. "
+                 "UEFA, Sampiyonlar Ligi, Avrupa Ligi, Avrupa buyuk ligleri, "
+                 "milli maclar ve Super Lig arasindan en fazla 6 mac ver.")
+    else:
+        extra = LEN_PROFILES[ans_len_idx][2]
+        tok = LEN_PROFILES[ans_len_idx][1]
+        sp = SYSTEM_PROMPT + " " + extra
+    return openai_chat(
+        [{"role": "system", "content": sp},
+         {"role": "user", "content": q}],
+        QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
+        reasoning="none",
+        search_context=search_context, on_delta=on_delta)
+
+def _ask_and_show(q):
+
+    release_answer_buffers()
+    gc.collect()
+    use_web = question_needs_web(q)
+    cached_answer = _live_cache_get(q) if use_web else None
+    draw_answer_frame()
+    if use_web and cached_answer is None:
+        _gpt_wait_start()
+    answer = cached_answer
+    if answer is None:
+        answer = fast_live_answer(q) if use_web else None
+    if answer is None:
+        if not _gpt_wait_active:
+            _gpt_wait_start()
+        answer, err = ask_question(q, use_web)
+    else:
+        err = None
+    if use_web and (err is not None or _answer_refuses_current(answer)):
+        answer = None
+        if err is None:
+            err = "GUNCEL YANIT ALINAMADI"
+    _gpt_wait_stop()
+    if err is None and not answer:
+        err = "GPT BOS YANIT VERDI"
+    if use_web and err is None and answer:
+        answer = strip_urls(answer)
+        _live_cache_put(q, answer)
+    gc.collect()
+    apply_ans_size(ans_size_idx)
+    if err is not None:
+        txt = to_screen_text(err)
+    else:
+        txt = to_screen_text(strip_urls(answer))
+    lines = wrap_full(
+        txt, (WIDTH - 8) // SIZE_PROFILES[ans_size_idx][2])
+    if not lines:
+        lines = [""]
+    action = show_answer(lines)
+    release_answer_buffers()
+    return action
+
+def _half_ring(cx, cy, r, color, side):
+
+
+    x = r; y = 0; err = 0
+    while x >= y:
+        for (px, py) in ((x, y), (y, x), (-y, x), (-x, y),
+                         (-x, -y), (-y, -x), (y, -x), (x, -y)):
+            if (side < 0 and px <= 0) or (side > 0 and px >= 0):
+                lcd.fill_rect(cx + px, cy + py, 1, 1, color)
+        y += 1
+        if err <= 0:
+            err += 2 * y + 1
+        if err > 0:
+            x -= 1
+            err -= 2 * x + 1
+
+def _draw_pill(x, y, w, h, fill_col, border_col, txt, txt_col):
+
+
+    r = h // 2
+    lcd.fill_rect(x + r, y, w - 2 * r, h, fill_col)
+    _fast_disc(x + r, y + r, r, fill_col)
+    _fast_disc(x + w - r, y + r, r, fill_col)
+    _half_ring(x + r, y + r, r, border_col, -1)
+    _half_ring(x + w - r, y + r, r, border_col, 1)
+    lcd.hline(x + r, y, w - 2 * r, border_col)
+    lcd.hline(x + r, y + h - 1, w - 2 * r, border_col)
+    tx = x + (w - len(txt) * 6) // 2
+    ty = y + (h - 7) // 2
+    lcd.text(txt, tx, ty, txt_col, 1)
+
+def _sor_pill_layout():
+
+
+    pills = []
+    x = _SOR_MARGIN_X
+    y = _SOR_PILL_Y0
+    max_x = WIDTH - _SOR_MARGIN_X
+    for label, question in PRESET_Q:
+        pw = len(label) * 6 + _SOR_PILL_PAD * 2
+        if x != _SOR_MARGIN_X and x + pw > max_x:
+            x = _SOR_MARGIN_X
+            y += _SOR_PILL_H + _SOR_GAP_Y
+        pills.append((x, y, pw, _SOR_PILL_H, label, question))
+        x += pw + _SOR_GAP_X
+    return pills
+
+def _sor_tabs_draw(active):
+
+
+    labels = ["GPT", "HAZIR SORU"]
+    bw = WIDTH // 2 - 6
+    for slot in range(2):
+        idx = 1 - slot
+        bx = 3 + slot * (WIDTH // 2)
+        on = (idx == active)
+        bg = FG if on else TAB_UNSEL
+        fg = BG if on else WHITE
+        _draw_round_rect(bx, _SOR_TABS_Y0, bw, _SOR_TABS_H, 9, bg, GRAY)
+        lbl = labels[idx]
+        lcd.text(lbl, bx + (bw - len(lbl) * 12) // 2,
+                  _SOR_TABS_Y0 + (_SOR_TABS_H - 14) // 2, fg, 2)
+
+def _sor_hit_tab(x, y):
+
+
+    if y < _SOR_TABS_Y0 or y > _SOR_TABS_Y0 + _SOR_TABS_H:
+        return None
+    return 1 if x < WIDTH // 2 else 0
+
+def _sor_hazir_draw():
+    lcd.fill_rect(0, 0, WIDTH, HEIGHT, BG)
+    _sor_tabs_draw(1)
+    for (x, y, w, h, label, question) in _sor_pill_layout():
+        _draw_pill(x, y, w, h, DARKGRAY, GRAY, label, WHITE)
+    lcd.fill_rect(0, _SOR_HAZIR_GERI_Y, WIDTH, _SOR_HAZIR_GERI_H, DARKGRAY)
+    lcd.hline(0, _SOR_HAZIR_GERI_Y, WIDTH, GRAY)
+    lcd.text("GERI", (WIDTH - 24) // 2, _SOR_HAZIR_GERI_Y + 9, WHITE, 1)
+
+def _sor_in_pos(idx):
+    return _SOR_IN_X + (idx % IN_CPL) * IN_CW, _SOR_IN_Y + (idx // IN_CPL) * IN_CH
+
+def _sor_in_char_at(idx, ch):
+    x, y = _sor_in_pos(idx)
+    if y > KB_TOP - 12:
+        return
+    lcd.text(ch, x, y, FG, 1)
+
+def _sor_in_erase_at(idx):
+    x, y = _sor_in_pos(idx)
+    if y > KB_TOP - 12:
+        return
+    lcd.fill_rect(x, y, IN_CW, IN_CH, BG)
+
+def _sor_in_draw_all(text):
+    for i in range(len(text)):
+        _sor_in_char_at(i, text[i])
+
+def _sor_kb_build(mode):
+
+
+    keys = _kb_build(mode)
+    keys.append({"label": "GERI", "x": _SOR_KB_GERI_X, "y": _SOR_KB_GERI_Y,
+                 "w": _SOR_KB_GERI_W, "h": KEY_H, "kind": "geri"})
+    return keys
+
+def _run_sor_keyboard():
+
+
+    text = ""
+    mode = "low"
+    keys = _sor_kb_build(mode)
+    lcd.fill_rect(0, 0, WIDTH, HEIGHT, BG)
+    _sor_tabs_draw(0)
+    _kb_draw(keys)
+    _sor_in_draw_all(text)
+    last = 0
+    while True:
+        p = touch.read_fast()
+        if p is None:
+            time.sleep_ms(20)
+            continue
+        now = time.ticks_ms()
+        if time.ticks_diff(now, last) < 90:
+            continue
+        last = now
+        x, y = p
+        tab = _sor_hit_tab(x, y)
+        if tab is not None:
+            if tab == 1:
+                _wait_touch_release()
+                return "__switch__"
+            continue
+        if y < _SOR_CONTENT_Y0:
+            continue
+        k = None
+        for kk in keys:
+            if kk["x"] <= x <= kk["x"] + kk["w"] and kk["y"] <= y <= kk["y"] + kk["h"]:
+                k = kk
+                break
+        if k is None:
+            continue
+        _kb_key_draw(k, True)
+        time.sleep_ms(30)
+        _kb_key_draw(k, False)
+        kind = k["kind"]
+        if kind == "geri":
+            _wait_touch_release()
+            return None
+        elif kind == "char":
+            if len(text) < 64:
+                idx = len(text)
+                text += k["val"]
+                _sor_in_char_at(idx, k["val"])
+        elif kind == "space":
+            if len(text) < 64:
+                text += " "
+        elif kind == "back":
+            if text:
+                idx = len(text) - 1
+                text = text[:-1]
+                _sor_in_erase_at(idx)
+        elif kind == "case":
+            mode = "up" if mode == "low" else "low"
+            keys = _sor_kb_build(mode)
+            _kb_draw(keys)
+        elif kind == "sym":
+            mode = "sym"
+            keys = _sor_kb_build(mode)
+            _kb_draw(keys)
+        elif kind == "toletters":
+            mode = "low"
+            keys = _sor_kb_build(mode)
+            _kb_draw(keys)
+        elif kind == "send":
+            return text
+
+def run_sor():
+
+    view = 1
+    while True:
+        if view == 0:
+            q = _run_sor_keyboard()
+            if q is None:
+                return
+            if q == "__switch__":
+                view = 1
+                continue
+            q = q.strip()
+            if q:
+                act = _ask_and_show(q)
+                if act == "back":
+                    view = 1
+                    continue
+            continue
+
+        _sor_hazir_draw()
+        _wait_touch_release()
+        last = 0
+        next_view = None
+        while next_view is None:
+            p = touch.read_fast()
+            if p is None:
+                time.sleep_ms(20)
+                continue
+            now = time.ticks_ms()
+            if time.ticks_diff(now, last) < TOUCH_DEBOUNCE_MS:
+                continue
+            last = now
+            x, y = p
+            if y >= _SOR_HAZIR_GERI_Y:
+                _wait_touch_release()
+                return
+            tab = _sor_hit_tab(x, y)
+            if tab is not None:
+                if tab == 0:
+                    _wait_touch_release()
+                    next_view = 0
+                continue
+            for (px, py, pw, ph, label, question) in _sor_pill_layout():
+                if px <= x <= px + pw and py <= y <= py + ph:
+                    _wait_touch_release()
+                    q_text = question() if callable(question) else question
+                    _ask_and_show(q_text)
+                    next_view = 1
+                    break
+        view = next_view
+
+def _open_sor_impl():
+    if is_online():
+        run_sor()
+    else:
+        show_status_screen("ONCE WIFI BAGLAN", AMBER)
+        time.sleep_ms(1200)
+    draw_static()
+
+
+# ===================== OTA MODULU =====================
+def _ota_parse_url(url):
+    prefix = "https://"
+    if not url.startswith(prefix):
+        return None, None
+    rest = url[len(prefix):]
+    slash = rest.find("/")
+    if slash < 0:
+        return rest, "/"
+    return rest[:slash], rest[slash:]
+
+def _ota_version_parts(value):
+    parts = []
+    for item in str(value).split("."):
+        digits = ""
+        for ch in item:
+            if "0" <= ch <= "9":
+                digits += ch
+            else:
+                break
+        parts.append(int(digits) if digits else 0)
+    while len(parts) < 4:
+        parts.append(0)
+    return tuple(parts[:4])
+
+def ota_check_manifest():
+    host, path = _ota_parse_url(OTA_MANIFEST_URL)
+    if not host:
+        return None, "OTA ADRESI GECERSIZ"
+    try:
+        gc.collect()
+        status, text = https_get(host, path, 20)
+    except Exception as exc:
+        return None, "OTA BAGLANTI: " + str(exc)
+    if status != 200:
+        return None, "OTA SUNUCU KODU " + str(status)
+    try:
+        data = json.loads(text)
+        version = str(data["version"]).strip()
+        url = str(data["url"]).strip()
+        sha256 = str(data["sha256"]).strip().lower()
+        raw_notes = data.get("notes", [])
+    except Exception:
+        return None, "OTA BILGISI GECERSIZ"
+    if not version or not url.startswith("https://") or len(sha256) != 64:
+        return None, "OTA ALANLARI EKSIK"
+    if isinstance(raw_notes, str):
+        raw_notes = [raw_notes]
+    notes = []
+    for item in raw_notes:
+        note = str(item).strip()
+        if note:
+            notes.append(note)
+        if len(notes) >= 4:
+            break
+    return {"version": version, "url": url, "sha256": sha256,
+            "notes": notes}, None
+
+def _ota_digest_hex(hasher):
+    return "".join("%02x" % b for b in hasher.digest())
+
+def _ota_draw_progress(done, total):
+    x = 28
+    y = 146
+    width = WIDTH - 56
+    lcd.rect(x, y, width, 14, GRAY)
+    inner = width - 4
+    fill = done * inner // total if total > 0 else (done // 1024) % inner
+    if fill < 0:
+        fill = 0
+    if fill > inner:
+        fill = inner
+    lcd.fill_rect(x + 2, y + 2, fill, 10, GREEN)
+    if fill < inner:
+        lcd.fill_rect(x + 2 + fill, y + 2, inner - fill, 10, DARKGRAY)
+    text = "%d KB" % (done // 1024)
+    lcd.fill_rect(0, 170, WIDTH, 14, BG)
+    lcd.text(text, (WIDTH - len(text) * 6) // 2, 173, FG, 1)
+
+def ota_download(url, expected_sha):
+    if hashlib is None:
+        return False, "SHA256 MODULU YOK"
+    host, path = _ota_parse_url(url)
+    if not host:
+        return False, "DOSYA ADRESI GECERSIZ"
+    raw = None
+    ss = None
+    f = None
+    try:
+        gc.collect()
+        try:
+            os.remove(OTA_RAW_FILE)
+        except Exception:
+            pass
+        addr = socket.getaddrinfo(host, 443)[0][-1]
+        raw = socket.socket()
+        try:
+            raw.settimeout(30)
+        except Exception:
+            pass
+        raw.connect(addr)
+        try:
+            ss = ssl.wrap_socket(raw, server_hostname=host)
+        except TypeError:
+            ss = ssl.wrap_socket(raw)
+        req = ("GET " + path + " HTTP/1.1\r\n"
+               "Host: " + host + "\r\n"
+               "User-Agent: masa-saati/" + APP_VERSION + "\r\n"
+               "Accept: application/octet-stream\r\n"
+               "Connection: close\r\n\r\n")
+        ss.write(req.encode("utf-8"))
+        status_line = ss.readline()
+        try:
+            status = int(status_line.split(b" ")[1])
+        except Exception:
+            status = 0
+        chunked = False
+        expected_size = 0
+        while True:
+            line = ss.readline()
+            if not line or line in (b"\r\n", b"\n"):
+                break
+            low = line.lower()
+            if low.startswith(b"transfer-encoding:") and b"chunked" in low:
+                chunked = True
+            elif low.startswith(b"content-length:"):
+                try:
+                    expected_size = int(line.split(b":", 1)[1].strip())
+                except Exception:
+                    expected_size = 0
+        if status != 200:
+            return False, "DOSYA SUNUCU KODU " + str(status)
+        if expected_size > OTA_MAX_BYTES:
+            return False, "GUNCELLEME COK BUYUK"
+
+        f = open(OTA_RAW_FILE, "wb")
+        hasher = hashlib.sha256()
+        done = 0
+        shown = -4096
+        if chunked:
+            while True:
+                line = ss.readline()
+                if not line:
+                    raise OSError("chunk basligi yok")
+                size = int(line.split(b";", 1)[0].strip(), 16)
+                if size == 0:
+                    break
+                remaining = size
+                while remaining > 0:
+                    block = ss.read(min(512, remaining))
+                    if not block:
+                        raise OSError("dosya yarim kaldi")
+                    done += len(block)
+                    if done > OTA_MAX_BYTES:
+                        raise OSError("dosya cok buyuk")
+                    f.write(block)
+                    hasher.update(block)
+                    remaining -= len(block)
+                    if done - shown >= 4096:
+                        _ota_draw_progress(done, expected_size)
+                        shown = done
+                ss.read(2)
+        else:
+            while True:
+                block = ss.read(512)
+                if not block:
+                    break
+                done += len(block)
+                if done > OTA_MAX_BYTES:
+                    raise OSError("dosya cok buyuk")
+                f.write(block)
+                hasher.update(block)
+                if done - shown >= 4096:
+                    _ota_draw_progress(done, expected_size)
+                    shown = done
+        try:
+            f.flush()
+        except Exception:
+            pass
+        f.close()
+        f = None
+        _ota_draw_progress(done, expected_size if expected_size else done)
+        if done < 1024:
+            return False, "GUNCELLEME DOSYASI COK KUCUK"
+        if expected_size and done != expected_size:
+            return False, "GUNCELLEME DOSYASI YARIM"
+        if _ota_digest_hex(hasher) != expected_sha:
+            return False, "SHA256 DOGRULANAMADI"
+        return True, None
+    except Exception as exc:
+        return False, "INDIRME HATASI: " + str(exc)
+    finally:
+        if f is not None:
+            try:
+                f.close()
+            except Exception:
+                pass
+        if ss is not None:
+            try:
+                ss.close()
+            except Exception:
+                pass
+        elif raw is not None:
+            try:
+                raw.close()
+            except Exception:
+                pass
+        gc.collect()
+
+def ota_prepare_with_local_key():
+    src = None
+    dst = None
+    replaced = False
+    try:
+        try:
+            os.remove(OTA_READY_FILE)
+        except Exception:
+            pass
+        src = open(OTA_RAW_FILE, "r")
+        dst = open(OTA_READY_FILE, "w")
+        for line in src:
+            if line.startswith("OPENAI_API_KEY ="):
+                dst.write("OPENAI_API_KEY = " + repr(OPENAI_API_KEY.strip()) + "\n")
+                replaced = True
+            else:
+                dst.write(line)
+        try:
+            dst.flush()
+        except Exception:
+            pass
+        src.close()
+        src = None
+        dst.close()
+        dst = None
+        if not replaced:
+            return False, "API ANAHTAR SATIRI BULUNAMADI"
+        return True, None
+    except Exception as exc:
+        return False, "DOSYA HAZIRLAMA: " + str(exc)
+    finally:
+        if src is not None:
+            try:
+                src.close()
+            except Exception:
+                pass
+        if dst is not None:
+            try:
+                dst.close()
+            except Exception:
+                pass
+        try:
+            os.remove(OTA_RAW_FILE)
+        except Exception:
+            pass
+
+def ota_install_ready():
+    if not safe_write_text(OTA_STATE_FILE, "installing\n"):
+        return False, "OTA DURUMU YAZILAMADI"
+    try:
+        try:
+            os.remove(OTA_BACKUP_FILE)
+        except Exception:
+            pass
+        os.rename("main.py", OTA_BACKUP_FILE)
+        try:
+            os.rename(OTA_READY_FILE, "main.py")
+        except Exception:
+            os.rename(OTA_BACKUP_FILE, "main.py")
+            raise
+        if not safe_write_text(OTA_STATE_FILE, "trial\n"):
+            try:
+                os.remove("main.py")
+            except Exception:
+                pass
+            os.rename(OTA_BACKUP_FILE, "main.py")
+            raise OSError("deneme durumu yazilamadi")
+        return True, None
+    except Exception as exc:
+        try:
+            os.remove(OTA_STATE_FILE)
+        except Exception:
+            pass
+        return False, "KURULUM HATASI: " + str(exc)
+
+def _ota_confirm_screen(version, notes):
+    lcd.fill(BG)
+    lcd.text("YAZILIM GUNCELLEMESI", 34, 14, TITLE_COL, 2)
+    incoming = "SURUM  v" + version
+    lcd.text(incoming, (WIDTH - len(incoming) * 6) // 2, 51, GREEN, 1)
+    lcd.hline(24, 72, WIDTH - 48, DARKGRAY)
+    lcd.text("YENILIKLER", 127, 84, TITLE_COL, 1)
+    shown_notes = notes if notes else ["Genel iyilestirmeler"]
+    y = 106
+    for note in shown_notes[:4]:
+        line = "- " + to_screen_text(note)
+        if len(line) > 50:
+            line = line[:47] + "..."
+        lcd.text(line, 10, y, FG, 1)
+        y += 16
+    lcd.fill_rect(0, 198, 158, 42, DARKGRAY)
+    lcd.rect(0, 198, 158, 42, GRAY)
+    lcd.text("IPTAL", 64, 215, WHITE, 1)
+    lcd.fill_rect(162, 198, 158, 42, GREEN)
+    lcd.rect(162, 198, 158, 42, GRAY)
+    lcd.text("GUNCELLE", 215, 215, BLACK, 1)
+    _wait_touch_release()
+    while True:
+        p = touch.read_fast()
+        if p is None:
+            time.sleep_ms(20)
+            continue
+        x, y = p
+        if y >= 198:
+            _wait_touch_release()
+            return x >= WIDTH // 2
+
+def run_ota_update():
+    if not is_online():
+        show_status_screen("OTA ICIN WIFI GEREKLI", AMBER)
+        time.sleep_ms(1400)
+        return
+    show_status_screen("GUNCELLEME KONTROL EDILIYOR", TITLE_COL)
+    release_answer_buffers()
+    gc.collect()
+    manifest, err = ota_check_manifest()
+    if err is not None:
+        show_status_screen(to_screen_text(err)[:48], RED)
+        time.sleep_ms(1800)
+        return
+    if _ota_version_parts(manifest["version"]) <= _ota_version_parts(APP_VERSION):
+        show_status_screen("SURUM GUNCEL: v" + APP_VERSION, GREEN)
+        time.sleep_ms(1400)
+        return
+    if not _ota_confirm_screen(manifest["version"], manifest.get("notes", [])):
+        return
+
+    download_url = manifest["url"]
+    expected_sha = manifest["sha256"]
+    manifest = None
+    release_answer_buffers()
+    gc.collect()
+
+    lcd.fill(BG)
+    lcd.text("YAZILIM GUNCELLENIYOR", 28, 76, TITLE_COL, 2)
+    _ota_draw_progress(0, 1)
+    ok, err = ota_download(download_url, expected_sha)
+    if not ok:
+        show_status_screen(to_screen_text(err)[:48], RED)
+        time.sleep_ms(2200)
+        return
+    download_url = None
+    expected_sha = None
+    gc.collect()
+    show_status_screen("API ANAHTARI KORUNUYOR", TITLE_COL)
+    ok, err = ota_prepare_with_local_key()
+    if not ok:
+        show_status_screen(to_screen_text(err)[:48], RED)
+        time.sleep_ms(2200)
+        return
+    gc.collect()
+    show_status_screen("DOGRULANDI, KURULUYOR", GREEN)
+    ok, err = ota_install_ready()
+    if not ok:
+        show_status_screen(to_screen_text(err)[:48], RED)
+        time.sleep_ms(2200)
+        return
+    show_status_screen("TAMAM, YENIDEN BASLIYOR", GREEN)
+    time.sleep_ms(1200)
+    if machine_reset is not None:
+        machine_reset()
+    while True:
+        time.sleep_ms(1000)
+
+
+if __name__ == "__main__":
+    run_clock()

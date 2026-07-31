@@ -1,11 +1,10 @@
 {
-  "version": "1.0.24",
-  "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/497586cb164238e595e04f9c957c2861ae03b14e/main.py",
-  "sha256": "ed7227158192a9e79d4f73309009ca1938628d8c5895b771d7870eeb53f71cb3",
+  "version": "1.0.30",
+  "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
+  "sha256": "db4bd98418d70fa1e1fb33e6d52d0d1c7057d94d2f96a6475ba200bab31ac895",
   "notes": [
-    "Acilistaki MemoryError duzeltildi",
-    "Cevap tamponlari sadece gerektiginde acilir",
-    "GPT sonrasi kullanilan RAM geri birakilir",
-    "Ana dosya yaklasik 22 KB kucultuldu"
+    "GPT modeli gpt-5.4 olarak guncellendi",
+    "Normal ve guncel sorular ayni modeli kullaniyor",
+    "OTA paketi cihaz surumuyle esitlendi"
   ]
 }
