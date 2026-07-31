@@ -1,10 +1,9 @@
 {
-  "version": "1.0.30",
+  "version": "0.0.0",
   "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
   "sha256": "db4bd98418d70fa1e1fb33e6d52d0d1c7057d94d2f96a6475ba200bab31ac895",
   "notes": [
-    "GPT modeli gpt-5.4 olarak guncellendi",
-    "Normal ve guncel sorular ayni modeli kullaniyor",
-    "OTA paketi cihaz surumuyle esitlendi"
+    "OTA gecici olarak kapatildi",
+    "Yazilim yalnizca USB portundan yuklenecek"
   ]
 }
