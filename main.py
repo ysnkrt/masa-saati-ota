@@ -12,17 +12,15 @@
 #
 # ==== KULLANICI AYARLARI ====
 WIFI_SSID = ""          # WiFi adi (bos birakirsan internet kullanmaz, elle ayar yaparsin)
-WIFI_PASS = ""          # WiFi sifresi
-TZ_OFFSET = 3           # Saat dilimi farki (Turkiye = UTC+3)
-USE_24H = True          # True: 24 saat (14:30), False: 12 saat (02:30)
-NTP_EVERY_MS = 3600000  # Her 1 saatte bir internetten tekrar saat al
-WIFI_RETRY_MS = 60000    # Baglanti koparsa her 1 dakikada bir tekrar dene
-GC_EVERY_MS = 300000     # Uzun calismalarda bellek parcalanmasini azalt
+WIFI_PASS = ""
+TZ_OFFSET = 3
+USE_24H = True
+NTP_EVERY_MS = 3600000
+WIFI_RETRY_MS = 60000
+GC_EVERY_MS = 300000
 
-# Il (bolge) IP uzerinden otomatik tespit edilir (SOR cevaplari ve namaz
-# vakitleri icin, ekranda gosterilmez). Yanlis cikarsa kendi ilini
-# asagiya yaz; bos birakirsan otomatik tespit edilen kullanilir.
-MANUAL_LOCATION = ""    # ORNEK: "Mugla"
+
+MANUAL_LOCATION = ""
 
 
 # ==== SOR (ChatGPT) AYARLARI ====
@@ -31,10 +29,10 @@ QA_MODEL = "gpt-5.4-nano"
 WEB_SEARCH_MODEL = "gpt-5.4-nano"
 WEB_MAX_TOKENS = 500
 WEB_RETRY_TOKENS = 700
-GPT_RETRY_COUNT = 1                                  # gecici hatada bir kez daha dene
+GPT_RETRY_COUNT = 1
 GPT_RETRY_DELAY_MS = 900
 GPT_RETRY_OUTPUT_BUDGET = 8192
-APP_VERSION = "1.0.23"
+APP_VERSION = "1.0.24"
 OTA_MANIFEST_URL = ("https://raw.githubusercontent.com/"
                     "ysnkrt/masa-saati-ota/main/ota.json")
 OTA_MAX_BYTES = 350000
@@ -45,7 +43,7 @@ LIVE_CACHE_PREFIX = "guncel_"
 USER_COUNTRY = "TR"
 USER_CITY = "Istanbul"
 USER_REGION = "Istanbul"
-USER_LAT = None         # gun batimi hesabi icin (geo_locate ile doldurulur)
+USER_LAT = None
 USER_LON = None
 SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "kisaca topla. SADECE duz metin: madde isareti, yildiz (*), "
@@ -77,43 +75,41 @@ WEB_SYSTEM_PROMPT = (
 MAX_TOKENS = 450
 # ============================
 
-# SOR cevap ayarlari (soru ekranindaki AYAR tusundan degisir, kalici)
-# yazi boyutu profilleri: (harf_gen, harf_yuk, ilerleme, satir_yuk)
+
 SIZE_PROFILES = [(10, 14, 11, 20), (8, 11, 9, 16), (6, 8, 7, 12)]
 SIZE_NAMES = ["BUYUK", "ORTA", "KUCUK"]
-# cevap uzunlugu: (ad, token, prompt eki)
+
 LEN_PROFILES = [
     ("UZUN", 900, "Cevabini detayli ve kapsamli ver."),
     ("NORMAL", 350, "Cevabini orta uzunlukta ozetle."),
     ("KISA", 200, "Cevabini cok kisa, 1-2 cumlede ver."),
 ]
-ans_size_idx = 1     # ORTA
-ans_len_idx = 1      # NORMAL
-anim_on = True       # saat animasyonlari
-UI_FRAME_MS = 80     # animasyon yenileme araligi
-MAIN_LOOP_MS = 12    # ana dongu beklemesi
+ans_size_idx = 1
+ans_len_idx = 1
+anim_on = True
+UI_FRAME_MS = 80
+MAIN_LOOP_MS = 12
 TOUCH_IDLE_POLL_MS = 22
 LONG_PRESS_MS = 650
 TOUCH_DEBOUNCE_MS = 140
 
-# HAVA ANIMASYONU: sadece BUYUK YAZI (HH:MM:SS) ekraninda calisir.
-# 1=kar, 2=yagmur. Buyuk dijital ekrana dokununca 1/2 arasinda gecis yapar.
+
 weather_idx = 2
 
 # ==== NAMAZ VAKITLERI ====
-# HIZLI AYAR > NM menusu: KAPALI / YAKIN / HEPSI
+
 PRAYER_CITY = "Istanbul"
 PRAYER_COUNTRY = "Turkey"
-PRAYER_METHOD = 13          # Turkiye/Diyanet hesabi
-PRAYER_EVERY_MS = 21600000  # 6 saatte bir tekrar dene
+PRAYER_METHOD = 13
+PRAYER_EVERY_MS = 21600000
 PRAYER_MODE_NAMES = ["KAPALI", "YAKIN", "HEPSI"]
-prayer_mode_idx = 1         # 0=kapali, 1=en yakin, 2=tum vakitler
+prayer_mode_idx = 1
 PRAYER_SIZE_NAMES = ["NORMAL", "BUYUK"]
-prayer_size_idx = 0         # 0=normal, 1=buyuk
+prayer_size_idx = 0
 PRAYER_THICK_NAMES = ["INCE", "ORTA", "KALIN"]
-prayer_thick_idx = 1        # 0=ince, 1=orta, 2=kalin
+prayer_thick_idx = 1
 PRAYER_GAP_NAMES = ["SIK", "NORMAL", "GENIS"]
-prayer_gap_idx = 1          # HEPSI modunda vakitler arasi bosluk
+prayer_gap_idx = 1
 
 from machine import Pin, SPI, PWM
 import time
@@ -212,7 +208,7 @@ LCD_DC = 8; LCD_CS = 9; LCD_SCK = 10; LCD_MOSI = 11; LCD_MISO = 12
 LCD_BL = 13; LCD_RST = 15
 TP_CS = 16
 
-LCD_BAUD = 24000000     # ekran cizim hizi; ekran bozulursa 16000000 yap
+LCD_BAUD = 24000000
 TOUCH_BAUD = 2000000
 
 WIDTH = 320
@@ -222,7 +218,7 @@ HEIGHT = 240
 BLACK = 0x0000
 WHITE = 0xFFFF
 GRAY = 0x8410
-DGRAY = 0x2104          # sonuk "hayalet" segment rengi
+DGRAY = 0x2104
 DARKGRAY = 0x4208
 YELLOW = 0xFFE0
 GREEN = 0x07E0
@@ -236,22 +232,21 @@ ORANGE = 0xFC00
 PURPLE = 0x8010
 PINK = 0xF81F
 LIME = 0x87E0
-LGRAY = 0xC618          # acik gri (acik modda "soluk/hayalet" icin)
+LGRAY = 0xC618
 
-# Ekran modu: saat, ust/alt cubuk ve tum ana ekran bu renklerle cizilir.
-# KOYU: zemin siyah, beyaz. ACIK: zemin beyaz, "beyaz" yerler siyah.
+
 MODE_NAMES = ["KOYU", "ACIK"]
-mode_idx = 0            # 0=KOYU (varsayilan) 1=ACIK
+mode_idx = 0
 
-BG = BLACK              # ana ekran zemin rengi (moda gore guncellenir)
-FG = WHITE              # ana ekran (saat + ust/alt cubuk) on plan rengi
-FG_DIM = DGRAY          # "hayalet/bos" ogeler (dolmamis saniye cizgisi vb.)
-RAIN_COL = CYAN         # yagmur damlasi rengi (moda gore okunur olsun)
-RING_FULL = WHITE       # analog: dolmus (gecmis) saniye cizgisi
-RING_EMPTY = DARKGRAY   # analog: dolmamis saniye cizgisi (soluk ama gorunur)
-TAB_UNSEL = DARKGRAY    # SOR sekmelerinde secili OLMAYAN sekmenin zemini
-TITLE_COL = CYAN        # panel basliklari/durum yazilari (moda gore okunur)
-LOCK_CLOSED_COL = GRAY  # wifi listesinde "kilitli" (bilinmeyen) ag ikonu
+BG = BLACK
+FG = WHITE
+FG_DIM = DGRAY
+RAIN_COL = CYAN
+RING_FULL = WHITE
+RING_EMPTY = DARKGRAY
+TAB_UNSEL = DARKGRAY
+TITLE_COL = CYAN
+LOCK_CLOSED_COL = GRAY
 
 
 def apply_mode():
@@ -260,15 +255,14 @@ def apply_mode():
     if mode_idx == 1:
         BG = WHITE
         FG = BLACK
-        FG_DIM = LGRAY      # beyaz zeminde bos ogeler acik gri
-        RAIN_COL = BLACK    # beyaz zeminde siyah yagmur
+        FG_DIM = LGRAY
+        RAIN_COL = BLACK
         RING_FULL = BLACK
         RING_EMPTY = LGRAY
-        # ACIK modda secili sekme (FG=siyah) ile secili olmayan sekme
-        # birbirine cok yakin koyulukta olmasin diye secili olmayan
-        # daha acik gri yapilir.
+
+
         TAB_UNSEL = GRAY
-        TITLE_COL = BLACK   # acik modda basliklar siyah
+        TITLE_COL = BLACK
         LOCK_CLOSED_COL = BLACK
     else:
         BG = BLACK
@@ -280,19 +274,19 @@ def apply_mode():
         TAB_UNSEL = DARKGRAY
         TITLE_COL = CYAN
         LOCK_CLOSED_COL = GRAY
-    _rebuild_ans_zero_buffers()   # SOR cevap zeminini yeni BG'ye gore yenile
+    _rebuild_ans_zero_buffers()
 
-# Parlaklik kademeleri (PWM duty 0-65535)
+
 BRIGHT_LEVELS = [65535, 49151, 32768, 16384, 655]
 BRIGHT_NAMES = ["%100", "%75", "%50", "%25", "%1"]
 bright_idx = 0
-BRIGHT_MIN = 655       # yaklasik %1; ekran tamamen kapanmaz
+BRIGHT_MIN = 655
 bright_value = BRIGHT_LEVELS[bright_idx]
 
-# Ekrani ters cevirme (180 derece)
+
 screen_flip = False
 
-# Saat modeli (sola/saga kaydirarak degisir): 0=dijital 1=analog 2=buyuk yazi 3=nabiz
+
 face_idx = 0
 FACE_COUNT = 4
 
@@ -404,7 +398,7 @@ FONT = {
     ":":["00000","00100","00100","00000","00100","00100","00000"],
     " ":["00000","00000","00000","00000","00000","00000","00000"],
 }
-# Kucuk harfler ve ek semboller (wifi sifresi girisi icin)
+
 FONT.update({
     "a":["00000","00000","01110","00001","01111","10001","01111"],
     "b":["10000","10000","11110","10001","10001","10001","11110"],
@@ -494,7 +488,7 @@ class ST7789:
         self.write_cmd(0x29); time.sleep_ms(100)
 
     def set_rotation(self, flip):
-        # flip=True -> 180 derece dondur
+
         self.write_cmd(0x36)
         self.write_data(0xB0 if flip else 0x70)
 
@@ -562,7 +556,7 @@ class ST7789:
         self.vline(x + w - 1, y, h, color)
 
     def circle(self, cx, cy, r, color):
-        # Dolu daireyi piksel piksel degil, yatay satirlar halinde ciz.
+
         rr = r * r
         for yy in range(-r, r + 1):
             xx = r
@@ -572,7 +566,7 @@ class ST7789:
             self.fill_rect(cx - xx, cy + yy, xx * 2 + 1, 1, color)
 
     def ring(self, cx, cy, r, color):
-        # sadece cember cizgisi (icini doldurmaz) - hizli
+
         x = r; y = 0; err = 0
         while x >= y:
             for (px, py) in ((x, y), (y, x), (-y, x), (-x, y),
@@ -649,7 +643,7 @@ class XPT2046:
         x = map_value(raw_y, RAW_Y_MIN, RAW_Y_MAX, 0, WIDTH - 1)
         y = map_value(raw_x, RAW_X_MIN, RAW_X_MAX, 0, HEIGHT - 1)
         x = WIDTH - 1 - x
-        if screen_flip:                 # 180 derece donukse dokunmayi da cevir
+        if screen_flip:
             x = WIDTH - 1 - x
             y = HEIGHT - 1 - y
         return clamp(x, 0, WIDTH - 1), clamp(y, 0, HEIGHT - 1)
@@ -760,12 +754,11 @@ def wrap_full(text, width):
     return lines
 
 
-# Cevap ekrani: secilebilir punto (BUYUK/ORTA/KUCUK), parmakla kaydirma
 _EMPTY = []
 ANS_TOP = 24
 ANS_BOTTOM = 206
 
-# Yalnizca secili cevap boyutunun glif tablosunu RAM'de tut.
+
 def _build_glyph_table(idx):
     _AGWp, _AGHp, _AADVp, _LHp = SIZE_PROFILES[idx]
     _tbl = {}
@@ -784,21 +777,17 @@ def _build_glyph_table(idx):
 
 _DEFAULT_ANS_IDX = 1
 _GLYPH_TABLES = [None] * len(SIZE_PROFILES)
-_GLYPH_TABLES[_DEFAULT_ANS_IDX] = _build_glyph_table(_DEFAULT_ANS_IDX)
 _BUFS = [None] * len(SIZE_PROFILES)
 _ZEROS = [None] * len(SIZE_PROFILES)
-_DEFAULT_ANS_BYTES = WIDTH * SIZE_PROFILES[_DEFAULT_ANS_IDX][3] * 2
-_BUFS[_DEFAULT_ANS_IDX] = bytearray(_DEFAULT_ANS_BYTES)
-_ZEROS[_DEFAULT_ANS_IDX] = bytearray(_DEFAULT_ANS_BYTES)
 
-# aktif boyut degiskenleri (apply_ans_size ile ayarlanir)
+
 _AADV = 9
 ANS_LINE_H = 16
 ANS_CHARS = (WIDTH - 8) // _AADV
 ANS_VISIBLE = (ANS_BOTTOM - ANS_TOP) // ANS_LINE_H
-_AGLYPH = _GLYPH_TABLES[_DEFAULT_ANS_IDX]
-_ANS_BUF = _BUFS[_DEFAULT_ANS_IDX]
-_ANS_ZERO = _ZEROS[_DEFAULT_ANS_IDX]
+_AGLYPH = None
+_ANS_BUF = None
+_ANS_ZERO = None
 
 
 def _fill_answer_background(zero):
@@ -814,7 +803,7 @@ def _fill_answer_background(zero):
 
 
 def _rebuild_ans_zero_buffers():
-    # SOR cevap satirinin zeminini yeni temaya gore yerinde boya.
+
     global _ANS_ZERO
     for zero in _ZEROS:
         _fill_answer_background(zero)
@@ -824,12 +813,14 @@ def _rebuild_ans_zero_buffers():
 
 
 def release_answer_buffers():
-    global _ANS_BUF, _ANS_ZERO
+    global _AGLYPH, _ANS_BUF, _ANS_ZERO
+    _AGLYPH = None
     _ANS_BUF = None
     _ANS_ZERO = None
     for i in range(len(_BUFS)):
         _BUFS[i] = None
         _ZEROS[i] = None
+        _GLYPH_TABLES[i] = None
     gc.collect()
 
 
@@ -998,111 +989,6 @@ def _dechunk(data):
         out.extend(data[start:start + n])
         i = start + n + 2
     return out
-
-
-def https_post(host, path, api_key, body_str, timeout=45):
-    body = body_str.encode("utf-8")
-    body_str = None
-    s = None
-    ss = None
-    raw = None
-    try:
-        gc.collect()
-        addr = socket.getaddrinfo(host, 443)[0][-1]
-        s = socket.socket()
-        try:
-            s.settimeout(timeout)
-        except Exception:
-            pass
-        s.connect(addr)
-        try:
-            ss = ssl.wrap_socket(s, server_hostname=host)
-        except TypeError:
-            ss = ssl.wrap_socket(s)
-        req = ("POST " + path + " HTTP/1.1\r\n"
-               "Host: " + host + "\r\n"
-               "Authorization: Bearer " + api_key + "\r\n"
-               "Content-Type: application/json\r\n"
-               "Content-Length: " + str(len(body)) + "\r\n"
-               "Connection: close\r\n\r\n")
-        ss.write(req.encode("utf-8"))
-        ss.write(body)
-        body = None
-        raw = bytearray()
-        poller = None
-        if select is not None:
-            try:
-                poller = select.poll()
-                poller.register(ss, select.POLLIN)
-            except Exception:
-                poller = None
-        read_started = time.ticks_ms()
-        read_errors = 0
-        while True:
-            if poller is not None:
-                try:
-                    ready = poller.poll(40)
-                except Exception:
-                    poller = None
-                    ready = None
-                if poller is not None and not ready:
-                    _gpt_wait_step()
-                    if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
-                        break
-                    continue
-            try:
-                d = ss.read(512)
-            except Exception:
-                read_errors += 1
-                if (poller is not None and read_errors < 200 and
-                        time.ticks_diff(time.ticks_ms(), read_started) < timeout * 1000):
-                    _gpt_wait_step()
-                    time.sleep_ms(10)
-                    continue
-                raise
-            if d is None:
-                if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
-                    break
-                _gpt_wait_step()
-                time.sleep_ms(10)
-                continue
-            if len(d) == 0:
-                break
-            read_errors = 0
-            raw.extend(d)
-            _gpt_wait_step()
-        he = _buffer_find(raw, b"\r\n\r\n")
-        if he < 0:
-            return 0, ""
-        head = bytes(raw[:he])
-        raw = raw[he + 4:]
-        try:
-            status = int(head.split(b"\r\n")[0].split(b" ")[1])
-        except Exception:
-            status = 0
-        if head.lower().find(b"transfer-encoding: chunked") >= 0:
-            body_bytes = _dechunk(raw)
-            raw = None
-        else:
-            body_bytes = raw
-            raw = None
-        text = _decode_buffer(body_bytes)
-        body_bytes = None
-        return status, text
-    finally:
-        body = None
-        raw = None
-        if ss is not None:
-            try:
-                ss.close()
-            except Exception:
-                pass
-        elif s is not None:
-            try:
-                s.close()
-            except Exception:
-                pass
-        gc.collect()
 
 
 class _SocketStreamReader:
@@ -1438,7 +1324,6 @@ def https_post_stream(host, path, api_key, body_str, timeout=45,
             except Exception:
                 pass
         gc.collect()
-
 
 
 def https_get(host, path, timeout=25):
@@ -1891,107 +1776,41 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
                 "region": USER_REGION,
             },
         }]
-    endpoint = "/v1/responses"
-    if on_delta is not None:
-        body["stream"] = True
+    body["stream"] = True
     payload = json.dumps(body)
+    body = None
+    messages = None
+    request_input = None
+    instructions = None
+    gc.collect()
     transient_status = (0, 408, 429, 500, 502, 503, 504)
     last_error = "BAGLANTI HATASI"
     attempt_count = 1 if web_search else GPT_RETRY_COUNT + 1
-
-    if on_delta is not None:
-        body = None
-        messages = None
-        request_input = None
-        instructions = None
-        gc.collect()
-        for attempt in range(attempt_count):
-            gc.collect()
-            status = 0
-            answer = None
-            stream_error = None
-            try:
-                status, answer, stream_error = https_post_stream(
-                    "api.openai.com", endpoint, api_key, payload, timeout,
-                    on_delta)
-            except Exception as exc:
-                stream_error = "BAGLANTI HATASI: " + str(exc)
-            finally:
-                gc.collect()
-            if answer:
-                return answer, None
-            if stream_error:
-                last_error = stream_error
-            elif status in transient_status:
-                last_error = "API GECICI HATA " + str(status)
-            else:
-                last_error = "API HATASI KOD " + str(status)
-            if status not in transient_status and status != 200:
-                return None, last_error
-            if attempt + 1 < attempt_count:
-                time.sleep_ms(GPT_RETRY_DELAY_MS)
-        return None, last_error
-
     for attempt in range(attempt_count):
         gc.collect()
         status = 0
-        text = ""
-        limit_reached = False
-        empty_answer = False
+        answer = None
+        stream_error = None
         try:
-            status, text = https_post("api.openai.com", endpoint,
-                                       api_key, payload, timeout)
+            status, answer, stream_error = https_post_stream(
+                "api.openai.com", "/v1/responses", api_key, payload,
+                timeout, on_delta)
         except Exception as exc:
-            last_error = "BAGLANTI HATASI: " + str(exc)
+            stream_error = "BAGLANTI HATASI: " + str(exc)
         finally:
             gc.collect()
-
-        data = None
-        if text:
-            try:
-                data = json.loads(text)
-                text = None
-                gc.collect()
-            except Exception:
-                last_error = "CEVAP COZULEMEDI"
-        else:
-            last_error = "BOS CEVAP GELDI"
-
-        if status == 200 and data is not None:
-            try:
-                output_text = []
-                for item in data.get("output", []):
-                    if item.get("type") != "message":
-                        continue
-                    for content in item.get("content", []):
-                        if content.get("type") == "output_text":
-                            output_text.append(content.get("text", ""))
-                if output_text:
-                    return "\n".join(output_text), None
-                incomplete = data.get("incomplete_details") or {}
-                if incomplete.get("reason") == "max_output_tokens":
-                    last_error = "GPT YANIT SINIRINA ULASTI"
-                    limit_reached = True
-                else:
-                    last_error = "GPT BOS YANIT VERDI"
-                    empty_answer = True
-            except Exception:
-                last_error = "BEKLENMEYEN BICIM"
-        elif status in transient_status and status != 0:
+        if answer:
+            return answer, None
+        if stream_error:
+            last_error = stream_error
+        elif status in transient_status:
             last_error = "API GECICI HATA " + str(status)
-        elif status not in transient_status and data is not None:
-            try:
-                return None, "API HATASI: " + data["error"]["message"]
-            except Exception:
-                return None, "API HATASI KOD " + str(status)
-
+        else:
+            last_error = "API HATASI KOD " + str(status)
+        if status not in transient_status and status != 200:
+            return None, last_error
         if attempt + 1 < attempt_count:
-            if limit_reached or empty_answer:
-                body["max_output_tokens"] = (
-                    WEB_RETRY_TOKENS if web_search else GPT_RETRY_OUTPUT_BUDGET)
-                payload = json.dumps(body)
             time.sleep_ms(GPT_RETRY_DELAY_MS)
-
     return None, last_error
 
 
@@ -2535,7 +2354,7 @@ def _geo_try_ipapi():
     if status != 200 or not text:
         return None
     data = json.loads(text)
-    region = data.get("region")          # il (IP tabanli tespitte sehir/ilceden daha guvenilir)
+    region = data.get("region")
     cc = data.get("country_code")
     cname = data.get("country_name")
     lat = data.get("latitude")
@@ -2546,8 +2365,8 @@ def _geo_try_ipapi():
 
 
 def _geo_try_ipwho():
-    # ipapi.co bazen bot korumasi/oran siniri yuzunden cevap vermeyebilir;
-    # bu durumda yedek olarak ipwho.is denenir.
+
+
     status, text = https_get("ipwho.is", "/", 12)
     if status != 200 or not text:
         return None
@@ -2565,12 +2384,8 @@ def _geo_try_ipwho():
 
 
 def geo_locate():
-    # WiFi'a baglaninca IP uzerinden IL (bolge), ulke ve enlem/boylam
-    # tespit edilir; SOR cevaplari (hava, kur vb.), namaz vakitleri ve
-    # gun batimina gore otomatik isik kisma buna gore ayarlanir. Ekranda
-    # gosterilmez, sadece arka planda kullanilir. Ilce/sehir duzeyi IP
-    # tabanli tespitte sik yanlis cikabildigi icin sadece il (region)
-    # kullanilir.
+
+
     global USER_COUNTRY, USER_CITY, USER_REGION, USER_LAT, USER_LON
     global PRAYER_CITY, PRAYER_COUNTRY, geo_ok
     if not is_online():
@@ -2605,24 +2420,22 @@ def geo_locate():
 # ==== 30 dk once (yeniden) tam parlakliga getir ====
 DIM_AFTER_SUNSET_MIN = 30
 BRIGHTEN_BEFORE_SUNRISE_MIN = 30
-DIM_AT_MIN = -1          # gun batimi+30dk, gece yarisindan itibaren dakika (-1=bilinmiyor)
-BRIGHTEN_AT_MIN = -1     # gun dogumu-30dk, gece yarisindan itibaren dakika (-1=bilinmiyor)
-_sunset_day_key = ""     # DIM_AT_MIN/BRIGHTEN_AT_MIN'in hangi gun icin hesaplandigi
-_dimmed_today = False    # bugun otomatik kisma zaten uygulandi mi
-_brightened_today = False  # bugun otomatik fullestirme zaten uygulandi mi
+DIM_AT_MIN = -1
+BRIGHTEN_AT_MIN = -1
+_sunset_day_key = ""
+_dimmed_today = False
+_brightened_today = False
 
 
 def _parse_hm(s):
-    # "18:26:27" -> (saat, dakika)
+
     parts = s.strip().split(":")
     return int(parts[0]), int(parts[1])
 
 
 def sunset_sync():
-    # Konumun (enlem/boylam) gun dogumu/batimi saatlerini internetten alir;
-    # batisi DIM_AFTER_SUNSET_MIN dakika ileri kaydirip DIM_AT_MIN'e,
-    # dogusu BRIGHTEN_BEFORE_SUNRISE_MIN dakika geri kaydirip
-    # BRIGHTEN_AT_MIN'e yazar.
+
+
     global DIM_AT_MIN, BRIGHTEN_AT_MIN, _sunset_day_key
     global _dimmed_today, _brightened_today
     if not is_online() or USER_LAT is None or USER_LON is None:
@@ -2655,7 +2468,7 @@ def sunset_sync():
 
 
 def _urlenc(s):
-    # Basit URL encode; burada sehir/ulke isimleri ASCII tutuluyor.
+
     out = ""
     for ch in s:
         if ch == " ":
@@ -2670,7 +2483,7 @@ def _prayer_key(lt):
 
 
 def prayer_sync():
-    # Bugunun namaz vakitlerini internetten alir. Internet yoksa sessizce cikilir.
+
     global prayer_text, prayer_times, prayer_day_key, last_prayer_sync
     if not is_online():
         return False
@@ -2752,7 +2565,7 @@ def _prayer_display_text(lt):
 
 
 def _hm_from_iso(s):
-    # "2026-06-20T05:31" -> "05:31"
+
     try:
         if "T" in s:
             return s.split("T", 1)[1][:5]
@@ -2836,9 +2649,8 @@ def _stream_preview_finish():
         _stream_preview_draw(True)
 
 
-
 def _ask_and_show(q):
-    # Guncel sorularda web arar, digerlerini dogrudan GPT'ye sorar.
+
     release_answer_buffers()
     gc.collect()
     use_web = question_needs_web(q)
@@ -2874,7 +2686,9 @@ def _ask_and_show(q):
     lines = wrap_full(txt, ANS_CHARS)
     if not lines:
         lines = [""]
-    return show_answer(lines)
+    action = show_answer(lines)
+    release_answer_buffers()
+    return action
 
 
 # ===================== DURUM =====================
@@ -2897,7 +2711,6 @@ prayer_text = ""
 prayer_times = []
 prayer_day_key = ""
 last_prayer_sync = 0
-
 
 
 def show_status_screen(msg, color=AMBER):
@@ -3291,8 +3104,8 @@ def run_wifi_pick():
             y += 18
             if y > 184:
                 break
-        # Butonlar arasinda bosluk yok (bitisik); acik modda hepsi siyah
-        # zeminli, koyu modda eskisi gibi farkli renkler.
+
+
         if mode_idx == 1:
             tara_bg = ellegir_bg = geri_bg = BLACK
         else:
@@ -3343,7 +3156,7 @@ def ntp_sync():
     if ntptime is None or rtc is None:
         return False
     try:
-        ntptime.settime()                       # RTC = UTC
+        ntptime.settime()
         secs = time.time() + TZ_OFFSET * 3600
         tm = time.localtime(secs)
         rtc.datetime((tm[0], tm[1], tm[2], tm[6], tm[3], tm[4], tm[5], 0))
@@ -3436,8 +3249,8 @@ DATE_Y1 = 150; DATE_Y2 = 176
 BTN_Y = 212; BTN_H = 28
 
 def _digital_layout():
-    # Alt menu saatin yerlesimini degistirmez. Boylece menu acilip kapanirken
-    # sadece alt serit yenilenebilir.
+
+
     return (24, 58, 108, 11, [18, 82, 181, 245], 146, 28,
             22, 148, 276, 6, 166, 196)
 
@@ -3518,7 +3331,7 @@ def draw_date(lt):
 
 
 def _text_thick(txt, x, y, color, size=1, thick=0):
-    # 5x7 fontu buyutmeden/buyuterek biraz kalinlastirir.
+
     lcd.text(txt, x, y, color, size)
     step = 1
     if thick >= 1:
@@ -3528,14 +3341,13 @@ def _text_thick(txt, x, y, color, size=1, thick=0):
 
 
 def _prayer_draw_size(txt):
-    # BUYUK modunda HEPSI satiri sigmazsa otomatik normal boyuta duser.
+
     size = 2 if prayer_size_idx == 1 else 1
     if prayer_mode_idx == 2 and len(txt) * 6 * size > WIDTH:
         size = 1
     return size
 
 
-# Ust cubukta OTA sag kosede; MANUEL yalnizca cevrimdisiyken onun solunda.
 OTA_TOP_TXT = "OTA"
 OTA_TOP_W = len(OTA_TOP_TXT) * 6
 OTA_TOP_X = WIDTH - OTA_TOP_W - 4
@@ -3543,14 +3355,12 @@ OTA_TOP_HIT_X0 = OTA_TOP_X - 10
 TOPBTN_TXT = "MANUEL"
 TOPBTN_W = len(TOPBTN_TXT) * 6
 TOPBTN_X = OTA_TOP_X - TOPBTN_W - 12
-TOPBTN_HIT_X0 = TOPBTN_X - 10          # dokunma alani biraz genis tutulur
+TOPBTN_HIT_X0 = TOPBTN_X - 10
 
 
 def draw_status():
-    # Ust durum satiri: solda baglanti durumu (dokununca her zaman wifi
-    # ekrani acilir), sagda MANUEL (her zaman gorunur, elle saat ayari).
-    # Konum ekranda gosterilmez; sadece SOR cevaplari/namaz vakitleri icin
-    # arka planda IP'den tespit edilir (bkz. geo_locate()).
+
+
     lcd.fill_rect(0, 0, WIDTH, 18, BG)
     online = is_online()
     lcd.text(OTA_TOP_TXT, OTA_TOP_X, 3, GREEN if online else GRAY, 1)
@@ -3572,7 +3382,7 @@ def draw_status():
 
 def draw_bottom():
     lcd.fill_rect(0, BTN_Y, WIDTH, BTN_H, BG)
-    # Alt menu her zaman gorunur.
+
     lcd.hline(0, BTN_Y, WIDTH, GRAY)
     labels = ("AYARLAR", MODE_NAMES[mode_idx], "GPT")
     q = WIDTH // len(labels)
@@ -3611,15 +3421,14 @@ def digital_update(lt, day_changed):
 
 # ============================================================
 # ---- MODEL 1: ANALOG ----
-# Ortada saniyesiz dijital saat (HH:MM, ornek 08:50).
-# Etrafinda 30 ESIT uzunlukta cizgi. Her cizgi 2 saniye = 1 cizgi.
-# Cizgiler saniye gectikce gri -> beyaz dolar. Yeni dakikada sifirlanir.
+
+
 # ============================================================
 AN_CX = 160
-AN_CY = 102          # cizgi halkasi yukarida
-AN_R = 90            # cizgi halkasinin dis yaricapi (kalin cizgiye gore genis)
-AN_TICKS = 60        # toplam cizgi sayisi (her saniye 1 cizgi)
-AN_TICK_LEN = 16     # her cizginin uzunlugu (biraz daha uzun, hepsi esit)
+AN_CY = 102
+AN_R = 90
+AN_TICKS = 60
+AN_TICK_LEN = 16
 _PI = 3.14159265
 
 _an_last_fill = -1
@@ -3627,8 +3436,7 @@ _an_last_min = -1
 _an_date_prev = ""
 _an_prayer_prev = ""
 
-# Analog ekranda namaz paneli (halkanin solundaki bos alan).
-# Halka sol kenari x=70 civari; panel x 2..68 arasinda kalir.
+
 AN_PR_X = 2
 AN_PR_Y = 22
 AN_PR_W = 66
@@ -3636,7 +3444,7 @@ AN_PR_H = 166
 
 
 def _an_tick_geom(i):
-    # i. cizginin ic ve dis koordinatlari (hepsi esit uzunlukta).
+
     a = i * (2.0 * _PI / AN_TICKS)
     s = math.sin(a)
     c = math.cos(a)
@@ -3650,40 +3458,40 @@ def _an_tick_geom(i):
 
 
 def _an_draw_tick(i, color):
-    # Cizgiyi kalin (2 px) ciz: ana cizgi + radyal yone dik 1 px kaydirma.
-    # Boylece her modda net gorunur.
+
+
     x0, y0, x1, y1 = _an_tick_geom(i)
     lcd.line(x0, y0, x1, y1, color)
     a = i * (2.0 * _PI / AN_TICKS)
-    ox = 1 if math.cos(a) >= 0 else -1     # radyal yone yaklasik dik kaydirma
+    ox = 1 if math.cos(a) >= 0 else -1
     oy = 1 if math.sin(a) >= 0 else -1
     lcd.line(x0 + ox, y0, x1 + ox, y1, color)
     lcd.line(x0, y0 + oy, x1, y1 + oy, color)
 
 
 def analog_tick_ring(filled):
-    # Cizgileri cizer: dolmus (gecmis) saniyeler RING_FULL, dolmamislar
-    # RING_EMPTY. Renkler moda gore net kontrast verir -> ilerleme belli.
+
+
     for i in range(AN_TICKS):
         _an_draw_tick(i, RING_FULL if i < filled else RING_EMPTY)
 
 
 def _an_fill_from_sec(sec):
-    # 60 saniye -> 60 cizgi. Her saniye 1 cizgi dolar.
+
     if sec > AN_TICKS:
         sec = AN_TICKS
     return sec
 
 
 def _analog_prayer_key(lt):
-    # Paneli sadece gerekince yeniden cizmek icin sade durum anahtari.
+
     return (_prayer_display_text(lt) + "|" + str(prayer_mode_idx) + "|" +
             str(prayer_thick_idx) + "|" + str(prayer_gap_idx) + "|" + str(mode_idx))
 
 
 def analog_prayer_panel(lt, force=False):
-    # Namaz vakitleri analog ekranda solda alt alta. Panel dar oldugu icin
-    # yazi boyutu her zaman 1.
+
+
     global _an_prayer_prev
     key = _analog_prayer_key(lt)
     if not force and key == _an_prayer_prev:
@@ -3696,7 +3504,7 @@ def analog_prayer_panel(lt, force=False):
     val = FG
 
     if not prayer_text:
-        # Vakit henuz yoksa namaz acik oldugunu yine de goster.
+
         lcd.text("NAMAZ", AN_PR_X + 4, AN_PR_Y + 12, head, 1)
         if is_online():
             lcd.text("ALINIYOR", AN_PR_X + 2, AN_PR_Y + 28, GRAY, 1)
@@ -3708,8 +3516,8 @@ def analog_prayer_panel(lt, force=False):
         return
 
     if prayer_mode_idx == 1:
-        # En yakin vakit: ad ustte, saat altta.
-        near = _nearest_prayer_text(lt)          # ORN: "OG 13:10"
+
+        near = _nearest_prayer_text(lt)
         parts = near.split(" ")
         name = parts[0] if parts else "--"
         tm = parts[1] if len(parts) > 1 else "--:--"
@@ -3718,7 +3526,7 @@ def analog_prayer_panel(lt, force=False):
         _text_thick(tm, AN_PR_X + 6, AN_PR_Y + 48, val, 1, prayer_thick_idx)
         return
 
-    # HEPSI modu: tum vakitler alt alta.
+
     lcd.text("NAMAZ", AN_PR_X + 4, AN_PR_Y + 2, head, 1)
     y = AN_PR_Y + 18
     line_h = 14 + prayer_gap_idx * 3
@@ -3730,7 +3538,7 @@ def analog_prayer_panel(lt, force=False):
 
 
 def analog_center_time(lt, force=False):
-    # Ortada saniyesiz buyuk dijital saat (HH:MM). Tam ortalanmis.
+
     global _an_last_min
     if not force and lt[4] == _an_last_min:
         return
@@ -3747,22 +3555,22 @@ def analog_center_time(lt, force=False):
 
     col = FG
     size = 4
-    adv = 6 * size          # bir karakterin tam genisligi (bosluk dahil)
-    char_w = 5 * size       # gercek piksel genisligi (son bosluk haric)
+    adv = 6 * size
+    char_w = 5 * size
     th = 7 * size
-    # Yatay: son karakterin bosluğunu saymadan tam ortala.
+
     tw = (len(s) - 1) * adv + char_w
     startx = AN_CX - tw // 2
     starty = AN_CY - th // 2
 
-    # Sadece yazi alanini temizle (cizgilere dokunma).
+
     lcd.fill_rect(startx - 4, starty - 4, tw + 8, th + 8, BG)
     for i, ch in enumerate(s):
         lcd.text(ch, startx + i * adv, starty, col, size)
 
 
 def analog_center_date(lt, force=False):
-    # Cizgi halkasinin altinda gun + tarih.
+
     global _an_date_prev
     wd = GUNLER[lt[6]] if 0 <= lt[6] < 7 else ""
     ds = "%02d.%02d.%d %s" % (lt[2], lt[1], lt[0], wd)
@@ -3787,13 +3595,13 @@ def analog_static():
     lt = time.localtime()
     fill = _an_fill_from_sec(lt[5])
     _an_last_fill = fill
-    # Dolan cizgi kadar beyaz, kalani gri.
+
     analog_tick_ring(fill)
-    # Ortada dijital saat.
+
     analog_center_time(lt, True)
-    # Altta tarih.
+
     analog_center_date(lt, True)
-    # Solda namaz vakitleri.
+
     analog_prayer_panel(lt, True)
 
 
@@ -3802,17 +3610,17 @@ def analog_update(lt, day_changed):
     fill = _an_fill_from_sec(lt[5])
     if fill != _an_last_fill:
         if fill < _an_last_fill:
-            # Yeni dakika: tum cizgileri gri yap (sifirla).
+
             analog_tick_ring(fill)
         else:
-            # Yeni dolan cizgileri dolu rengine boya.
+
             for i in range(_an_last_fill, fill):
                 _an_draw_tick(i, RING_FULL)
         _an_last_fill = fill
 
-    # Saat dakikasi degisince ortadaki yazi guncellenir.
+
     analog_center_time(lt)
-    # Namaz paneli (sadece degisince yeniden cizilir).
+
     analog_prayer_panel(lt)
     if day_changed:
         analog_center_date(lt)
@@ -3870,22 +3678,17 @@ def big_static():
 
 # ============================================================
 # ---- MODEL 3: NABIZ SAATI (dijital HH:MM + EKG dalgasi) ----
-# Ortada buyuk dijital HH:MM. Saat tek haneliyse (12 saat bicimi,
-# 1-9 arasi) yaninda gizli bir "0" varmis gibi davranilmaz; yazi
-# oldugu gercek genislige gore HER SEFERINDE yeniden ortalanir.
-# Iki yaninda 5'er cubuktan olusan birer sutun; her saniye basinda
-# merkezden disariya dogru bir NABIZ DALGASI yayilir (EKG/ekolayzer
-# gibi cubuklar sirayla yukselip iner). Analog degil, tamamen
-# dijital ve hareketli.
+
+
 # ============================================================
 PULSE_SIZE = 5
 PULSE_Y = 90
 _padv = PULSE_SIZE * 6
-_ptw_max = 4 * _padv + 5 * PULSE_SIZE   # en genis olasi yazi ("12:45", 5 karakter)
+_ptw_max = 4 * _padv + 5 * PULSE_SIZE
 
 BAR_W2 = 8
 BAR_STEP = 13
-BAR_BUFFER = 10                          # yazi ile cubuklar arasindaki bosluk
+BAR_BUFFER = 10
 BAR_CY = PULSE_Y + (PULSE_SIZE * 7) // 2
 BAR_BASE_H = 6
 BAR_MAX_H = 34
@@ -3903,8 +3706,8 @@ _pulse_colon_level_prev = -1
 
 
 def _pulse_time_str(lt):
-    # Tek haneli saat (12 saat bicimi) "0" ile doldurulmaz; boylece
-    # metnin gercek genisligi degisir ve ona gore ortalanir.
+
+
     if USE_24H:
         hs = "%02d" % lt[3]
     else:
@@ -3928,7 +3731,7 @@ def pulse_time(lt, force=False):
     _pulse_colon_x = x0 + ci * _padv
     for i, ch in enumerate(s):
         if i == ci:
-            continue    # ":" ayri fonksiyonla (nabiz) cizilir
+            continue
         lcd.text(ch, x0 + i * _padv, PULSE_Y, col, PULSE_SIZE)
     _pulse_prev = s
     _pulse_colon_level_prev = -1
@@ -3946,13 +3749,13 @@ def pulse_colon_level(level):
 
 
 def _bar_height(tier, frac):
-    # tier 0 = merkeze en yakin cubuk (once o yukselir), disariya dogru gecikmeli
+
     delay = tier * 0.15
     lp = frac - delay
     if lp < 0.0 or lp > 0.4:
         return BAR_BASE_H
     x = lp / 0.4
-    shape = 1.0 - abs(1.0 - 2.0 * x)     # ucgen nabiz: 0 -> 1 -> 0
+    shape = 1.0 - abs(1.0 - 2.0 * x)
     return int(BAR_BASE_H + (BAR_MAX_H - BAR_BASE_H) * shape)
 
 
@@ -4011,8 +3814,8 @@ def pulse_update(lt, day_changed):
 
 # ---- MODEL DAGITICI ----
 def _dim(color, num, den):
-    # color'u BG'ye dogru soldurur (num/den orani parlaklik, 0=BG, den=tam renk).
-    # Boylece koyu modda siyaha, acik modda beyaza dogru dogru sonmus olur.
+
+
     r = (color >> 11) & 0x1F
     g = (color >> 5) & 0x3F
     b = color & 0x1F
@@ -4026,7 +3829,7 @@ def _dim(color, num, den):
 
 
 def draw_colon_level(level):
-    # level 0..6 -> iki noktanin parlakligi (nabiz)
+
     global _digital_colon_level_prev
     if level == _digital_colon_level_prev:
         return
@@ -4041,7 +3844,7 @@ def draw_colon_level(level):
 
 
 def draw_seconds_f(frac_total):
-    # frac_total: 0..1 (dakika icindeki oran) -> akici dolan cubuk
+
     global _seconds_fill_prev
     _ty, _dw, _dh, _dt, _dx, _cx, _cw, bx, by, bw, bh, _dy1, _dy2 = _digital_layout()
     fill = int(frac_total * bw)
@@ -4062,7 +3865,7 @@ def draw_seconds_f(frac_total):
 
 
 def big_colon_level(level):
-    # buyuk yazi modelinde iki ":" hucresini nabiz gibi soldur
+
     global _big_colon_level_prev
     if level == _big_colon_level_prev:
         return
@@ -4079,11 +3882,11 @@ def big_colon_level(level):
 
 
 def _pulse_level(frac):
-    # ucgen nabiz: ortada parlak (6), uclarda sonuk
+
     t = frac * 2.0
     if t > 1.0:
         t = 2.0 - t
-    lv = int(2 + t * 4)        # 2..6
+    lv = int(2 + t * 4)
     if lv < 0:
         lv = 0
     if lv > 6:
@@ -4116,9 +3919,9 @@ def face_update(lt, day_changed):
 
 
 def face_anim(lt, frac):
-    # saniye icinde akan animasyon (anim_on iken cagirilir)
+
     if face_idx == 1:
-        # Analogda cizgiler saniye basi guncelleniyor; ara animasyon yok.
+
         return
     elif face_idx == 3:
         pulse_colon_level(_pulse_level(frac))
@@ -4131,7 +3934,7 @@ def face_anim(lt, frac):
 
 
 def wipe_transition():
-    # model degisirken hizli yatay silme efekti
+
     if not anim_on:
         return
     step = 12
@@ -4141,7 +3944,7 @@ def wipe_transition():
 
 
 # ---- HAVA ANIMASYONU: KAR / YAGMUR ----
-# Sadece BUYUK YAZI (face_idx==2) ekraninda calisir.
+
 _weather_particles = []
 _weather_seed = 12345
 _weather_tick = 0
@@ -4157,8 +3960,8 @@ def _wrand(n):
 
 def _weather_kind(i):
     if weather_idx == 1:
-        return 0      # kar
-    return 1          # yagmur
+        return 0
+    return 1
 
 
 def _weather_count():
@@ -4323,8 +4126,8 @@ def _set_zone(x, y):
 
 
 def _set_draw_value(fields, i):
-    # Sadece bir satirin degerini yeniler (+/- basinca ekran komple
-    # yenilenmesin diye).
+
+
     f = fields[i]
     y = 38 + i * 32
     lcd.fill_rect(150, y, 64, 26, BG)
@@ -4571,7 +4374,7 @@ def _settings_draw_direction(preview_flip, clear=True):
     lcd.rect(device_x, device_y, device_w, device_h, FG)
     lcd.rect(device_x + 4, device_y + 4, device_w - 8, device_h - 8, GRAY)
     if preview_flip:
-        # Fotograftaki gibi: port ustte, dirsekli fis sola dogru cikiyor.
+
         lcd.fill_rect(port_x - 5, device_y - 3, 11, 4, TITLE_COL)
         lcd.fill_rect(port_x - 8, device_y - 13, 17, 11, DARKGRAY)
         lcd.rect(port_x - 8, device_y - 13, 17, 11, FG)
@@ -4580,7 +4383,7 @@ def _settings_draw_direction(preview_flip, clear=True):
         lcd.hline(3 * _SET_COL_W + 1, device_y - 11,
                   port_x - 8 - (3 * _SET_COL_W + 1), FG)
     else:
-        # 180 derece cevrilince ayni fiziksel giris alta, kablo saga gelir.
+
         port_y = device_y + device_h - 1
         lcd.fill_rect(port_x - 5, port_y, 11, 4, TITLE_COL)
         lcd.fill_rect(port_x - 8, port_y + 3, 17, 11, DARKGRAY)
@@ -4620,7 +4423,6 @@ def _settings_change(col, y):
     if col == 0:
         if y < 123:
             ans_size_idx = (ans_size_idx + 1) % len(SIZE_PROFILES)
-            apply_ans_size(ans_size_idx)
         else:
             ans_len_idx = (ans_len_idx + 1) % len(LEN_PROFILES)
     elif col == 1:
@@ -4807,10 +4609,8 @@ def _fast_disc(cx, cy, r, color):
 
 
 def _draw_round_rect(x, y, w, h, r, fill_col, border_col=None):
-    # Kose yaricapli dikdortgen. Kenarlik, dolguyla AYNI satir-bazli
-    # hesabi kullanarak tek piksel olarak cizilir; boylece dolgu ile
-    # kenarlik birebir orusur (ayri bir daireyle ic ice cizmenin
-    # kose ucunda birakti kalinlasma/yigilma hatasi olmaz).
+
+
     if r <= 0:
         lcd.fill_rect(x, y, w, h, fill_col)
         if border_col is not None:
@@ -4861,8 +4661,8 @@ def _draw_round_button(x, y, w, h, border_col, fill_col, label, fg, r=8):
 
 
 def _fast_button_base(cx, cy, r, active):
-    # Aktif: on plan renginde (moda gore parlak) dolgu + zemin rengi yazi.
-    # Pasif: her modda okunur olsun diye sabit koyu gri + beyaz yazi.
+
+
     bg = FG if active else DARKGRAY
     fg = BG if active else WHITE
     _fast_disc(cx, cy, r, bg)
@@ -5470,9 +5270,8 @@ def run_extra_settings():
 
 
 # ---- SOR MENUSU: KLAVYE / HAZIR SORULAR ----
-# Hazir sorular basit elips (pill) sekilleri icinde gosterilir. Pil
-# uzerindeki yazi kisa kalsin diye (etiket, gercek soru) ciftleri
-# tutulur: AI'ya etiketten daha detayli, tam bir soru gonderilir.
+
+
 PRESET_Q = [
     ("BUGUN HAVA NASIL",
      lambda: USER_CITY + " icin bugunku hava durumunu TUM detaylariyla ver: "
@@ -5493,18 +5292,17 @@ PRESET_Q = [
      "gun, tarih ve TSI baslama saatiyle birlikte liste halinde ver."),
 ]
 
-_SOR_PILL_Y0 = 44       # sekmelerin (36px) hemen altinda, 8px bosluk
+_SOR_PILL_Y0 = 44
 _SOR_PILL_H = 26
-_SOR_PILL_PAD = 10      # yazi ile pilin kenari arasi ic bosluk
-_SOR_GAP_X = 8          # yan yana pillar arasi bosluk
-_SOR_GAP_Y = 8          # satirlar arasi bosluk
+_SOR_PILL_PAD = 10
+_SOR_GAP_X = 8
+_SOR_GAP_Y = 8
 _SOR_MARGIN_X = 10
 
 
 def _half_ring(cx, cy, r, color, side):
-    # Cemberin sadece disa bakan yarisini cizer (side<0 sol, side>0 sag).
-    # Boylece pilin dis hatti tek parca gibi durur; ortadaki dikdortgenle
-    # birlestigi yerde iki daireden yapildigini ele veren dikis olusmaz.
+
+
     x = r; y = 0; err = 0
     while x >= y:
         for (px, py) in ((x, y), (y, x), (-y, x), (-x, y),
@@ -5520,9 +5318,8 @@ def _half_ring(cx, cy, r, color, side):
 
 
 def _draw_pill(x, y, w, h, fill_col, border_col, txt, txt_col):
-    # Elips/hap sekli: orta dikdortgen + iki ucta dolu yarim daire.
-    # Dis hat (kenar cizgisi) her iki ucta sadece disa bakan yarim
-    # cember olarak cizilir; ic dikis gorunmez.
+
+
     r = h // 2
     lcd.fill_rect(x + r, y, w - 2 * r, h, fill_col)
     _fast_disc(x + r, y + r, r, fill_col)
@@ -5537,10 +5334,8 @@ def _draw_pill(x, y, w, h, fill_col, border_col, txt, txt_col):
 
 
 def _sor_pill_layout():
-    # Her soru kendi ETIKET genisligi kadar pil olur (AI'ya gidecek
-    # tam soru daha uzun olabilir, pil boyutunu etkilemez). Yan yana
-    # sigdikca yan yana dizilir; sigmayan (ya da satirda ilk soru
-    # olan) tek basina yeni satira gecer. Sola yasli, simetri aranmaz.
+
+
     pills = []
     x = _SOR_MARGIN_X
     y = _SOR_PILL_Y0
@@ -5555,19 +5350,14 @@ def _sor_pill_layout():
     return pills
 
 
-# Ust cubukta sadece kucultulmus GPT/HAZIR SORU sekmeleri var.
-# GERI butonu her ekranda kendi yerinde: HAZIR SORU'da eskisi gibi
-# alttaki seritte; KLAVYE'de M/L harflerinin yanindaki bosluga,
-# TAMAM'in tam ustune gelecek sekilde klavyenin icine gomulu.
 _SOR_TABS_Y0 = 6
 _SOR_TABS_H = 24
-_SOR_CONTENT_Y0 = _SOR_TABS_Y0 + _SOR_TABS_H + 6   # icerigin basladigi satir
+_SOR_CONTENT_Y0 = _SOR_TABS_Y0 + _SOR_TABS_H + 6
 
 
 def _sor_tabs_draw(active):
-    # Sekmeler yer degistirdi: solda HAZIR SORU, sagda GPT.
-    # (Ic mantikta 0=GPT klavyesi 1=HAZIR SORU sabit kaldi, sadece fiziksel
-    # yerlesim ters cevrildi.)
+
+
     labels = ["GPT", "HAZIR SORU"]
     bw = WIDTH // 2 - 6
     for slot in range(2):
@@ -5583,8 +5373,8 @@ def _sor_tabs_draw(active):
 
 
 def _sor_hit_tab(x, y):
-    # Sekme alanina dokunuldu mu? 0=KLAVYE 1=HAZIR SORU, degilse None.
-    # Sol=HAZIR SORU(1), sag=KLAVYE(0) (fiziksel yerlesim ters).
+
+
     if y < _SOR_TABS_Y0 or y > _SOR_TABS_Y0 + _SOR_TABS_H:
         return None
     return 1 if x < WIDTH // 2 else 0
@@ -5608,8 +5398,7 @@ def _sor_hazir_draw():
 _SOR_IN_X = 4
 _SOR_IN_Y = _SOR_CONTENT_Y0 + 2
 
-# GERI tusu, 'm' harfinin saginda kalan bos alana, TAMAM'in tam
-# ustune gelecek sekilde ek bir klavye tusu olarak yerlestirilir.
+
 _SOR_KB_GERI_X = 272
 _SOR_KB_GERI_Y = KB_TOP + 3 * (KEY_H + 2)
 _SOR_KB_GERI_W = WIDTH - _SOR_KB_GERI_X
@@ -5639,8 +5428,8 @@ def _sor_in_draw_all(text):
 
 
 def _sor_kb_build(mode):
-    # Normal klavye tuslarina ek olarak, 'm'nin yanindaki bos alana
-    # gomulu bir GERI tusu ekler (TAMAM'in tam ustunde kalir).
+
+
     keys = _kb_build(mode)
     keys.append({"label": "GERI", "x": _SOR_KB_GERI_X, "y": _SOR_KB_GERI_Y,
                  "w": _SOR_KB_GERI_W, "h": KEY_H, "kind": "geri"})
@@ -5648,8 +5437,8 @@ def _sor_kb_build(mode):
 
 
 def _run_sor_keyboard():
-    # Donus: yazilan soru metni, None (GERI ile SOR'dan tamamen cikildi,
-    # ana ekrana donulur) ya da "__switch__" (HAZIR SORU'ya gecis istendi).
+
+
     text = ""
     mode = "low"
     keys = _sor_kb_build(mode)
@@ -5720,13 +5509,13 @@ def _run_sor_keyboard():
 
 
 def run_sor():
-    # view: 0=KLAVYE 1=HAZIR SORU (varsayilan acilis)
+
     view = 1
     while True:
         if view == 0:
             q = _run_sor_keyboard()
             if q is None:
-                return          # GERI (klavyede) -> ana ekrana don
+                return
             if q == "__switch__":
                 view = 1
                 continue
@@ -5736,7 +5525,7 @@ def run_sor():
                 if act == "back":
                     view = 1
                     continue
-            continue        # "new" ya da bos soru -> klavye sekmesinde kal
+            continue
 
         _sor_hazir_draw()
         _wait_touch_release()
@@ -5752,7 +5541,7 @@ def run_sor():
                 continue
             last = now
             x, y = p
-            if y >= _SOR_HAZIR_GERI_Y:          # GERI (alttaki serit)
+            if y >= _SOR_HAZIR_GERI_Y:
                 _wait_touch_release()
                 return
             tab = _sor_hit_tab(x, y)
@@ -5814,7 +5603,7 @@ def boot_anim():
     subtitle = "PICO 2 W"
     lcd.text(subtitle, (WIDTH - len(subtitle) * 6) // 2, 194, GRAY, 1)
 
-    # Kadran soldan saga tamamlanirken alttaki ince cizgi de ilerler.
+
     bar_x = 70
     bar_y = 220
     bar_w = WIDTH - 140
@@ -5931,7 +5720,7 @@ def main():
             held = time.ticks_diff(now, press_t0) > LONG_PRESS_MS
 
             if not long_done and press_start[1] < BTN_Y - 4 and stable and held:
-                # Basili tutunca (her modelde, kar/yagmur dahil) saat degisir.
+
                 face_idx = (face_idx + 1) % FACE_COUNT
                 save_cfg()
                 wipe_transition()
@@ -5950,8 +5739,8 @@ def main():
                     wipe_transition()
                     draw_static()
                 elif abs(dx) < 22 and abs(dy) < 22 and sy < 28:
-                    # Sag kosede OTA her zaman dokunulabilir. Cevrimdisiyken
-                    # MANUEL onun solunda, WiFi ayari ise soldaki durumdadir.
+
+
                     if sx >= OTA_TOP_HIT_X0:
                         run_ota_update()
                         draw_static()
@@ -5963,9 +5752,8 @@ def main():
                             run_wifi_setup()
                             draw_static()
                 elif abs(dx) < 22 and abs(dy) < 22 and sy < BTN_Y - 4 and face_idx == 2:
-                    # Kar/yagmur (buyuk yazi) modelinde kisa dokunma hava
-                    # tipini degistirir. Saatler arasi gecis sadece basili
-                    # tutarak (uzun basma) yapilir.
+
+
                     weather_idx = 1 if weather_idx == 2 else 2
                     weather_init()
                     save_cfg()
@@ -6041,8 +5829,8 @@ def main():
             was_online = online
             if (DIM_AT_MIN >= 0 and not _dimmed_today
                     and lt[3] * 60 + lt[4] >= DIM_AT_MIN):
-                # Gun batimindan DIM_AFTER_SUNSET_MIN dakika sonra isigi
-                # otomatik olarak en dusuk ayara getir (tek seferlik).
+
+
                 _dimmed_today = True
                 if bright_value != BRIGHT_LEVELS[-1]:
                     bright_idx = len(BRIGHT_LEVELS) - 1
@@ -6052,8 +5840,8 @@ def main():
                     save_cfg()
             if (BRIGHTEN_AT_MIN >= 0 and not _brightened_today
                     and lt[3] * 60 + lt[4] >= BRIGHTEN_AT_MIN):
-                # Gun dogumundan BRIGHTEN_BEFORE_SUNRISE_MIN dakika once isigi
-                # otomatik olarak en yuksek ayara getir (tek seferlik).
+
+
                 _brightened_today = True
                 if bright_value != BRIGHT_LEVELS[0]:
                     bright_idx = 0
