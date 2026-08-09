@@ -1,9 +1,41 @@
 {
-  "version": "0.0.0",
-  "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-  "sha256": "db4bd98418d70fa1e1fb33e6d52d0d1c7057d94d2f96a6475ba200bab31ac895",
+  "version": "1.0.32",
+  "release_id": "20260803-204500-settings-hold-tests",
+  "files": [
+    {
+      "path": "main.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
+      "sha256": "6d4e4f39b30404000a162cabb0dab033dbd42221e2c0f7dbeb1fa256d4f0b55e"
+    },
+    {
+      "path": "clock_app.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.py",
+      "sha256": "8a7a9e8c8e034d2ed698d66cdc7d7f4b646d82e3208955facfa55b620e917f5f"
+    },
+    {
+      "path": "gpt_stream.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/gpt_stream.py",
+      "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
+    },
+    {
+      "path": "sor_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/sor_feature.py",
+      "sha256": "8a32072d90fbf57441b258d9a1f3ecc6c3d8e8008d92f8b1cfb1f9df4b88a729"
+    },
+    {
+      "path": "ota_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_feature.py",
+      "sha256": "427d0a715b2d6e3b18232aca0ba1c93144b54cbc3c6128decbc4ac5fb6993448"
+    },
+    {
+      "path": "ota_release.txt",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
+      "sha256": "f0d4a4c8d36c7ca368cc2df3b98f0adb75d7fd8012d9329dad7d8f67f0c614b1"
+    }
+  ],
   "notes": [
-    "OTA gecici olarak kapatildi",
-    "Yazilim yalnizca USB portundan yuklenecek"
+    "Genel Test EKRAN YONU basligina uzun basmaya tasindi",
+    "Ag Testi SOR basligina uzun basmaya tasindi",
+    "Test dugmeleri ekran yonu sutunundan kaldirildi"
   ]
 }
