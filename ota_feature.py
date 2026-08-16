@@ -133,6 +133,19 @@ _OTA_ANIM_FRAME = 0
 _OTA_ANIM_LAST = 0
 
 
+def _ota_ring_segment(index, color):
+    cx = WIDTH // 2
+    cy = 108
+    radius = 55
+    angle = index * 2.0 * _PI / 36.0
+    inner = radius - (9 if index % 3 == 0 else 5)
+    x0 = cx + int(inner * math.sin(angle))
+    y0 = cy - int(inner * math.cos(angle))
+    x1 = cx + int(radius * math.sin(angle))
+    y1 = cy - int(radius * math.cos(angle))
+    lcd.line(x0, y0, x1, y1, color)
+
+
 def _ota_anim_tick(force=False):
     global _OTA_ANIM_FRAME, _OTA_ANIM_LAST
     now = time.ticks_ms()
@@ -140,21 +153,20 @@ def _ota_anim_tick(force=False):
             time.ticks_diff(now, _OTA_ANIM_LAST) < 70):
         return
     _OTA_ANIM_LAST = now
-    lcd.fill_rect(50, 94, 220, 54, BG)
-    for i in range(9):
-        distance = (i - _OTA_ANIM_FRAME) % 9
-        if distance == 0:
-            height = 36
-            color = CYAN
-        elif distance in (1, 8):
-            height = 24
-            color = TITLE_COL
-        else:
-            height = 12
-            color = DARKGRAY
-        x = 62 + i * 22
-        lcd.fill_rect(x, 121 - height // 2, 10, height, color)
-    _OTA_ANIM_FRAME = (_OTA_ANIM_FRAME + 1) % 9
+    _ota_ring_segment((_OTA_ANIM_FRAME - 5) % 36, DARKGRAY)
+    colors = (CYAN, TITLE_COL, TITLE_COL, FG, DARKGRAY)
+    for distance in range(4, -1, -1):
+        _ota_ring_segment((_OTA_ANIM_FRAME - distance) % 36,
+                          colors[distance])
+    bar_x = 70
+    inner_w = WIDTH - 144
+    segment_w = 28
+    travel = inner_w - segment_w
+    phase = (_OTA_ANIM_FRAME * 7) % max(1, travel * 2)
+    pos = phase if phase <= travel else travel * 2 - phase
+    lcd.fill_rect(bar_x + 2, 222, inner_w, 2, DARKGRAY)
+    lcd.fill_rect(bar_x + 2 + pos, 222, segment_w, 2, TITLE_COL)
+    _OTA_ANIM_FRAME = (_OTA_ANIM_FRAME + 1) % 36
 
 
 def _ota_anim_start():
@@ -162,6 +174,9 @@ def _ota_anim_start():
     _OTA_ANIM_FRAME = 0
     _OTA_ANIM_LAST = 0
     lcd.fill(BG)
+    for index in range(36):
+        _ota_ring_segment(index, DARKGRAY)
+    lcd.rect(70, 220, WIDTH - 140, 6, DARKGRAY)
     _ota_anim_tick(True)
 
 

@@ -16,10 +16,11 @@ WIFI_PASS = ""
 TZ_OFFSET = 3
 USE_24H = True
 NTP_EVERY_MS = 3600000
-WIFI_RETRY_MS = 60000
+WIFI_RETRY_MS = 10000
 WIFI_BOOT_RETRY_MS = 6000
 WIFI_BOOT_RETRY_COUNT = 3
 WIFI_BOOT_CONNECT_TIMEOUT_MS = 6000
+WIFI_WEAK_DBM = -75
 GC_EVERY_MS = 300000
 
 
@@ -813,21 +814,15 @@ def render_answer_line(text, screen_y):
     lcd.cs.value(1)
 
 
-def draw_answer_frame(scrollable):
+def draw_answer_frame(scrollable=True):
     lcd.fill(BG)
     lcd.text("GPT:", 4, 4, GREEN, 2)
-    if scrollable:
-        buttons = (
-            (0, 68, BLUE, "GERI", WHITE),
-            (70, 70, GREEN, "YENI", BLACK),
-            (142, 88, DARKGRAY, "YUKARI", WHITE),
-            (232, 88, DARKGRAY, "ASAGI", WHITE),
-        )
-    else:
-        buttons = (
-            (0, 159, BLUE, "GERI", WHITE),
-            (161, 159, GREEN, "YENI", BLACK),
-        )
+    buttons = (
+        (0, 68, BLUE, "GERI", WHITE),
+        (70, 70, GREEN, "YENI", BLACK),
+        (142, 88, DARKGRAY, "YUKARI", WHITE),
+        (232, 88, DARKGRAY, "ASAGI", WHITE),
+    )
     for x, w, color, label, fg in buttons:
         lcd.fill_rect(x, 210, w, 30, color)
         lcd.rect(x, 210, w, 30, GRAY)
@@ -865,8 +860,7 @@ def show_answer(lines):
     drag_px = 0
     offset = 0
     target_offset = 0
-    scrollable = max_off > 0
-    draw_answer_frame(scrollable)
+    draw_answer_frame()
     draw_answer_text(lines, offset)
     page_step = ANS_VISIBLE - 2
     if page_step < 1:
@@ -886,9 +880,6 @@ def show_answer(lines):
         x, y = res
         if last_y is None:
             if y >= 210:
-                if not scrollable:
-                    time.sleep_ms(120)
-                    return "back" if x < 160 else "new"
                 if x < 70:
                     time.sleep_ms(120)
                     return "back"
@@ -1136,6 +1127,18 @@ def is_online():
         return w.isconnected()
     except Exception:
         return False
+
+
+def wifi_signal_dbm():
+    if network is None:
+        return None
+    try:
+        w = network.WLAN(network.STA_IF)
+        if not w.isconnected():
+            return None
+        return int(w.status("rssi"))
+    except Exception:
+        return None
 
 
 geo_ok = False
@@ -1840,7 +1843,7 @@ def wifi_reconnect_start(ssid, pw):
 
 
 def wifi_boot_connect():
-    """Acilis animasyonu surerken en fazla iki WiFi denemesi yapar."""
+    """Acilis animasyonu surerken en fazla uc WiFi denemesi yapar."""
     if not WIFI_SSID or network is None:
         return 0
     attempts = 0
@@ -2103,12 +2106,15 @@ def draw_status():
     online = is_online()
     lcd.text(OTA_TOP_TXT, OTA_TOP_X, 3, GREEN if online else GRAY, 1)
     if online:
+        rssi = wifi_signal_dbm()
+        if rssi is not None and rssi < WIFI_WEAK_DBM:
+            lcd.text("BAGLANTI COK ZAYIF", 4, 3, AMBER, 1)
         return
     lt = time.localtime()
-    if ntp_ok:
+    if WIFI_SSID:
+        lcd.text("BAGLANMAYA CALISILIYOR", 4, 3, AMBER, 1)
+    elif ntp_ok:
         lcd.text("NTP", 4, 3, GREEN, 1)
-    elif WIFI_SSID:
-        lcd.text("WIFI?", 4, 3, AMBER, 1)
     else:
         lcd.text("AYAR'DAN KUR", 4, 3, GRAY, 1)
 
@@ -4458,6 +4464,7 @@ def main():
             if WIFI_SSID and not online and (boot_retry or normal_retry):
                 last_wifi_retry = now
                 wifi_reconnect_start(WIFI_SSID, WIFI_PASS)
+                draw_status()
                 if wifi_boot_attempts < WIFI_BOOT_RETRY_COUNT:
                     wifi_boot_attempts += 1
             if ntp_ok and time.ticks_diff(now, last_ntp) > NTP_EVERY_MS:
