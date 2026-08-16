@@ -2948,18 +2948,33 @@ def _forecast_value(daily, key, index):
     return values[index] if index < len(values) else None
 
 
+def _forecast_text(value):
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            return bytes(value).decode("utf-8")
+        except Exception:
+            try:
+                return bytes(value).decode()
+            except Exception:
+                return ""
+    try:
+        return str(value)
+    except Exception:
+        return ""
+
+
 def _forecast_date_label(value):
     try:
-        parts = str(value)[:10].split("-")
+        parts = _forecast_text(value)[:10].split("-")
         day = int(parts[2])
         month = int(parts[1])
         return "%d %s" % (day, AYLAR[(month - 1) % 12])
     except Exception:
-        return str(value)[:10]
+        return _forecast_text(value)[:10]
 
 
 def _forecast_hm(value):
-    text = str(value)
+    text = _forecast_text(value)
     return text[11:16] if len(text) >= 16 else "--:--"
 
 
@@ -2975,11 +2990,13 @@ def weather_forecast_fetch():
             "precipitation_probability_max,wind_speed_10m_max,"
             "wind_gusts_10m_max,sunrise,sunset"
             "&timezone=auto&forecast_days=16") % (
-                str(USER_LAT), str(USER_LON))
+                _forecast_text(USER_LAT), _forecast_text(USER_LON))
     try:
         status, raw = https_get("api.open-meteo.com", path, 18)
         if status != 200 or not raw:
             return None, "HAVA SUNUCU KODU " + str(status)
+        if isinstance(raw, (bytes, bytearray)):
+            raw = _decode_buffer(raw)
         daily = json.loads(raw).get("daily") or {}
         keys = ("time", "temperature_2m_max", "temperature_2m_min",
                 "precipitation_probability_max", "wind_speed_10m_max",
