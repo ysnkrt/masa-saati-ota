@@ -1,1 +1,1 @@
-20260816-weather-chunked-fix
+20260816-weather-layout-current-mini

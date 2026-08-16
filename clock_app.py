@@ -1400,6 +1400,12 @@ _watchdog = None
 _watchdog_timer = None
 _watchdog_heartbeat = 0
 _ota_boot_confirmed = False
+WEATHER_REFRESH_MS = 30 * 60 * 1000
+WEATHER_RETRY_MS = 5 * 60 * 1000
+_weather_cache_days = []
+_weather_cache_ms = 0
+_weather_last_attempt = 0
+_weather_cache_version = 0
 
 
 def _watchdog_touch():
@@ -2324,7 +2330,40 @@ def _an_fill_from_sec(sec):
 def _analog_prayer_key(lt):
 
     return (_prayer_display_text(lt) + "|" + str(prayer_mode_idx) + "|" +
-            str(prayer_thick_idx) + "|" + str(prayer_gap_idx) + "|" + str(mode_idx))
+            str(prayer_thick_idx) + "|" + str(prayer_gap_idx) + "|" +
+            str(mode_idx) + "|" + str(_weather_cache_version))
+
+
+def analog_weather_mini():
+    y0 = AN_PR_Y + 88
+    h = 19
+    lcd.fill_rect(AN_PR_X, y0, AN_PR_W, AN_PR_H - 88, BG)
+    if not _weather_cache_days:
+        lcd.rect(AN_PR_X, y0, AN_PR_W, h, GRAY)
+        lcd.text("HAVA --", AN_PR_X + 12, y0 + 6, GRAY, 1)
+        return
+    day = _weather_cache_days[0]
+    current = _forecast_number(day.get("current"), "C")
+    hi = _forecast_number(day.get("high"))
+    low = _forecast_number(day.get("low"))
+    rows = (
+        ("ISI", current + " " + hi + "/" + low),
+        ("YAG", "%" + _forecast_number(day.get("rain"))),
+        ("R/G", _forecast_number(day.get("wind")) + "/" +
+         _forecast_number(day.get("gust"))),
+        ("D/B", day.get("sunrise", "--:--") + "/" +
+         day.get("sunset", "--:--")),
+    )
+    for index, (title, value) in enumerate(rows):
+        y = y0 + index * h
+        lcd.fill_rect(AN_PR_X, y, AN_PR_W, h, DARKGRAY)
+        lcd.rect(AN_PR_X, y, AN_PR_W, h, GRAY)
+        lcd.text(title, AN_PR_X + 2, y + 2, TITLE_COL, 1)
+        if len(value) * 6 <= AN_PR_W - 4:
+            lcd.text(value, AN_PR_X + AN_PR_W - len(value) * 6 - 2,
+                     y + 10, FG, 1)
+        else:
+            lcd.text(value[:11], AN_PR_X, y + 10, FG, 1)
 
 
 def analog_prayer_panel(lt, force=False):
@@ -2337,6 +2376,7 @@ def analog_prayer_panel(lt, force=False):
     _an_prayer_prev = key
     lcd.fill_rect(AN_PR_X, AN_PR_Y, AN_PR_W, AN_PR_H, BG)
     if prayer_mode_idx == 0:
+        analog_weather_mini()
         return
     head = FG
     val = FG
@@ -2351,6 +2391,7 @@ def analog_prayer_panel(lt, force=False):
         else:
             lcd.text("WIFI", AN_PR_X + 8, AN_PR_Y + 28, GRAY, 1)
             lcd.text("YOK", AN_PR_X + 10, AN_PR_Y + 42, GRAY, 1)
+        analog_weather_mini()
         return
 
     if prayer_mode_idx == 1:
@@ -2366,6 +2407,7 @@ def analog_prayer_panel(lt, force=False):
         time_x = AN_PR_X + (AN_PR_W - _scaled_text_width(tm, time_style)) // 2
         _draw_scaled_text(name, name_x, AN_PR_Y + 30, val, name_style)
         _draw_scaled_text(tm, time_x, AN_PR_Y + 50, val, time_style)
+        analog_weather_mini()
         return
 
 
@@ -2373,11 +2415,11 @@ def analog_prayer_panel(lt, force=False):
     y = AN_PR_Y + 18
     for name, tm in prayer_times:
         text = name + " " + tm
-        style = _prayer_text_style(text, AN_PR_W - 6)
-        if y + style[1] > AN_PR_Y + AN_PR_H:
+        if y + 8 > AN_PR_Y + 84:
             break
-        _draw_scaled_text(text, AN_PR_X + 3, y, val, style)
-        y += style[1] + 7 + prayer_gap_idx * 3
+        lcd.text(text, AN_PR_X + 3, y, val, 1)
+        y += 13
+    analog_weather_mini()
 
 
 def analog_center_time(lt, force=False):
@@ -2980,6 +3022,9 @@ def _forecast_hm(value):
 
 
 def weather_forecast_fetch():
+    global _weather_cache_days, _weather_cache_ms
+    global _weather_last_attempt, _weather_cache_version
+    _weather_last_attempt = time.ticks_ms()
     if not is_online():
         return None, "HAVA ICIN WIFI GEREKLI"
     if USER_LAT is None or USER_LON is None:
@@ -2987,6 +3032,7 @@ def weather_forecast_fetch():
     if USER_LAT is None or USER_LON is None:
         return None, "KONUM BULUNAMADI"
     path = ("/v1/forecast?latitude=%s&longitude=%s"
+            "&current=temperature_2m"
             "&daily=temperature_2m_max,temperature_2m_min,"
             "precipitation_probability_max,wind_speed_10m_max,"
             "wind_gusts_10m_max,sunrise,sunset"
@@ -2998,7 +3044,9 @@ def weather_forecast_fetch():
             return None, "HAVA SUNUCU KODU " + str(status)
         if isinstance(raw, (bytes, bytearray)):
             raw = _decode_buffer(raw)
-        daily = json.loads(raw).get("daily") or {}
+        payload = json.loads(raw)
+        daily = payload.get("daily") or {}
+        current = (payload.get("current") or {}).get("temperature_2m")
         keys = ("time", "temperature_2m_max", "temperature_2m_min",
                 "precipitation_probability_max", "wind_speed_10m_max",
                 "wind_gusts_10m_max", "sunrise", "sunset")
@@ -3009,6 +3057,7 @@ def weather_forecast_fetch():
             days.append({
                 "date": _forecast_date_label(
                     _forecast_value(daily, "time", index)),
+                "current": current if index == 0 else None,
                 "low": _forecast_value(
                     daily, "temperature_2m_min", index),
                 "high": _forecast_value(
@@ -3026,6 +3075,9 @@ def weather_forecast_fetch():
             })
         if not days:
             return None, "HAVA VERISI YOK"
+        _weather_cache_days = days
+        _weather_cache_ms = time.ticks_ms()
+        _weather_cache_version += 1
         return days, None
     except Exception as exc:
         return None, "HAVA: " + str(exc)
@@ -3044,10 +3096,11 @@ def _forecast_tile(x, y, w, h, title, first, second=""):
     lcd.fill_rect(x, y, w, h, DARKGRAY)
     lcd.rect(x, y, w, h, GRAY)
     lcd.text(title, x + (w - len(title) * 6) // 2, y + 8, TITLE_COL, 1)
-    lcd.text(first, x + (w - len(first) * 12) // 2, y + 31, FG, 2)
     if second:
-        lcd.text(second, x + (w - len(second) * 6) // 2,
-                 y + h - 17, FG_DIM, 1)
+        lcd.text(first, x + (w - len(first) * 12) // 2, y + 28, FG, 2)
+        lcd.text(second, x + (w - len(second) * 12) // 2, y + 57, FG, 2)
+    else:
+        lcd.text(first, x + (w - len(first) * 12) // 2, y + 43, FG, 2)
 
 
 def _forecast_draw(days, index):
@@ -3055,7 +3108,10 @@ def _forecast_draw(days, index):
     lcd.fill(BG)
     date = day["date"]
     lcd.text(date, (WIDTH - len(date) * 12) // 2, 5, TITLE_COL, 2)
-    _forecast_tile(0, 28, 159, 87, "SICAKLIK",
+    temp_title = "SICAKLIK"
+    if day.get("current") is not None:
+        temp_title += " SIMDI " + _forecast_number(day["current"], " C")
+    _forecast_tile(0, 28, 159, 87, temp_title,
                    "MAX " + _forecast_number(day["high"], " C"),
                    "MIN " + _forecast_number(day["low"], " C"))
     _forecast_tile(161, 28, 159, 87, "YAGMUR OLASILIGI",
@@ -4590,6 +4646,8 @@ def main():
             prayer_sync()
         boot_wait_tick()
         sunset_sync()
+        boot_wait_tick()
+        weather_forecast_fetch()
         boot_network_synced = True
 
     draw_static()
@@ -4718,8 +4776,10 @@ def main():
                         prayer_sync()
                 elif network_sync_stage == 3:
                     sunset_sync()
+                elif network_sync_stage == 4:
+                    weather_forecast_fetch()
                 network_sync_stage += 1
-                if network_sync_stage > 3:
+                if network_sync_stage > 4:
                     network_sync_stage = -1
                 draw_status()
             boot_retry = (wifi_boot_attempts < WIFI_BOOT_RETRY_COUNT and
@@ -4747,6 +4807,16 @@ def main():
             if (online and network_sync_stage < 0 and not ran_network_stage
                     and _sunset_day_key != _prayer_key(lt)):
                 sunset_sync()
+            weather_age = time.ticks_diff(now, _weather_cache_ms)
+            weather_retry_age = time.ticks_diff(now, _weather_last_attempt)
+            if (online and network_sync_stage < 0 and not ran_network_stage and
+                    ((not _weather_cache_days and
+                      weather_retry_age >= WEATHER_RETRY_MS) or
+                     (_weather_cache_days and
+                      weather_age >= WEATHER_REFRESH_MS))):
+                weather_forecast_fetch()
+                if face_idx == 1:
+                    analog_prayer_panel(lt, True)
             was_online = online
             if (DIM_AT_MIN >= 0 and not _dimmed_today
                     and lt[3] * 60 + lt[4] >= DIM_AT_MIN):
