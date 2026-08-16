@@ -1,42 +1,43 @@
 {
   "version": "1.0.32",
-  "release_id": "20260816-weather-bytearray-fix",
+  "release_id": "20260816-weather-chunked-fix",
   "files": [
     {
       "path": "main.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e9968caf4c477c0be992d70d9b3ce9d58001959c/main.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/585a4dee4c24a07607a7101401e8dfeff1bc49f5/main.py",
       "sha256": "79060c1506d9b020b8d7e25c312bb4c223c5577b95e31dbd0d378b7306305a86"
     },
     {
       "path": "clock_app.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e9968caf4c477c0be992d70d9b3ce9d58001959c/clock_app.py",
-      "sha256": "6af216e1daaa7b2d8fa10b197b072c02c3b0917a6172f855f41fb2dab62afc83"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/585a4dee4c24a07607a7101401e8dfeff1bc49f5/clock_app.py",
+      "sha256": "bb0d733aad97e9cccb9cae5956c032a6d3237f9be27c51ef307ebe7e55622bd6"
     },
     {
       "path": "gpt_stream.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e9968caf4c477c0be992d70d9b3ce9d58001959c/gpt_stream.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/585a4dee4c24a07607a7101401e8dfeff1bc49f5/gpt_stream.py",
       "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
     },
     {
       "path": "sor_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e9968caf4c477c0be992d70d9b3ce9d58001959c/sor_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/585a4dee4c24a07607a7101401e8dfeff1bc49f5/sor_feature.py",
       "sha256": "eb252198f44dfd70310cc38467e74b1bf390f27cf8d6dd344b394864428b5319"
     },
     {
       "path": "ota_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e9968caf4c477c0be992d70d9b3ce9d58001959c/ota_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/585a4dee4c24a07607a7101401e8dfeff1bc49f5/ota_feature.py",
       "sha256": "2e7acaf34b611d7363a6d5baff7a2a9c5668305bbcb67ce15be8f39d25619796"
     },
     {
       "path": "ota_release.txt",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e9968caf4c477c0be992d70d9b3ce9d58001959c/ota_release.txt",
-      "sha256": "05f81f440877ccbf31640babcd7c5ea8b446c569f3c7c8181a38ff3855c127f5"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/585a4dee4c24a07607a7101401e8dfeff1bc49f5/ota_release.txt",
+      "sha256": "a462ece5b1309f07df5e62d8e53a1c736a62e8f7c3439a7f58b4f36dd5321ae9"
     }
   ],
   "notes": [
     "Donma korumasi ve basarisiz OTA icin otomatik geri donus eklendi",
     "Alt menuye HAVA tusu ve dort kutulu gunluk tahmin ekrani eklendi",
     "Tahminler gercek tarihlerle 16 gune kadar gezilebilir",
-    "Hava verisindeki bytearray donusum hatasi giderildi"
+    "Hava verisindeki bytearray donusum hatasi giderildi",
+    "Parcali HTTP yanitlarinin boyut satiri guvenli bicimde cozuluyor"
   ]
 }
