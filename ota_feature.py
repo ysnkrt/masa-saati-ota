@@ -129,7 +129,50 @@ def _confirm(manifest):
             return x >= WIDTH // 2
 
 
-def _download(url, temp_path, expected_sha):
+_OTA_ANIM_FRAME = 0
+_OTA_ANIM_LAST = 0
+
+
+def _ota_anim_tick(force=False):
+    global _OTA_ANIM_FRAME, _OTA_ANIM_LAST
+    now = time.ticks_ms()
+    if (not force and
+            time.ticks_diff(now, _OTA_ANIM_LAST) < 70):
+        return
+    _OTA_ANIM_LAST = now
+    lcd.fill_rect(50, 94, 220, 54, BG)
+    for i in range(9):
+        distance = (i - _OTA_ANIM_FRAME) % 9
+        if distance == 0:
+            height = 36
+            color = CYAN
+        elif distance in (1, 8):
+            height = 24
+            color = TITLE_COL
+        else:
+            height = 12
+            color = DARKGRAY
+        x = 62 + i * 22
+        lcd.fill_rect(x, 121 - height // 2, 10, height, color)
+    _OTA_ANIM_FRAME = (_OTA_ANIM_FRAME + 1) % 9
+
+
+def _ota_anim_start():
+    global _OTA_ANIM_FRAME, _OTA_ANIM_LAST
+    _OTA_ANIM_FRAME = 0
+    _OTA_ANIM_LAST = 0
+    lcd.fill(BG)
+    _ota_anim_tick(True)
+
+
+def _ota_anim_success():
+    lcd.fill(BG)
+    for offset in range(4):
+        lcd.line(112, 121 + offset, 145, 151 + offset, GREEN)
+        lcd.line(145, 151 + offset, 211, 84 + offset, GREEN)
+
+
+def _download(url, temp_path, expected_sha, progress=None):
     if hashlib is None or socket is None or ssl is None:
         return False, "AG VEYA SHA MODULU YOK"
     host, path = _parse_url(url)
@@ -139,6 +182,8 @@ def _download(url, temp_path, expected_sha):
     secure = None
     out = None
     try:
+        if progress is not None:
+            progress()
         try:
             os.remove(temp_path)
         except Exception:
@@ -150,6 +195,8 @@ def _download(url, temp_path, expected_sha):
         except Exception:
             pass
         raw.connect(addr)
+        if progress is not None:
+            progress()
         try:
             secure = ssl.wrap_socket(raw, server_hostname=host)
         except TypeError:
@@ -159,6 +206,8 @@ def _download(url, temp_path, expected_sha):
                    "\r\nAccept: application/octet-stream\r\n"
                    "Connection: close\r\n\r\n")
         secure.write(request.encode("utf-8"))
+        if progress is not None:
+            progress()
         status_line = secure.readline()
         try:
             status = int(status_line.split(b" ")[1])
@@ -168,6 +217,8 @@ def _download(url, temp_path, expected_sha):
         expected_size = 0
         while True:
             line = secure.readline()
+            if progress is not None:
+                progress()
             if not line or line in (b"\r\n", b"\n"):
                 break
             low = line.lower()
@@ -202,6 +253,8 @@ def _download(url, temp_path, expected_sha):
                     hasher.update(block)
                     done += len(block)
                     remaining -= len(block)
+                    if progress is not None:
+                        progress()
                     if done > OTA_MAX_BYTES:
                         raise OSError("dosya cok buyuk")
                 secure.read(2)
@@ -213,6 +266,8 @@ def _download(url, temp_path, expected_sha):
                 out.write(block)
                 hasher.update(block)
                 done += len(block)
+                if progress is not None:
+                    progress()
                 if done > OTA_MAX_BYTES:
                     raise OSError("dosya cok buyuk")
         out.close()
@@ -344,10 +399,11 @@ def run_ota_update():
     if not _confirm(manifest):
         return
     files = manifest["files"]
+    _ota_anim_start()
     for item in files:
-        show_status_screen("GUNCELLEME INDIRILIYOR", TITLE_COL)
         temp = ".ota_" + item["path"]
-        ok, err = _download(item["url"], temp, item["sha256"])
+        ok, err = _download(item["url"], temp, item["sha256"],
+                            _ota_anim_tick)
         if not ok:
             show_status_screen(to_screen_text(err)[:48], RED)
             time.sleep_ms(2200)
@@ -358,14 +414,14 @@ def run_ota_update():
                 show_status_screen(to_screen_text(err)[:48], RED)
                 time.sleep_ms(2200)
                 return
-    show_status_screen("DOGRULANDI, KURULUYOR", GREEN)
+    _ota_anim_tick(True)
     ok, err = _install(files)
     if not ok:
         show_status_screen(to_screen_text(err)[:48], RED)
         time.sleep_ms(2200)
         return
-    show_status_screen("TAMAM, YENIDEN BASLIYOR", GREEN)
-    time.sleep_ms(1200)
+    _ota_anim_success()
+    time.sleep_ms(700)
     if machine_reset is not None:
         machine_reset()
 
