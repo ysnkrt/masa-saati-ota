@@ -18,7 +18,7 @@ USE_24H = True
 NTP_EVERY_MS = 3600000
 WIFI_RETRY_MS = 60000
 WIFI_BOOT_RETRY_MS = 6000
-WIFI_BOOT_RETRY_COUNT = 2
+WIFI_BOOT_RETRY_COUNT = 3
 WIFI_BOOT_CONNECT_TIMEOUT_MS = 6000
 GC_EVERY_MS = 300000
 
@@ -816,12 +816,16 @@ def render_answer_line(text, screen_y):
 def draw_answer_frame():
     lcd.fill(BG)
     lcd.text("GPT:", 4, 4, GREEN, 2)
-    lcd.fill_rect(0, 210, 158, 30, BLUE)
-    lcd.rect(0, 210, 158, 30, GRAY)
-    lcd.text("GERI", 56, 219, WHITE, 1)
-    lcd.fill_rect(162, 210, 158, 30, GREEN)
-    lcd.rect(162, 210, 158, 30, GRAY)
-    lcd.text("YENI SORU", 192, 219, BLACK, 1)
+    buttons = (
+        (0, 68, BLUE, "GERI", WHITE),
+        (70, 78, DARKGRAY, "YUK", WHITE),
+        (150, 98, DARKGRAY, "ASAGI", WHITE),
+        (250, 70, GREEN, "YENI", BLACK),
+    )
+    for x, w, color, label, fg in buttons:
+        lcd.fill_rect(x, 210, w, 30, color)
+        lcd.rect(x, 210, w, 30, GRAY)
+        lcd.text(label, x + (w - len(label) * 8) // 2, 219, fg, 1)
 
 
 def draw_answer_text_pixels(lines, scroll_px):
@@ -857,6 +861,9 @@ def show_answer(lines):
     target_offset = 0
     draw_answer_frame()
     draw_answer_text(lines, offset)
+    page_step = ANS_VISIBLE - 2
+    if page_step < 1:
+        page_step = 1
     last_y = None
     last_draw = time.ticks_ms()
     while True:
@@ -872,8 +879,29 @@ def show_answer(lines):
         x, y = res
         if last_y is None:
             if y >= 210:
-                time.sleep_ms(120)
-                return "back" if x < 160 else "new"
+                if x < 70:
+                    time.sleep_ms(120)
+                    return "back"
+                if x >= 250:
+                    time.sleep_ms(120)
+                    return "new"
+                if x < 150:
+                    target_offset -= page_step
+                else:
+                    target_offset += page_step
+                if target_offset < 0:
+                    target_offset = 0
+                elif target_offset > max_off:
+                    target_offset = max_off
+                drag_px = target_offset * ANS_LINE_H
+                if target_offset != offset:
+                    offset = target_offset
+                    draw_answer_text(lines, offset)
+                    last_draw = time.ticks_ms()
+                while touch.read_fast() is not None:
+                    time.sleep_ms(10)
+                last_y = None
+                continue
             last_y = y
             continue
         dy = y - last_y
