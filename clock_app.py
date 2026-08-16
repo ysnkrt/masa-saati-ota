@@ -20,7 +20,6 @@ WIFI_RETRY_MS = 10000
 WIFI_BOOT_RETRY_MS = 6000
 WIFI_BOOT_RETRY_COUNT = 3
 WIFI_BOOT_CONNECT_TIMEOUT_MS = 6000
-WIFI_WEAK_DBM = -75
 GC_EVERY_MS = 300000
 
 
@@ -1129,18 +1128,6 @@ def is_online():
         return False
 
 
-def wifi_signal_dbm():
-    if network is None:
-        return None
-    try:
-        w = network.WLAN(network.STA_IF)
-        if not w.isconnected():
-            return None
-        return int(w.status("rssi"))
-    except Exception:
-        return None
-
-
 geo_ok = False
 
 
@@ -2106,9 +2093,6 @@ def draw_status():
     online = is_online()
     lcd.text(OTA_TOP_TXT, OTA_TOP_X, 3, GREEN if online else GRAY, 1)
     if online:
-        rssi = wifi_signal_dbm()
-        if rssi is not None and rssi < WIFI_WEAK_DBM:
-            lcd.text("BAGLANTI COK ZAYIF", 4, 3, AMBER, 1)
         return
     lt = time.localtime()
     if WIFI_SSID:
