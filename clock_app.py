@@ -1402,6 +1402,10 @@ _GPT_WAIT_Y = 6
 _GPT_WAIT_W = 48
 _GPT_WAIT_H = 34
 _GPT_WAIT_INTERVAL_MS = 140
+_wifi_wait_phase = 0
+_wifi_wait_last = 0
+_WIFI_WAIT_HEIGHTS = (4, 7, 12, 7)
+_WIFI_WAIT_INTERVAL_MS = 140
 
 
 def _gpt_wait_bar(x, height):
@@ -1438,6 +1442,8 @@ def _gpt_wait_start():
     _gpt_wait_active = True
     _gpt_wait_phase = 0
     _gpt_wait_last = 0
+    if lcd is not None:
+        lcd.fill_rect(0, 0, WIDTH, ANS_TOP, BG)
     _gpt_wait_step(True)
 
 
@@ -1448,6 +1454,31 @@ def _gpt_wait_stop():
         lcd.fill_rect(_GPT_WAIT_X, _GPT_WAIT_Y,
                       _GPT_WAIT_W, _GPT_WAIT_H, BG)
     gc.collect()
+
+
+def _wifi_wait_step(force=False):
+    global _wifi_wait_phase, _wifi_wait_last
+    if lcd is None or not WIFI_SSID:
+        return
+    now = time.ticks_ms()
+    if (not force and
+            time.ticks_diff(now, _wifi_wait_last) < _WIFI_WAIT_INTERVAL_MS):
+        return
+    if is_online():
+        return
+    _wifi_wait_last = now
+    lcd.fill_rect(0, 0, 48, 18, BG)
+    phase = (-(_wifi_wait_phase // 2)) % 4
+    next_phase = (phase - 1) % 4
+    between = _wifi_wait_phase & 1
+    for i in range(4):
+        height = _WIFI_WAIT_HEIGHTS[(phase + i) % 4]
+        if between:
+            next_height = _WIFI_WAIT_HEIGHTS[(next_phase + i) % 4]
+            height = (height + next_height) // 2
+        top = 2 + (14 - height) // 2
+        lcd.fill_rect(4 + i * 10, top, 6, height, TITLE_COL)
+    _wifi_wait_phase = (_wifi_wait_phase + 1) % 8
 
 
 # ===================== WIFI DOSYA / TARAMA =====================
@@ -2096,7 +2127,7 @@ def draw_status():
         return
     lt = time.localtime()
     if WIFI_SSID:
-        lcd.text("BAGLANMAYA CALISILIYOR", 4, 3, AMBER, 1)
+        _wifi_wait_step(True)
     elif ntp_ok:
         lcd.text("NTP", 4, 3, GREEN, 1)
     else:
@@ -4500,6 +4531,9 @@ def main():
         if face_idx == 2 and time.ticks_diff(now, last_weather_anim) >= weather_interval_ms():
             last_weather_anim = now
             weather_step()
+
+        if WIFI_SSID and not was_online:
+            _wifi_wait_step()
 
         if time.ticks_diff(now, last_gc) >= GC_EVERY_MS:
             gc.collect()

@@ -19,7 +19,10 @@ SYSTEM_PROMPT = ("Turkce yanit ver. Cevabini OZET halinde ver: ana noktalari "
                  "kaynak belirtme. 'Kaynaklara gore', 'haberlere gore', "
                  "'verilere gore', 'X sitesine gore', 'arastirmalara gore' "
                  "gibi ifadeleri KULLANMA. Bilgiyi kaynak belirtmeden, sanki "
-                 "kendin biliyormus gibi dogrudan soyle. "
+                 "kendin biliyormus gibi dogrudan soyle. Bilginin nereden "
+                 "alindigini hicbir sekilde aciklama; kurum, haber kurumu, "
+                 "web sitesi, platform, kaynak, alinti veya arama sonucu "
+                 "adi verme. "
                  "Cevabinin en sonunda, sadece verdigin bilginin hangi yila "
                  "ait oldugunu kisa bir cumleyle belirt (kaynak degil, sadece yil).")
 
@@ -33,7 +36,9 @@ WEB_SYSTEM_PROMPT = (
     "aramasinda buldugun en yeni sonucu tarihini belirterek dogrudan ver. "
     "Mac ve fikstur sorularini sadece Super Lig ile sinirlama; UEFA, Avrupa "
     "ligleri, milli maclar ve Turkiye liglerinden en onemli maclari birlikte ver. "
-    "URL, site veya kaynak adi yazma. Bugunun tarihi %s. En yeni tarihli "
+    "URL, site veya kaynak adi yazma. Bilgiyi nereden aldigini soyleme; "
+    "kurum, haber kurumu, platform, kaynak veya arama sonucu adi verme. "
+    "Bugunun tarihi %s. En yeni tarihli "
     "guvenilir veriyi kullan; farkli tarihler varsa en guncelini sec. "
     "Son cumlede verinin tam tarihini belirt.")
 
@@ -186,6 +191,19 @@ def _normalize_question(q):
     for separator in ".,?!:;()[]{}-/\\'\"":
         text = text.replace(separator, " ")
     return " " + " ".join(text.split()) + " "
+
+def strip_source_disclosures(text):
+    kept = []
+    source_starts = (
+        " kaynak ", " kaynaklar ", " bilgi kaynagi ",
+        " veri kaynagi ", " web aramasi ", " alinti ",
+    )
+    for line in str(text).split("\n"):
+        normalized = _normalize_question(line)
+        if any(normalized.startswith(marker) for marker in source_starts):
+            continue
+        kept.append(line)
+    return "\n".join(kept).strip()
 
 def question_needs_web(q):
     text = _normalize_question(q)
@@ -680,15 +698,16 @@ def _ask_and_show(q):
     _gpt_wait_stop()
     if err is None and not answer:
         err = "GPT BOS YANIT VERDI"
+    if err is None and answer:
+        answer = strip_source_disclosures(strip_urls(answer))
     if use_web and err is None and answer:
-        answer = strip_urls(answer)
         _live_cache_put(q, answer)
     gc.collect()
     apply_ans_size(ans_size_idx)
     if err is not None:
         txt = to_screen_text(err)
     else:
-        txt = to_screen_text(strip_urls(answer))
+        txt = to_screen_text(answer)
     lines = wrap_full(
         txt, (WIDTH - 8) // SIZE_PROFILES[ans_size_idx][2])
     if not lines:
