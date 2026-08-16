@@ -256,6 +256,14 @@ BRIGHT_NAMES = ["%100", "%75", "%50", "%25", "%1"]
 bright_idx = 0
 BRIGHT_MIN = 655
 bright_value = BRIGHT_LEVELS[bright_idx]
+auto_brightness = False
+LIGHT_ADC_PIN = 26
+LIGHT_READ_MS = 500
+_light_adc = None
+_light_last_ms = 0
+_light_filtered = None
+_light_last_percent = -1
+_auto_pwm_value = bright_value
 
 
 screen_flip = False
@@ -3271,7 +3279,7 @@ CFG_FILE = "saat_cfg.txt"
 
 
 def save_cfg():
-    data = "%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n" % (
+    data = "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n" % (
         mode_idx, face_idx, bright_idx,
         1 if screen_flip else 0,
         1 if USE_24H else 0,
@@ -3281,13 +3289,14 @@ def save_cfg():
         prayer_thick_idx,
         prayer_gap_idx,
         bright_value,
-        2)
+        1 if auto_brightness else 0,
+        3)
     safe_write_text(CFG_FILE, data)
 
 
 def load_cfg():
     global mode_idx, face_idx, bright_idx, screen_flip, USE_24H
-    global bright_value
+    global bright_value, auto_brightness, _auto_pwm_value
     global ans_size_idx, ans_len_idx, weather_idx, prayer_mode_idx
     global prayer_size_idx, prayer_thick_idx, prayer_gap_idx
     try:
@@ -3311,7 +3320,8 @@ def load_cfg():
             prayer_mode_idx = int(p[8]) % len(PRAYER_MODE_NAMES)
         if len(p) >= 10:
             saved_prayer_size = int(p[9])
-            if len(p) >= 14 and p[13] == "2":
+            if ((len(p) >= 14 and p[13] == "2") or
+                    (len(p) >= 15 and p[14] == "3")):
                 prayer_size_idx = saved_prayer_size % len(PRAYER_SIZE_NAMES)
             else:
                 prayer_size_idx = min(saved_prayer_size + 1,
@@ -3332,6 +3342,9 @@ def load_cfg():
                         nearest_diff = diff
                 bright_idx = nearest
                 bright_value = BRIGHT_LEVELS[bright_idx]
+        if len(p) >= 15 and p[14] == "3":
+            auto_brightness = (p[13] == "1")
+        _auto_pwm_value = bright_value
     except Exception:
         pass
     mode_idx = 0
@@ -3346,11 +3359,68 @@ def _wait_touch_release():
         time.sleep_ms(10)
 
 
+def _light_read_percent():
+    global _light_adc, _light_filtered, _light_last_percent
+    try:
+        if _light_adc is None:
+            _light_adc = ADC(Pin(LIGHT_ADC_PIN))
+        total = 0
+        for _ in range(8):
+            total += _light_adc.read_u16()
+        raw = total // 8
+        if _light_filtered is None:
+            _light_filtered = raw
+        else:
+            _light_filtered = (_light_filtered * 7 + raw) // 8
+        _light_last_percent = _light_filtered * 100 // 65535
+        return _light_last_percent
+    except Exception:
+        return -1
+
+
+def _auto_brightness_target(percent):
+    if percent <= 15:
+        return 6553
+    if percent <= 35:
+        return 16384
+    if percent <= 60:
+        return 36044
+    if percent <= 80:
+        return 52428
+    return 65535
+
+
+def auto_brightness_step(now=None, force=False):
+    global _light_last_ms, _auto_pwm_value
+    if not auto_brightness or bl_pwm is None:
+        return False
+    if now is None:
+        now = time.ticks_ms()
+    if (not force and
+            time.ticks_diff(now, _light_last_ms) < LIGHT_READ_MS):
+        return False
+    _light_last_ms = now
+    percent = _light_read_percent()
+    if percent < 0:
+        return False
+    target = _auto_brightness_target(percent)
+    if force:
+        _auto_pwm_value = target
+    elif _auto_pwm_value < target:
+        _auto_pwm_value = min(target, _auto_pwm_value + 2048)
+    elif _auto_pwm_value > target:
+        _auto_pwm_value = max(target, _auto_pwm_value - 2048)
+    bl_pwm.duty_u16(_auto_pwm_value)
+    return True
+
+
 # ---- TEK EKRANDA TUM AYARLAR ----
 _SET_BACK_Y = 214
 _SET_COL_W = WIDTH // 4
 _BRIGHT_SLIDER_TOP = 58
-_BRIGHT_SLIDER_BOTTOM = 178
+_BRIGHT_SLIDER_BOTTOM = 154
+_BRIGHT_AUTO_Y = 174
+_BRIGHT_AUTO_H = 30
 
 
 def _settings_col_text(col, text, y, color, size=1):
@@ -3435,6 +3505,19 @@ def _settings_draw_brightness(clear=True, old_y=None):
     thumb_y = _brightness_slider_y()
     lcd.fill_rect(bx - 10, thumb_y - 5, 21, 11, TITLE_COL)
     lcd.rect(bx - 10, thumb_y - 5, 21, 11, FG)
+    x = 2 * _SET_COL_W + 5
+    w = _SET_COL_W - 10
+    bg = GREEN if auto_brightness else DARKGRAY
+    fg = BLACK if auto_brightness else WHITE
+    lcd.fill_rect(x, _BRIGHT_AUTO_Y, w, _BRIGHT_AUTO_H, bg)
+    lcd.rect(x, _BRIGHT_AUTO_Y, w, _BRIGHT_AUTO_H, GRAY)
+    label = "OTO ACIK" if auto_brightness else "OTO KAPALI"
+    lcd.text(label, x + (w - len(label) * 6) // 2,
+             _BRIGHT_AUTO_Y + 6, fg, 1)
+    light_text = ("ISIK %" + str(_light_last_percent)
+                  if _light_last_percent >= 0 else "ISIK --")
+    lcd.text(light_text, x + (w - len(light_text) * 6) // 2,
+             _BRIGHT_AUTO_Y + 17, fg, 1)
 
 
 def _settings_draw_direction(preview_flip, clear=True):
@@ -3488,7 +3571,7 @@ def _settings_draw(preview_flip):
             lcd.vline(x, 0, _SET_BACK_Y, GRAY)
     _settings_col_text(0, "SOR", 14, WHITE)
     _settings_col_text(1, "NAMAZ", 14, WHITE)
-    _settings_col_text(2, "PARLAKLIK", 14, WHITE)
+    _settings_col_text(2, "ISIK AYARI", 14, WHITE)
     _settings_col_text(3, "EKRAN YONU", 14, WHITE)
     lcd.hline(0, 38, WIDTH, GRAY)
     _settings_draw_sor(False)
@@ -3540,6 +3623,18 @@ def _settings_set_brightness(y):
     _settings_draw_brightness(False, old_y)
 
 
+def _settings_toggle_auto_brightness():
+    global auto_brightness, _auto_pwm_value
+    auto_brightness = not auto_brightness
+    _auto_pwm_value = bright_value
+    if auto_brightness:
+        auto_brightness_step(force=True)
+    elif bl_pwm is not None:
+        bl_pwm.duty_u16(bright_value)
+    save_cfg()
+    _settings_draw_brightness(True)
+
+
 def _settings_header_held(col):
     """Ayni ayar basliginda uzun basma yapildiysa True dondurur."""
     started = time.ticks_ms()
@@ -3559,7 +3654,7 @@ def _settings_header_held(col):
 
 
 def run_all_settings():
-    global screen_flip
+    global screen_flip, auto_brightness, _auto_pwm_value
     dragging_brightness = False
     _settings_draw(screen_flip)
     _wait_touch_release()
@@ -3570,6 +3665,8 @@ def run_all_settings():
             if dragging_brightness:
                 dragging_brightness = False
                 save_cfg()
+            if auto_brightness and auto_brightness_step():
+                _settings_draw_brightness(True)
             time.sleep_ms(15)
             continue
         x, y = p
@@ -3596,6 +3693,14 @@ def run_all_settings():
                     _settings_draw(screen_flip)
             continue
         if col == 2:
+            if y >= _BRIGHT_AUTO_Y - 4:
+                _wait_touch_release()
+                _settings_toggle_auto_brightness()
+                continue
+            if auto_brightness:
+                auto_brightness = False
+                _auto_pwm_value = bright_value
+                save_cfg()
             dragging_brightness = True
             _settings_set_brightness(y)
             continue
@@ -4631,6 +4736,8 @@ def main():
         lcd.set_rotation(True)
 
     watchdog_start()
+    if auto_brightness:
+        auto_brightness_step(force=True)
 
     if anim_on:
         boot_anim()
@@ -4676,6 +4783,7 @@ def main():
     while True:
         now = time.ticks_ms()
         _watchdog_touch()
+        auto_brightness_step(now)
         _ota_confirm_boot_if_stable(stable_boot_started, now)
 
         if (press_start is None and
@@ -4822,7 +4930,7 @@ def main():
                 if face_idx == 1:
                     analog_prayer_panel(lt, True)
             was_online = online
-            if (DIM_AT_MIN >= 0 and not _dimmed_today
+            if (not auto_brightness and DIM_AT_MIN >= 0 and not _dimmed_today
                     and lt[3] * 60 + lt[4] >= DIM_AT_MIN):
 
 
@@ -4833,7 +4941,7 @@ def main():
                     if bl_pwm is not None:
                         bl_pwm.duty_u16(bright_value)
                     save_cfg()
-            if (BRIGHTEN_AT_MIN >= 0 and not _brightened_today
+            if (not auto_brightness and BRIGHTEN_AT_MIN >= 0 and not _brightened_today
                     and lt[3] * 60 + lt[4] >= BRIGHTEN_AT_MIN):
 
 
