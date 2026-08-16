@@ -813,15 +813,21 @@ def render_answer_line(text, screen_y):
     lcd.cs.value(1)
 
 
-def draw_answer_frame():
+def draw_answer_frame(scrollable):
     lcd.fill(BG)
     lcd.text("GPT:", 4, 4, GREEN, 2)
-    buttons = (
-        (0, 68, BLUE, "GERI", WHITE),
-        (70, 70, GREEN, "YENI", BLACK),
-        (142, 88, DARKGRAY, "YUKARI", WHITE),
-        (232, 88, DARKGRAY, "ASAGI", WHITE),
-    )
+    if scrollable:
+        buttons = (
+            (0, 68, BLUE, "GERI", WHITE),
+            (70, 70, GREEN, "YENI", BLACK),
+            (142, 88, DARKGRAY, "YUKARI", WHITE),
+            (232, 88, DARKGRAY, "ASAGI", WHITE),
+        )
+    else:
+        buttons = (
+            (0, 159, BLUE, "GERI", WHITE),
+            (161, 159, GREEN, "YENI", BLACK),
+        )
     for x, w, color, label, fg in buttons:
         lcd.fill_rect(x, 210, w, 30, color)
         lcd.rect(x, 210, w, 30, GRAY)
@@ -859,7 +865,8 @@ def show_answer(lines):
     drag_px = 0
     offset = 0
     target_offset = 0
-    draw_answer_frame()
+    scrollable = max_off > 0
+    draw_answer_frame(scrollable)
     draw_answer_text(lines, offset)
     page_step = ANS_VISIBLE - 2
     if page_step < 1:
@@ -879,6 +886,9 @@ def show_answer(lines):
         x, y = res
         if last_y is None:
             if y >= 210:
+                if not scrollable:
+                    time.sleep_ms(120)
+                    return "back" if x < 160 else "new"
                 if x < 70:
                     time.sleep_ms(120)
                     return "back"
