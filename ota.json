@@ -1,41 +1,41 @@
 {
   "version": "1.0.32",
-  "release_id": "20260816-gpt-scroll-one-to-one",
+  "release_id": "20260816-gpt-scroll-stable",
   "files": [
     {
       "path": "main.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/27ba35da776e5c56857ee61570a31a431c8fa95f/main.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/c6c273b57710be4825e9c93f5c1aa7c1c2d4347c/main.py",
       "sha256": "6d4e4f39b30404000a162cabb0dab033dbd42221e2c0f7dbeb1fa256d4f0b55e"
     },
     {
       "path": "clock_app.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/27ba35da776e5c56857ee61570a31a431c8fa95f/clock_app.py",
-      "sha256": "a0df1ee6a965e240987ab702ab988648846c9917e7cbeddb7be53e48d56ce07b"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/c6c273b57710be4825e9c93f5c1aa7c1c2d4347c/clock_app.py",
+      "sha256": "dbd8939ab45c6cdf2cfa244a4a63d1ab700d950224ee4c5574807aa1abb05a76"
     },
     {
       "path": "gpt_stream.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/27ba35da776e5c56857ee61570a31a431c8fa95f/gpt_stream.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/c6c273b57710be4825e9c93f5c1aa7c1c2d4347c/gpt_stream.py",
       "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
     },
     {
       "path": "sor_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/27ba35da776e5c56857ee61570a31a431c8fa95f/sor_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/c6c273b57710be4825e9c93f5c1aa7c1c2d4347c/sor_feature.py",
       "sha256": "8a32072d90fbf57441b258d9a1f3ecc6c3d8e8008d92f8b1cfb1f9df4b88a729"
     },
     {
       "path": "ota_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/27ba35da776e5c56857ee61570a31a431c8fa95f/ota_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/c6c273b57710be4825e9c93f5c1aa7c1c2d4347c/ota_feature.py",
       "sha256": "cf19bf721d503c6c5a0653fe32a5337e0ec8e095e11f0f6ece1011b9226d59f8"
     },
     {
       "path": "ota_release.txt",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/27ba35da776e5c56857ee61570a31a431c8fa95f/ota_release.txt",
-      "sha256": "0acb2e7feebdf752056d4a8ae69c79ca7fc560cbeafafd74600e1ad856f42053"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/c6c273b57710be4825e9c93f5c1aa7c1c2d4347c/ota_release.txt",
+      "sha256": "36723fa626ac0b56d01f888121e5dd9876e526edd6e5e4d5bf49a275e62cf9c7"
     }
   ],
   "notes": [
-    "GPT cevabi parmak mesafesini bire bir izler",
-    "Hizli kaydirmada hareket mesafesi kaybolmaz",
-    "Parmak kalkinca son konum eksiksiz cizilir"
+    "GPT kaydirma yuku Pico icin azaltildi",
+    "Uzun parmak hareketi daha cok satir kaydirir",
+    "Ekran yalnizca hedef satir degisince cizilir"
   ]
 }
