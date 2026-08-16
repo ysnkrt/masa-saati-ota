@@ -148,6 +148,7 @@ def _ota_ring_segment(index, color):
 
 def _ota_anim_tick(force=False):
     global _OTA_ANIM_FRAME, _OTA_ANIM_LAST
+    _watchdog_touch()
     now = time.ticks_ms()
     if (not force and
             time.ticks_diff(now, _OTA_ANIM_LAST) < 70):
@@ -348,7 +349,7 @@ def _preserve_api_key(temp_path):
                     pass
 
 
-def _install(files):
+def _install(files, release_id):
     installed = []
     try:
         for item in files:
@@ -373,12 +374,13 @@ def _install(files):
                         pass
                 raise
             installed.append((name, backup))
-        for _name, backup in installed:
-            if backup:
-                try:
-                    os.remove(backup)
-                except Exception:
-                    pass
+        try:
+            os.remove("ota_booting.txt")
+        except Exception:
+            pass
+        marker = open("ota_pending.txt", "w")
+        marker.write(str(release_id))
+        marker.close()
         return True, None
     except Exception as exc:
         for name, backup in reversed(installed):
@@ -430,7 +432,7 @@ def run_ota_update():
                 time.sleep_ms(2200)
                 return
     _ota_anim_tick(True)
-    ok, err = _install(files)
+    ok, err = _install(files, manifest["release_id"])
     if not ok:
         show_status_screen(to_screen_text(err)[:48], RED)
         time.sleep_ms(2200)

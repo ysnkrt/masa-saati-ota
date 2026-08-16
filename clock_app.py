@@ -83,6 +83,11 @@ prayer_gap_idx = 1
 import machine
 from machine import Pin, SPI, PWM, ADC
 try:
+    from machine import WDT, Timer
+except Exception:
+    WDT = None
+    Timer = None
+try:
     from machine import freq as machine_freq
 except Exception:
     machine_freq = None
@@ -612,6 +617,7 @@ class XPT2046:
         return clamp(x, 0, WIDTH - 1), clamp(y, 0, HEIGHT - 1)
 
     def read_raw(self):
+        _watchdog_touch()
         self.spi.init(baudrate=TOUCH_BAUD, polarity=0, phase=0)
         try:
             xs = []; ys = []
@@ -638,6 +644,7 @@ class XPT2046:
         return raw[0], raw[1], x, y
 
     def read_fast(self):
+        _watchdog_touch()
         self.spi.init(baudrate=TOUCH_BAUD, polarity=0, phase=0)
         try:
             xs = []; ys = []
@@ -983,6 +990,7 @@ def https_get(host, path, timeout=25, extra_headers=""):
     ss = None
     raw = None
     try:
+        _watchdog_touch()
         gc.collect()
         addr = socket.getaddrinfo(host, 443)[0][-1]
         s = socket.socket()
@@ -1006,6 +1014,7 @@ def https_get(host, path, timeout=25, extra_headers=""):
         read_started = time.ticks_ms()
         while True:
             d = ss.read(512)
+            _watchdog_touch()
             if d is None:
                 if time.ticks_diff(time.ticks_ms(), read_started) >= timeout * 1000:
                     break
@@ -1384,6 +1393,73 @@ prayer_times = []
 prayer_day_key = ""
 last_prayer_sync = 0
 
+WATCHDOG_STALE_MS = 90000
+OTA_BOOT_STABLE_MS = 15000
+_watchdog = None
+_watchdog_timer = None
+_watchdog_heartbeat = 0
+_ota_boot_confirmed = False
+
+
+def _watchdog_touch():
+    global _watchdog_heartbeat
+    _watchdog_heartbeat = time.ticks_ms()
+
+
+def _watchdog_timer_step(_timer):
+    try:
+        if (_watchdog is not None and
+                time.ticks_diff(time.ticks_ms(), _watchdog_heartbeat) <
+                WATCHDOG_STALE_MS):
+            _watchdog.feed()
+    except Exception:
+        pass
+
+
+def watchdog_start():
+    global _watchdog, _watchdog_timer
+    _watchdog_touch()
+    if WDT is None or Timer is None:
+        return False
+    try:
+        _watchdog = WDT(timeout=8000)
+        try:
+            _watchdog_timer = Timer(-1)
+        except Exception:
+            _watchdog_timer = Timer()
+        _watchdog_timer.init(period=1000, mode=Timer.PERIODIC,
+                             callback=_watchdog_timer_step)
+        _watchdog.feed()
+        return True
+    except Exception:
+        _watchdog = None
+        _watchdog_timer = None
+        return False
+
+
+def _ota_confirm_boot_if_stable(started, now):
+    global _ota_boot_confirmed
+    if (_ota_boot_confirmed or
+            time.ticks_diff(now, started) < OTA_BOOT_STABLE_MS):
+        return
+    try:
+        os.stat("ota_pending.txt")
+    except Exception:
+        _ota_boot_confirmed = True
+        return
+    for path in ("ota_pending.txt", "ota_booting.txt"):
+        try:
+            os.remove(path)
+        except Exception:
+            pass
+    for name in ("main.py", "clock_app.py", "gpt_stream.py",
+                 "sor_feature.py", "ota_feature.py", "ota_release.txt"):
+        try:
+            os.remove(".bak_" + name)
+        except Exception:
+            pass
+    _ota_boot_confirmed = True
+
 
 def show_status_screen(msg, color=AMBER):
     lcd.fill(BG)
@@ -1419,6 +1495,7 @@ def _gpt_wait_step(force=False):
     global _gpt_wait_phase, _gpt_wait_last
     if not _gpt_wait_active or lcd is None:
         return
+    _watchdog_touch()
     now = time.ticks_ms()
     if (not force and
             time.ticks_diff(now, _gpt_wait_last) < _GPT_WAIT_INTERVAL_MS):
@@ -1460,6 +1537,7 @@ def _wifi_wait_step(force=False):
     global _wifi_wait_phase, _wifi_wait_last
     if lcd is None or not WIFI_SSID:
         return
+    _watchdog_touch()
     now = time.ticks_ms()
     if (not force and
             time.ticks_diff(now, _wifi_wait_last) < _WIFI_WAIT_INTERVAL_MS):
@@ -2143,7 +2221,7 @@ def draw_bottom():
     lcd.fill_rect(0, BTN_Y, WIDTH, BTN_H, BG)
 
     lcd.hline(0, BTN_Y, WIDTH, GRAY)
-    labels = ("AYARLAR", "GPT")
+    labels = ("AYARLAR", "HAVA", "GPT")
     q = WIDTH // len(labels)
     for i, lbl in enumerate(labels):
         if i:
@@ -2863,6 +2941,153 @@ def weather_step():
         if p[1] > BTN_Y - 8 or p[0] < 3 or p[0] > WIDTH - 4:
             _weather_reset_particle(p, False)
         _weather_draw(p)
+
+
+def _forecast_value(daily, key, index):
+    values = daily.get(key) or []
+    return values[index] if index < len(values) else None
+
+
+def _forecast_date_label(value):
+    try:
+        parts = str(value)[:10].split("-")
+        day = int(parts[2])
+        month = int(parts[1])
+        return "%d %s" % (day, AYLAR[(month - 1) % 12])
+    except Exception:
+        return str(value)[:10]
+
+
+def _forecast_hm(value):
+    text = str(value)
+    return text[11:16] if len(text) >= 16 else "--:--"
+
+
+def weather_forecast_fetch():
+    if not is_online():
+        return None, "HAVA ICIN WIFI GEREKLI"
+    if USER_LAT is None or USER_LON is None:
+        geo_locate()
+    if USER_LAT is None or USER_LON is None:
+        return None, "KONUM BULUNAMADI"
+    path = ("/v1/forecast?latitude=%s&longitude=%s"
+            "&daily=temperature_2m_max,temperature_2m_min,"
+            "precipitation_probability_max,wind_speed_10m_max,"
+            "wind_gusts_10m_max,sunrise,sunset"
+            "&timezone=auto&forecast_days=16") % (
+                str(USER_LAT), str(USER_LON))
+    try:
+        status, raw = https_get("api.open-meteo.com", path, 18)
+        if status != 200 or not raw:
+            return None, "HAVA SUNUCU KODU " + str(status)
+        daily = json.loads(raw).get("daily") or {}
+        keys = ("time", "temperature_2m_max", "temperature_2m_min",
+                "precipitation_probability_max", "wind_speed_10m_max",
+                "wind_gusts_10m_max", "sunrise", "sunset")
+        lengths = [len(daily.get(key) or []) for key in keys]
+        count = min(lengths) if lengths else 0
+        days = []
+        for index in range(count):
+            days.append({
+                "date": _forecast_date_label(
+                    _forecast_value(daily, "time", index)),
+                "low": _forecast_value(
+                    daily, "temperature_2m_min", index),
+                "high": _forecast_value(
+                    daily, "temperature_2m_max", index),
+                "rain": _forecast_value(
+                    daily, "precipitation_probability_max", index),
+                "wind": _forecast_value(
+                    daily, "wind_speed_10m_max", index),
+                "gust": _forecast_value(
+                    daily, "wind_gusts_10m_max", index),
+                "sunrise": _forecast_hm(
+                    _forecast_value(daily, "sunrise", index)),
+                "sunset": _forecast_hm(
+                    _forecast_value(daily, "sunset", index)),
+            })
+        if not days:
+            return None, "HAVA VERISI YOK"
+        return days, None
+    except Exception as exc:
+        return None, "HAVA: " + str(exc)
+    finally:
+        gc.collect()
+
+
+def _forecast_number(value, suffix=""):
+    try:
+        return str(int(float(value) + 0.5)) + suffix
+    except Exception:
+        return "-"
+
+
+def _forecast_tile(x, y, w, h, title, first, second=""):
+    lcd.fill_rect(x, y, w, h, DARKGRAY)
+    lcd.rect(x, y, w, h, GRAY)
+    lcd.text(title, x + (w - len(title) * 6) // 2, y + 8, TITLE_COL, 1)
+    lcd.text(first, x + (w - len(first) * 12) // 2, y + 31, FG, 2)
+    if second:
+        lcd.text(second, x + (w - len(second) * 6) // 2,
+                 y + h - 17, FG_DIM, 1)
+
+
+def _forecast_draw(days, index):
+    day = days[index]
+    lcd.fill(BG)
+    date = day["date"]
+    lcd.text(date, (WIDTH - len(date) * 12) // 2, 5, TITLE_COL, 2)
+    _forecast_tile(0, 28, 159, 87, "SICAKLIK",
+                   "MAX " + _forecast_number(day["high"], " C"),
+                   "MIN " + _forecast_number(day["low"], " C"))
+    _forecast_tile(161, 28, 159, 87, "YAGMUR OLASILIGI",
+                   "%" + _forecast_number(day["rain"]))
+    _forecast_tile(0, 117, 159, 87, "RUZGAR / GUST",
+                   _forecast_number(day["wind"], " km/h"),
+                   "GUST " + _forecast_number(day["gust"], " km/h"))
+    _forecast_tile(161, 117, 159, 87, "GUNES",
+                   "DOGUS " + day["sunrise"],
+                   "BATIS " + day["sunset"])
+    buttons = (
+        (0, 88, "GERI", BLUE, WHITE),
+        (90, 114, "ONCEKI", DARKGRAY, WHITE),
+        (206, 114, "SONRAKI", GREEN, BLACK),
+    )
+    for x, w, label, bg, fg in buttons:
+        lcd.fill_rect(x, 208, w, 32, bg)
+        lcd.rect(x, 208, w, 32, GRAY)
+        lcd.text(label, x + (w - len(label) * 6) // 2, 220, fg, 1)
+
+
+def run_weather_forecast():
+    show_status_screen("HAVA ALINIYOR", TITLE_COL)
+    days, err = weather_forecast_fetch()
+    if err is not None:
+        show_status_screen(to_screen_text(err)[:48], RED)
+        time.sleep_ms(1800)
+        return
+    index = 0
+    _forecast_draw(days, index)
+    _wait_touch_release()
+    while True:
+        point = touch.read_fast()
+        if point is None:
+            time.sleep_ms(20)
+            continue
+        x, y = point
+        if y < 208:
+            continue
+        _wait_touch_release()
+        if x < 88:
+            break
+        if x < 205:
+            if index > 0:
+                index -= 1
+        elif index + 1 < len(days):
+            index += 1
+        _forecast_draw(days, index)
+    days = None
+    gc.collect()
 
 def draw_static():
     lcd.fill(BG)
@@ -4236,6 +4461,7 @@ _boot_wait_step = 0
 def boot_wait_tick():
     """WiFi beklerken acilis ekraninin alt cubugunu akici tutar."""
     global _boot_wait_step
+    _watchdog_touch()
     bar_x = 70
     bar_y = 220
     inner_w = WIDTH - 144
@@ -4326,6 +4552,8 @@ def main():
     if screen_flip:
         lcd.set_rotation(True)
 
+    watchdog_start()
+
     if anim_on:
         boot_anim()
     else:
@@ -4360,12 +4588,15 @@ def main():
     last_status_min = -1
     last_touch_poll = 0
     last_wifi_retry = time.ticks_ms()
+    stable_boot_started = last_wifi_retry
     last_gc = last_wifi_retry
     was_online = is_online()
     network_sync_stage = -1 if boot_network_synced else (0 if was_online else -1)
 
     while True:
         now = time.ticks_ms()
+        _watchdog_touch()
+        _ota_confirm_boot_if_stable(stable_boot_started, now)
 
         if (press_start is None and
                 time.ticks_diff(now, last_touch_poll) < TOUCH_IDLE_POLL_MS):
@@ -4425,9 +4656,12 @@ def main():
                     save_cfg()
                     draw_static()
                 elif abs(dx) < 22 and abs(dy) < 22 and sy >= BTN_Y - 4:
-                    slot = sx * 2 // WIDTH
+                    slot = sx * 3 // WIDTH
                     if slot == 0:
                         run_all_settings()
+                        draw_static()
+                    elif slot == 1:
+                        run_weather_forecast()
                         draw_static()
                     else:
                         open_sor_safe()
