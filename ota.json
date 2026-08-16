@@ -1,36 +1,36 @@
 {
   "version": "1.0.32",
-  "release_id": "20260816-auto-light-toggle",
+  "release_id": "20260816-light-calibration",
   "files": [
     {
       "path": "main.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e17b6d5043cfdc58a412d075e9433e71c3ad12f0/main.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/main.py",
       "sha256": "79060c1506d9b020b8d7e25c312bb4c223c5577b95e31dbd0d378b7306305a86"
     },
     {
       "path": "clock_app.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e17b6d5043cfdc58a412d075e9433e71c3ad12f0/clock_app.py",
-      "sha256": "8ef886a07af93d918c1fce21964f6f6c7a25c4ef66542611f47468efc402aece"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/clock_app.py",
+      "sha256": "76dffed7aeda5fcd5a368bb7ae10d9508b4dae6ee792073d4f114a1ddea25875"
     },
     {
       "path": "gpt_stream.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e17b6d5043cfdc58a412d075e9433e71c3ad12f0/gpt_stream.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/gpt_stream.py",
       "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
     },
     {
       "path": "sor_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e17b6d5043cfdc58a412d075e9433e71c3ad12f0/sor_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/sor_feature.py",
       "sha256": "eb252198f44dfd70310cc38467e74b1bf390f27cf8d6dd344b394864428b5319"
     },
     {
       "path": "ota_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e17b6d5043cfdc58a412d075e9433e71c3ad12f0/ota_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/ota_feature.py",
       "sha256": "2e7acaf34b611d7363a6d5baff7a2a9c5668305bbcb67ce15be8f39d25619796"
     },
     {
       "path": "ota_release.txt",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/e17b6d5043cfdc58a412d075e9433e71c3ad12f0/ota_release.txt",
-      "sha256": "6ea6ccd6d047629bfb090d70437739275122e51ee563776dd1b27412772d2fec"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/ota_release.txt",
+      "sha256": "bd7fe0cfb0ab621170cb76146f92442dd13247c0d38abdf17a43ca1183cf2a4b"
     }
   ],
   "notes": [
@@ -44,6 +44,7 @@
     "Cizgili saatin hava bolumu boslugu dolduran tek panel oldu",
     "Panel asagi uzanan dort yatay hava bolumune ayrildi",
     "Isik ayarina GP26 tabanli otomatik parlaklik ac kapa eklendi",
-    "Otomatik parlaklik yumusak gecis ve filtreli sensor okumasi kullanir"
+    "Otomatik parlaklik yumusak gecis ve filtreli sensor okumasi kullanir",
+    "Bes saniyelik ortam isigi kalibrasyonu ve kalici ust sinir eklendi"
   ]
 }
