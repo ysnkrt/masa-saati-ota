@@ -818,9 +818,9 @@ def draw_answer_frame():
     lcd.text("GPT:", 4, 4, GREEN, 2)
     buttons = (
         (0, 68, BLUE, "GERI", WHITE),
-        (70, 78, DARKGRAY, "YUK", WHITE),
-        (150, 98, DARKGRAY, "ASAGI", WHITE),
-        (250, 70, GREEN, "YENI", BLACK),
+        (70, 70, GREEN, "YENI", BLACK),
+        (142, 88, DARKGRAY, "YUKARI", WHITE),
+        (232, 88, DARKGRAY, "ASAGI", WHITE),
     )
     for x, w, color, label, fg in buttons:
         lcd.fill_rect(x, 210, w, 30, color)
@@ -882,10 +882,10 @@ def show_answer(lines):
                 if x < 70:
                     time.sleep_ms(120)
                     return "back"
-                if x >= 250:
+                if x < 142:
                     time.sleep_ms(120)
                     return "new"
-                if x < 150:
+                if x < 232:
                     target_offset -= page_step
                 else:
                     target_offset += page_step
