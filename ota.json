@@ -1,41 +1,41 @@
 {
   "version": "1.0.32",
-  "release_id": "20260816-boot-wifi-two-attempts",
+  "release_id": "20260816-boot-smooth-scroll-ota",
   "files": [
     {
       "path": "main.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7315bb8c1aea38583733a09c87547f7b7eb76d89/main.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/de5c28dee115b35b40882f8caf93abbf53831dee/main.py",
       "sha256": "6d4e4f39b30404000a162cabb0dab033dbd42221e2c0f7dbeb1fa256d4f0b55e"
     },
     {
       "path": "clock_app.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7315bb8c1aea38583733a09c87547f7b7eb76d89/clock_app.py",
-      "sha256": "9941559b84217ada0cd98bbdb9bb8d3d038583ad80d1891b75a390ff760f02e2"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/de5c28dee115b35b40882f8caf93abbf53831dee/clock_app.py",
+      "sha256": "418f3c346594125afe9391eff55e744595c28bbbe4ed0cf74b261df95be2995b"
     },
     {
       "path": "gpt_stream.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7315bb8c1aea38583733a09c87547f7b7eb76d89/gpt_stream.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/de5c28dee115b35b40882f8caf93abbf53831dee/gpt_stream.py",
       "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
     },
     {
       "path": "sor_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7315bb8c1aea38583733a09c87547f7b7eb76d89/sor_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/de5c28dee115b35b40882f8caf93abbf53831dee/sor_feature.py",
       "sha256": "8a32072d90fbf57441b258d9a1f3ecc6c3d8e8008d92f8b1cfb1f9df4b88a729"
     },
     {
       "path": "ota_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7315bb8c1aea38583733a09c87547f7b7eb76d89/ota_feature.py",
-      "sha256": "427d0a715b2d6e3b18232aca0ba1c93144b54cbc3c6128decbc4ac5fb6993448"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/de5c28dee115b35b40882f8caf93abbf53831dee/ota_feature.py",
+      "sha256": "cf19bf721d503c6c5a0653fe32a5337e0ec8e095e11f0f6ece1011b9226d59f8"
     },
     {
       "path": "ota_release.txt",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7315bb8c1aea38583733a09c87547f7b7eb76d89/ota_release.txt",
-      "sha256": "e01a3f38bf975ae7fb9bb2e71d2be7a1ce0c20ef3e8b7077d6dc7763a30f058c"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/de5c28dee115b35b40882f8caf93abbf53831dee/ota_release.txt",
+      "sha256": "761b380ad7d9428ebc7b3d666f4b7d7046d379c14a8cef26510a9bff872c6c8d"
     }
   ],
   "notes": [
-    "Saat ekrani acilmadan once WiFi iki kez denenir",
-    "Acilista WiFi deneme durumu ekranda gosterilir",
-    "Baglanti olmasa da saat ekrani acilir"
+    "WiFi denemeleri acilis animasyonunda yapilir",
+    "GPT cevaplari piksel bazli daha akici kayar",
+    "OTA indirme ekrani sade gorunume doner"
   ]
 }
