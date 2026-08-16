@@ -257,6 +257,7 @@ bright_idx = 0
 BRIGHT_MIN = 655
 bright_value = BRIGHT_LEVELS[bright_idx]
 auto_brightness = False
+light_cal_max = 100
 LIGHT_ADC_PIN = 26
 LIGHT_READ_MS = 500
 _light_adc = None
@@ -3279,7 +3280,7 @@ CFG_FILE = "saat_cfg.txt"
 
 
 def save_cfg():
-    data = "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n" % (
+    data = "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n" % (
         mode_idx, face_idx, bright_idx,
         1 if screen_flip else 0,
         1 if USE_24H else 0,
@@ -3290,13 +3291,14 @@ def save_cfg():
         prayer_gap_idx,
         bright_value,
         1 if auto_brightness else 0,
-        3)
+        light_cal_max,
+        4)
     safe_write_text(CFG_FILE, data)
 
 
 def load_cfg():
     global mode_idx, face_idx, bright_idx, screen_flip, USE_24H
-    global bright_value, auto_brightness, _auto_pwm_value
+    global bright_value, auto_brightness, light_cal_max, _auto_pwm_value
     global ans_size_idx, ans_len_idx, weather_idx, prayer_mode_idx
     global prayer_size_idx, prayer_thick_idx, prayer_gap_idx
     try:
@@ -3321,7 +3323,8 @@ def load_cfg():
         if len(p) >= 10:
             saved_prayer_size = int(p[9])
             if ((len(p) >= 14 and p[13] == "2") or
-                    (len(p) >= 15 and p[14] == "3")):
+                    (len(p) >= 15 and p[14] == "3") or
+                    (len(p) >= 16 and p[15] == "4")):
                 prayer_size_idx = saved_prayer_size % len(PRAYER_SIZE_NAMES)
             else:
                 prayer_size_idx = min(saved_prayer_size + 1,
@@ -3344,6 +3347,11 @@ def load_cfg():
                 bright_value = BRIGHT_LEVELS[bright_idx]
         if len(p) >= 15 and p[14] == "3":
             auto_brightness = (p[13] == "1")
+        elif len(p) >= 16 and p[15] == "4":
+            auto_brightness = (p[13] == "1")
+            saved_light_max = int(p[14])
+            if 5 <= saved_light_max <= 100:
+                light_cal_max = saved_light_max
         _auto_pwm_value = bright_value
     except Exception:
         pass
@@ -3378,16 +3386,23 @@ def _light_read_percent():
         return -1
 
 
+def _light_read_raw_percent():
+    global _light_adc
+    try:
+        if _light_adc is None:
+            _light_adc = ADC(Pin(LIGHT_ADC_PIN))
+        total = 0
+        for _ in range(8):
+            total += _light_adc.read_u16()
+        return (total // 8) * 100 // 65535
+    except Exception:
+        return -1
+
+
 def _auto_brightness_target(percent):
-    if percent <= 15:
-        return 6553
-    if percent <= 35:
-        return 16384
-    if percent <= 60:
-        return 36044
-    if percent <= 80:
-        return 52428
-    return 65535
+    maximum = max(5, light_cal_max)
+    level = max(0, min(maximum, percent))
+    return BRIGHT_MIN + level * (65535 - BRIGHT_MIN) // maximum
 
 
 def auto_brightness_step(now=None, force=False):
@@ -3418,9 +3433,11 @@ def auto_brightness_step(now=None, force=False):
 _SET_BACK_Y = 214
 _SET_COL_W = WIDTH // 4
 _BRIGHT_SLIDER_TOP = 58
-_BRIGHT_SLIDER_BOTTOM = 154
-_BRIGHT_AUTO_Y = 174
-_BRIGHT_AUTO_H = 30
+_BRIGHT_SLIDER_BOTTOM = 126
+_BRIGHT_AUTO_Y = 137
+_BRIGHT_AUTO_H = 28
+_BRIGHT_CAL_Y = 173
+_BRIGHT_CAL_H = 31
 
 
 def _settings_col_text(col, text, y, color, size=1):
@@ -3518,6 +3535,14 @@ def _settings_draw_brightness(clear=True, old_y=None):
                   if _light_last_percent >= 0 else "ISIK --")
     lcd.text(light_text, x + (w - len(light_text) * 6) // 2,
              _BRIGHT_AUTO_Y + 17, fg, 1)
+    lcd.fill_rect(x, _BRIGHT_CAL_Y, w, _BRIGHT_CAL_H, DARKGRAY)
+    lcd.rect(x, _BRIGHT_CAL_Y, w, _BRIGHT_CAL_H, GRAY)
+    label = "KALIBRE"
+    lcd.text(label, x + (w - len(label) * 6) // 2,
+             _BRIGHT_CAL_Y + 5, WHITE, 1)
+    max_text = "MAX %" + str(light_cal_max)
+    lcd.text(max_text, x + (w - len(max_text) * 6) // 2,
+             _BRIGHT_CAL_Y + 17, TITLE_COL, 1)
 
 
 def _settings_draw_direction(preview_flip, clear=True):
@@ -3635,6 +3660,60 @@ def _settings_toggle_auto_brightness():
     _settings_draw_brightness(True)
 
 
+def _settings_calibrate_light():
+    global light_cal_max, auto_brightness, _auto_pwm_value
+    lcd.fill(BG)
+    lcd.text("ISIGI KONUMUNA GETIRIN", 22, 35, TITLE_COL, 1)
+    lcd.text("MARUZ KALACAGI EN YUKSEK", 13, 62, FG, 1)
+    lcd.text("ORTAM ISIGINI OLUSTURUN", 19, 80, FG, 1)
+    lcd.text("SONRA TAMAM'A BASIN", 52, 107, GRAY, 1)
+    _draw_round_button(70, 165, 180, 42, GRAY, DARKGRAY,
+                       "TAMAM", WHITE)
+    _wait_touch_release()
+    while True:
+        _watchdog_touch()
+        p = touch.read_fast()
+        if p is not None:
+            x, y = p
+            if 70 <= x < 250 and 165 <= y < 207:
+                _wait_touch_release()
+                break
+        time.sleep_ms(20)
+
+    lcd.fill(BG)
+    lcd.text("ORTAM ISIGI TARANIYOR", 34, 55, TITLE_COL, 1)
+    bar_x, bar_y, bar_w, bar_h = 30, 128, 260, 20
+    lcd.rect(bar_x, bar_y, bar_w, bar_h, GRAY)
+    best = 0
+    started = time.ticks_ms()
+    while True:
+        _watchdog_touch()
+        elapsed = time.ticks_diff(time.ticks_ms(), started)
+        if elapsed >= 5000:
+            break
+        percent = _light_read_raw_percent()
+        if percent > best:
+            best = percent
+        remain = 5 - elapsed // 1000
+        lcd.fill_rect(0, 83, WIDTH, 30, BG)
+        msg = str(remain) + " SANIYE"
+        lcd.text(msg, (WIDTH - len(msg) * 12) // 2, 88, FG, 2)
+        fill_w = (bar_w - 4) * elapsed // 5000
+        lcd.fill_rect(bar_x + 2, bar_y + 2, fill_w, bar_h - 4, TITLE_COL)
+        time.sleep_ms(50)
+
+    light_cal_max = max(5, min(100, best))
+    auto_brightness = True
+    _auto_pwm_value = bright_value
+    save_cfg()
+    auto_brightness_step(force=True)
+    lcd.fill(BG)
+    lcd.text("KALIBRE TAMAM", 76, 72, GREEN, 2)
+    result = "TAM ISIK: %" + str(light_cal_max)
+    lcd.text(result, (WIDTH - len(result) * 12) // 2, 113, FG, 2)
+    time.sleep_ms(1200)
+
+
 def _settings_header_held(col):
     """Ayni ayar basliginda uzun basma yapildiysa True dondurur."""
     started = time.ticks_ms()
@@ -3693,6 +3772,11 @@ def run_all_settings():
                     _settings_draw(screen_flip)
             continue
         if col == 2:
+            if y >= _BRIGHT_CAL_Y - 4:
+                _wait_touch_release()
+                _settings_calibrate_light()
+                _settings_draw(screen_flip)
+                continue
             if y >= _BRIGHT_AUTO_Y - 4:
                 _wait_touch_release()
                 _settings_toggle_auto_brightness()
