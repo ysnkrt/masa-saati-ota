@@ -799,10 +799,17 @@ def render_answer_line(text, screen_y):
         cx += _AADV
         if cx > limit:
             break
-    lcd.set_window(0, screen_y, w - 1, screen_y + ANS_LINE_H - 1)
+    draw_y0 = max(ANS_TOP, screen_y)
+    draw_y1 = min(ANS_BOTTOM, screen_y + ANS_LINE_H)
+    if draw_y0 >= draw_y1:
+        return
+    source_row = draw_y0 - screen_y
+    source_start = source_row * w * 2
+    source_end = source_start + (draw_y1 - draw_y0) * w * 2
+    lcd.set_window(0, draw_y0, w - 1, draw_y1 - 1)
     lcd.dc.value(1)
     lcd.cs.value(0)
-    lcd.spi.write(buf)
+    lcd.spi.write(memoryview(buf)[source_start:source_end])
     lcd.cs.value(1)
 
 
@@ -817,37 +824,44 @@ def draw_answer_frame():
     lcd.text("YENI SORU", 192, 219, BLACK, 1)
 
 
-def draw_answer_text(lines, offset):
+def draw_answer_text_pixels(lines, scroll_px):
     n = len(lines)
-    i = offset
-    for row in range(ANS_VISIBLE):
-        screen_y = ANS_TOP + row * ANS_LINE_H
+    first = scroll_px // ANS_LINE_H
+    shift = scroll_px % ANS_LINE_H
+    rows = ANS_VISIBLE + (2 if shift else 1)
+    i = first
+    for row in range(rows):
+        screen_y = ANS_TOP - shift + row * ANS_LINE_H
         render_answer_line(lines[i] if i < n else "", screen_y)
         i += 1
     if n > ANS_VISIBLE:
         track_h = ANS_BOTTOM - ANS_TOP
         bar_h = max(12, track_h * ANS_VISIBLE // n)
-        max_off = n - ANS_VISIBLE
-        bar_y = ANS_TOP + (track_h - bar_h) * offset // max_off
+        max_scroll = (n - ANS_VISIBLE) * ANS_LINE_H
+        bar_y = ANS_TOP + (track_h - bar_h) * scroll_px // max_scroll
         lcd.fill_rect(WIDTH - 4, ANS_TOP, 3, track_h, DARKGRAY)
         lcd.fill_rect(WIDTH - 4, bar_y, 3, bar_h, CYAN)
+
+
+def draw_answer_text(lines, offset):
+    draw_answer_text_pixels(lines, offset * ANS_LINE_H)
 
 
 def show_answer(lines):
     max_off = len(lines) - ANS_VISIBLE
     if max_off < 0:
         max_off = 0
-    offset = 0
+    max_scroll = max_off * ANS_LINE_H
+    scroll_px = 0
     draw_answer_frame()
-    draw_answer_text(lines, offset)
+    draw_answer_text_pixels(lines, scroll_px)
     last_y = None
-    accum = 0
+    last_draw = time.ticks_ms()
     while True:
         res = touch.read_fast()
         if res is None:
             last_y = None
-            accum = 0
-            time.sleep_ms(5)
+            time.sleep_ms(2)
             continue
         x, y = res
         if last_y is None:
@@ -858,18 +872,17 @@ def show_answer(lines):
             continue
         dy = y - last_y
         last_y = y
-        accum += -dy
-        changed = False
-        while accum >= ANS_LINE_H and offset < max_off:
-            offset += 1; accum -= ANS_LINE_H; changed = True
-        while accum <= -ANS_LINE_H and offset > 0:
-            offset -= 1; accum += ANS_LINE_H; changed = True
-        if accum > ANS_LINE_H:
-            accum = ANS_LINE_H
-        elif accum < -ANS_LINE_H:
-            accum = -ANS_LINE_H
-        if changed:
-            draw_answer_text(lines, offset)
+        new_scroll = scroll_px - dy
+        if new_scroll < 0:
+            new_scroll = 0
+        elif new_scroll > max_scroll:
+            new_scroll = max_scroll
+        now = time.ticks_ms()
+        if (new_scroll != scroll_px and
+                time.ticks_diff(now, last_draw) >= 12):
+            scroll_px = new_scroll
+            draw_answer_text_pixels(lines, scroll_px)
+            last_draw = time.ticks_ms()
 
 
 def _buffer_find(data, needle, start=0):
@@ -1747,7 +1760,7 @@ def ntp_sync():
         return False
 
 
-def wifi_connect(ssid, pw, timeout=12000):
+def wifi_connect(ssid, pw, timeout=12000, progress=None):
     if network is None:
         return False
     try:
@@ -1759,7 +1772,9 @@ def wifi_connect(ssid, pw, timeout=12000):
             while not w.isconnected():
                 if time.ticks_diff(time.ticks_ms(), t0) > timeout:
                     return False
-                time.sleep_ms(250)
+                if progress is not None:
+                    progress()
+                time.sleep_ms(100)
         return w.isconnected()
     except Exception:
         return False
@@ -1780,22 +1795,20 @@ def wifi_reconnect_start(ssid, pw):
 
 
 def wifi_boot_connect():
-    """Saat ekranindan once en fazla iki gorunur WiFi denemesi yapar."""
+    """Acilis animasyonu surerken en fazla iki WiFi denemesi yapar."""
     if not WIFI_SSID or network is None:
         return 0
     attempts = 0
     for attempt in range(WIFI_BOOT_RETRY_COUNT):
         attempts = attempt + 1
-        boot_msg("WIFI BAGLANIYOR %d/%d" %
-                 (attempts, WIFI_BOOT_RETRY_COUNT), AMBER)
         if wifi_connect(WIFI_SSID, WIFI_PASS,
-                        WIFI_BOOT_CONNECT_TIMEOUT_MS):
-            boot_msg("WIFI BAGLANDI", GREEN)
-            time.sleep_ms(450)
+                        WIFI_BOOT_CONNECT_TIMEOUT_MS, boot_wait_tick):
             return attempts
-        time.sleep_ms(150)
-    boot_msg("WIFI SONRA TEKRAR", AMBER)
-    time.sleep_ms(450)
+        try:
+            network.WLAN(network.STA_IF).disconnect()
+        except Exception:
+            pass
+        time.sleep_ms(120)
     return attempts
 
 
@@ -4151,6 +4164,24 @@ def boot_msg(msg, color=None):
     lcd.text(msg, (WIDTH - len(msg) * 12) // 2, HEIGHT // 2 - 8, color if color else FG, 2)
 
 
+_boot_wait_step = 0
+
+
+def boot_wait_tick():
+    """WiFi beklerken acilis ekraninin alt cubugunu akici tutar."""
+    global _boot_wait_step
+    bar_x = 70
+    bar_y = 220
+    inner_w = WIDTH - 144
+    segment_w = 28
+    travel = inner_w - segment_w
+    phase = _boot_wait_step % max(1, travel * 2)
+    pos = phase if phase <= travel else travel * 2 - phase
+    lcd.fill_rect(bar_x + 2, bar_y + 2, inner_w, 2, DARKGRAY)
+    lcd.fill_rect(bar_x + 2 + pos, bar_y + 2, segment_w, 2, TITLE_COL)
+    _boot_wait_step += 5
+
+
 def boot_anim():
     lcd.fill(BG)
     cx = WIDTH // 2
@@ -4236,6 +4267,18 @@ def main():
         time.sleep_ms(600)
 
     wifi_boot_attempts = wifi_boot_connect()
+    boot_network_synced = False
+    if is_online():
+        boot_wait_tick()
+        ntp_sync()
+        boot_wait_tick()
+        geo_locate()
+        boot_wait_tick()
+        if prayer_mode_idx != 0:
+            prayer_sync()
+        boot_wait_tick()
+        sunset_sync()
+        boot_network_synced = True
 
     draw_static()
 
@@ -4253,7 +4296,7 @@ def main():
     last_wifi_retry = time.ticks_ms()
     last_gc = last_wifi_retry
     was_online = is_online()
-    network_sync_stage = 0 if was_online else -1
+    network_sync_stage = -1 if boot_network_synced else (0 if was_online else -1)
 
     while True:
         now = time.ticks_ms()

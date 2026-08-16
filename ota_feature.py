@@ -38,15 +38,17 @@ def _local_release():
 
 
 def _manifest_url():
+    value = OTA_MANIFEST_URL
     try:
         f = open(_OTA_URL_FILE)
-        value = f.read().strip()
+        configured = f.read().strip()
         f.close()
-        if value.startswith("https://"):
-            return value
+        if configured.startswith("https://"):
+            value = configured
     except Exception:
         pass
-    return OTA_MANIFEST_URL
+    separator = "&" if "?" in value else "?"
+    return value + separator + "cb=" + str(time.ticks_ms())
 
 
 def _manifest():
@@ -342,9 +344,8 @@ def run_ota_update():
     if not _confirm(manifest):
         return
     files = manifest["files"]
-    for index, item in enumerate(files):
-        show_status_screen("INDIRILIYOR %d/%d" % (index + 1, len(files)),
-                           TITLE_COL)
+    for item in files:
+        show_status_screen("GUNCELLEME INDIRILIYOR", TITLE_COL)
         temp = ".ota_" + item["path"]
         ok, err = _download(item["url"], temp, item["sha256"])
         if not ok:
