@@ -964,7 +964,8 @@ def _dechunk(data):
         if j < 0:
             break
         try:
-            n = int(data[i:j], 16)
+            size_text = _decode_buffer(data[i:j]).split(";", 1)[0].strip()
+            n = int(size_text, 16)
         except ValueError:
             break
         if n == 0:
