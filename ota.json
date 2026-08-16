@@ -1,41 +1,41 @@
 {
   "version": "1.0.32",
-  "release_id": "20260816-gpt-button-order",
+  "release_id": "20260816-ota-wave-animation",
   "files": [
     {
       "path": "main.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/a2f2a49b813aaa385f6d6df272d8257f1a75b6c3/main.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/5a1f99f246d265cd976dd560e23a25ee2b32bf72/main.py",
       "sha256": "6d4e4f39b30404000a162cabb0dab033dbd42221e2c0f7dbeb1fa256d4f0b55e"
     },
     {
       "path": "clock_app.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/a2f2a49b813aaa385f6d6df272d8257f1a75b6c3/clock_app.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/5a1f99f246d265cd976dd560e23a25ee2b32bf72/clock_app.py",
       "sha256": "a90aa268f2d94d00b3ce168df41405002a35a7498ff397dca50f9976d8be9b49"
     },
     {
       "path": "gpt_stream.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/a2f2a49b813aaa385f6d6df272d8257f1a75b6c3/gpt_stream.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/5a1f99f246d265cd976dd560e23a25ee2b32bf72/gpt_stream.py",
       "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
     },
     {
       "path": "sor_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/a2f2a49b813aaa385f6d6df272d8257f1a75b6c3/sor_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/5a1f99f246d265cd976dd560e23a25ee2b32bf72/sor_feature.py",
       "sha256": "8a32072d90fbf57441b258d9a1f3ecc6c3d8e8008d92f8b1cfb1f9df4b88a729"
     },
     {
       "path": "ota_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/a2f2a49b813aaa385f6d6df272d8257f1a75b6c3/ota_feature.py",
-      "sha256": "cf19bf721d503c6c5a0653fe32a5337e0ec8e095e11f0f6ece1011b9226d59f8"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/5a1f99f246d265cd976dd560e23a25ee2b32bf72/ota_feature.py",
+      "sha256": "4bf0850c69a3c0b141bb07734c10201b0d2805a5ad5c90116dc4c160b8589305"
     },
     {
       "path": "ota_release.txt",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/a2f2a49b813aaa385f6d6df272d8257f1a75b6c3/ota_release.txt",
-      "sha256": "9eeba0bd2a9a1e1adcc7d1d7f663a42b116d30a0efe7d92d77077f8053290bc5"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/5a1f99f246d265cd976dd560e23a25ee2b32bf72/ota_release.txt",
+      "sha256": "5a164952a84c4fd4467c40c8a3c67f716d6cd37137991dd7c094ad163dd0f543"
     }
   ],
   "notes": [
     "WiFi acilista en fazla uc kez denenir",
     "GPT tus sirasi GERI YENI YUKARI ASAGI olarak duzenlendi",
-    "Sayfa gecisinde onceki son iki satir korunur"
+    "OTA sirasinda yazisiz dalga animasyonu gosterilir"
   ]
 }
