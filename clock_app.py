@@ -828,7 +828,7 @@ def draw_answer_text_pixels(lines, scroll_px):
     n = len(lines)
     first = scroll_px // ANS_LINE_H
     shift = scroll_px % ANS_LINE_H
-    rows = ANS_VISIBLE + (2 if shift else 1)
+    rows = ANS_VISIBLE + (2 if shift else 0)
     i = first
     for row in range(rows):
         screen_y = ANS_TOP - shift + row * ANS_LINE_H
@@ -852,18 +852,19 @@ def show_answer(lines):
     if max_off < 0:
         max_off = 0
     max_scroll = max_off * ANS_LINE_H
-    scroll_px = 0
-    target_scroll = 0
+    drag_px = 0
+    offset = 0
+    target_offset = 0
     draw_answer_frame()
-    draw_answer_text_pixels(lines, scroll_px)
+    draw_answer_text(lines, offset)
     last_y = None
     last_draw = time.ticks_ms()
     while True:
         res = touch.read_fast()
         if res is None:
-            if last_y is not None and target_scroll != scroll_px:
-                scroll_px = target_scroll
-                draw_answer_text_pixels(lines, scroll_px)
+            if last_y is not None and target_offset != offset:
+                offset = target_offset
+                draw_answer_text(lines, offset)
                 last_draw = time.ticks_ms()
             last_y = None
             time.sleep_ms(2)
@@ -877,16 +878,17 @@ def show_answer(lines):
             continue
         dy = y - last_y
         last_y = y
-        target_scroll -= dy
-        if target_scroll < 0:
-            target_scroll = 0
-        elif target_scroll > max_scroll:
-            target_scroll = max_scroll
+        drag_px -= dy
+        if drag_px < 0:
+            drag_px = 0
+        elif drag_px > max_scroll:
+            drag_px = max_scroll
+        target_offset = (drag_px + ANS_LINE_H // 2) // ANS_LINE_H
         now = time.ticks_ms()
-        if (target_scroll != scroll_px and
-                time.ticks_diff(now, last_draw) >= 12):
-            scroll_px = target_scroll
-            draw_answer_text_pixels(lines, scroll_px)
+        if (target_offset != offset and
+                time.ticks_diff(now, last_draw) >= 35):
+            offset = target_offset
+            draw_answer_text(lines, offset)
             last_draw = time.ticks_ms()
 
 
