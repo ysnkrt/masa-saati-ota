@@ -2337,34 +2337,37 @@ def _analog_prayer_key(lt):
 def analog_weather_mini():
     y0 = AN_PR_Y + 74
     panel_h = AN_PR_H - 74
-    lcd.fill_rect(AN_PR_X, y0, AN_PR_W, panel_h, DARKGRAY)
-    lcd.rect(AN_PR_X, y0, AN_PR_W, panel_h, GRAY)
+    section_h = panel_h // 4
+    lcd.fill_rect(AN_PR_X, y0, AN_PR_W, panel_h, BG)
     if not _weather_cache_days:
-        lcd.text("HAVA", AN_PR_X + 21, y0 + 8, TITLE_COL, 1)
-        lcd.text("--", AN_PR_X + 21, y0 + 28, GRAY, 2)
+        for index in range(4):
+            y = y0 + index * section_h
+            lcd.fill_rect(AN_PR_X, y, AN_PR_W, section_h, DARKGRAY)
+            lcd.rect(AN_PR_X, y, AN_PR_W, section_h, GRAY)
+        lcd.text("HAVA --", AN_PR_X + 12, y0 + 7, GRAY, 1)
         return
     day = _weather_cache_days[0]
     current = _forecast_number(day.get("current"), "C")
     hi = _forecast_number(day.get("high"))
     low = _forecast_number(day.get("low"))
-    lcd.text("HAVA", AN_PR_X + 21, y0 + 3, TITLE_COL, 1)
-    lcd.text(current, AN_PR_X + (AN_PR_W - len(current) * 12) // 2,
-             y0 + 14, FG, 2)
-    lines = (
-        "MAX " + hi + " MIN " + low,
-        "YAG %" + _forecast_number(day.get("rain")),
-        "R " + _forecast_number(day.get("wind")) +
-        " G " + _forecast_number(day.get("gust")),
-        "D " + day.get("sunrise", "--:--"),
-        "B " + day.get("sunset", "--:--"),
+    sections = (
+        ("ISI", current + " " + hi + "/" + low),
+        ("YAGMUR", "%" + _forecast_number(day.get("rain"))),
+        ("RUZ/GUST", _forecast_number(day.get("wind")) + "/" +
+         _forecast_number(day.get("gust"))),
+        ("DOG/BAT", day.get("sunrise", "--:--") + "/" +
+         day.get("sunset", "--:--")),
     )
-    y = y0 + 34
-    for text in lines:
-        if len(text) > 11:
-            text = text[:11]
-        lcd.text(text, AN_PR_X + (AN_PR_W - len(text) * 6) // 2,
-                 y, FG, 1)
-        y += 12
+    for index, (title, value) in enumerate(sections):
+        y = y0 + index * section_h
+        lcd.fill_rect(AN_PR_X, y, AN_PR_W, section_h, DARKGRAY)
+        lcd.rect(AN_PR_X, y, AN_PR_W, section_h, GRAY)
+        lcd.text(title, AN_PR_X + (AN_PR_W - len(title) * 6) // 2,
+                 y + 2, TITLE_COL, 1)
+        if len(value) > 11:
+            value = value[:11]
+        lcd.text(value, AN_PR_X + (AN_PR_W - len(value) * 6) // 2,
+                 y + 12, FG, 1)
 
 
 def analog_prayer_panel(lt, force=False):
