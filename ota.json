@@ -1,6 +1,6 @@
 {
   "version": "1.0.32",
-  "release_id": "20260803-204500-settings-hold-tests",
+  "release_id": "20260816-boot-wifi-two-attempts",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.py",
-      "sha256": "8a7a9e8c8e034d2ed698d66cdc7d7f4b646d82e3208955facfa55b620e917f5f"
+      "sha256": "9941559b84217ada0cd98bbdb9bb8d3d038583ad80d1891b75a390ff760f02e2"
     },
     {
       "path": "gpt_stream.py",
@@ -30,12 +30,12 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "f0d4a4c8d36c7ca368cc2df3b98f0adb75d7fd8012d9329dad7d8f67f0c614b1"
+      "sha256": "e01a3f38bf975ae7fb9bb2e71d2be7a1ce0c20ef3e8b7077d6dc7763a30f058c"
     }
   ],
   "notes": [
-    "Genel Test EKRAN YONU basligina uzun basmaya tasindi",
-    "Ag Testi SOR basligina uzun basmaya tasindi",
-    "Test dugmeleri ekran yonu sutunundan kaldirildi"
+    "Saat ekrani acilmadan once WiFi iki kez denenir",
+    "Acilista WiFi deneme durumu ekranda gosterilir",
+    "Baglanti olmasa da saat ekrani acilir"
   ]
 }

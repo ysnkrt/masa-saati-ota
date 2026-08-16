@@ -18,7 +18,8 @@ USE_24H = True
 NTP_EVERY_MS = 3600000
 WIFI_RETRY_MS = 60000
 WIFI_BOOT_RETRY_MS = 6000
-WIFI_BOOT_RETRY_COUNT = 4
+WIFI_BOOT_RETRY_COUNT = 2
+WIFI_BOOT_CONNECT_TIMEOUT_MS = 6000
 GC_EVERY_MS = 300000
 
 
@@ -1776,6 +1777,26 @@ def wifi_reconnect_start(ssid, pw):
         return True
     except Exception:
         return False
+
+
+def wifi_boot_connect():
+    """Saat ekranindan once en fazla iki gorunur WiFi denemesi yapar."""
+    if not WIFI_SSID or network is None:
+        return 0
+    attempts = 0
+    for attempt in range(WIFI_BOOT_RETRY_COUNT):
+        attempts = attempt + 1
+        boot_msg("WIFI BAGLANIYOR %d/%d" %
+                 (attempts, WIFI_BOOT_RETRY_COUNT), AMBER)
+        if wifi_connect(WIFI_SSID, WIFI_PASS,
+                        WIFI_BOOT_CONNECT_TIMEOUT_MS):
+            boot_msg("WIFI BAGLANDI", GREEN)
+            time.sleep_ms(450)
+            return attempts
+        time.sleep_ms(150)
+    boot_msg("WIFI SONRA TEKRAR", AMBER)
+    time.sleep_ms(450)
+    return attempts
 
 
 def run_wifi_setup():
@@ -4199,9 +4220,6 @@ def main():
     load_touch_cal()
     load_wifi()
     wifi_boot_attempts = 0
-    if WIFI_SSID and network is not None:
-        wifi_reconnect_start(WIFI_SSID, WIFI_PASS)
-        wifi_boot_attempts = 1
     try:
         bl_pwm = PWM(Pin(LCD_BL))
         bl_pwm.freq(1000)
@@ -4216,6 +4234,8 @@ def main():
     else:
         boot_msg("MASA SAATI", TITLE_COL)
         time.sleep_ms(600)
+
+    wifi_boot_attempts = wifi_boot_connect()
 
     draw_static()
 
