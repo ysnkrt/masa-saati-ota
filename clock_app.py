@@ -853,6 +853,7 @@ def show_answer(lines):
         max_off = 0
     max_scroll = max_off * ANS_LINE_H
     scroll_px = 0
+    target_scroll = 0
     draw_answer_frame()
     draw_answer_text_pixels(lines, scroll_px)
     last_y = None
@@ -860,6 +861,10 @@ def show_answer(lines):
     while True:
         res = touch.read_fast()
         if res is None:
+            if last_y is not None and target_scroll != scroll_px:
+                scroll_px = target_scroll
+                draw_answer_text_pixels(lines, scroll_px)
+                last_draw = time.ticks_ms()
             last_y = None
             time.sleep_ms(2)
             continue
@@ -872,15 +877,15 @@ def show_answer(lines):
             continue
         dy = y - last_y
         last_y = y
-        new_scroll = scroll_px - dy
-        if new_scroll < 0:
-            new_scroll = 0
-        elif new_scroll > max_scroll:
-            new_scroll = max_scroll
+        target_scroll -= dy
+        if target_scroll < 0:
+            target_scroll = 0
+        elif target_scroll > max_scroll:
+            target_scroll = max_scroll
         now = time.ticks_ms()
-        if (new_scroll != scroll_px and
+        if (target_scroll != scroll_px and
                 time.ticks_diff(now, last_draw) >= 12):
-            scroll_px = new_scroll
+            scroll_px = target_scroll
             draw_answer_text_pixels(lines, scroll_px)
             last_draw = time.ticks_ms()
 
