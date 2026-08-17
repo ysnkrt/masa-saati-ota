@@ -1,50 +1,46 @@
 {
-  "version": "1.0.32",
-  "release_id": "20260816-light-calibration",
+  "version": "1.0.33",
+  "release_id": "20260817-kapasitif-kalibrasyon",
+  "notes": [
+    "Kapasitif hazirlik + iki uclu isik kalibrasyonu",
+    "Oto isik titremesi giderildi",
+    "Genel testte acilis suresi"
+  ],
   "files": [
     {
       "path": "main.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/main.py",
-      "sha256": "79060c1506d9b020b8d7e25c312bb4c223c5577b95e31dbd0d378b7306305a86"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
+      "sha256": "39364fc31170659142e1f4e1f1482aee142da58fea78cd4f0e86a168823aa031"
     },
     {
-      "path": "clock_app.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/clock_app.py",
-      "sha256": "76dffed7aeda5fcd5a368bb7ae10d9508b4dae6ee792073d4f114a1ddea25875"
+      "path": "clock_app.mpy",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
+      "sha256": "7ce3f0a42fb8cc2a82bdc41cada023e43ad6c03901b1195f59d8d850386e9c4b"
     },
     {
       "path": "gpt_stream.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/gpt_stream.py",
-      "sha256": "3d03743541886194b22df9296f7f694368e178d88dbd586ac99c6d31fac1cf8f"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/gpt_stream.py",
+      "sha256": "77d7f8017c59fc65d47e5a2b6943ce0a83720d7cd5b62bfbc8fdc9808b52c9d3"
     },
     {
       "path": "sor_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/sor_feature.py",
-      "sha256": "eb252198f44dfd70310cc38467e74b1bf390f27cf8d6dd344b394864428b5319"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/sor_feature.py",
+      "sha256": "062147a845b299521c420dcef84d53315c281f9cca4e5d3ce3e50cd42270c12b"
     },
     {
       "path": "ota_feature.py",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/ota_feature.py",
-      "sha256": "2e7acaf34b611d7363a6d5baff7a2a9c5668305bbcb67ce15be8f39d25619796"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_feature.py",
+      "sha256": "06797669e499830ed423cabd14a906311768cb9862106bba2f0e9bdaf6134d56"
     },
     {
       "path": "ota_release.txt",
-      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/7e1ce2655f3b20224dfa5aeb84a807c4d6063079/ota_release.txt",
-      "sha256": "bd7fe0cfb0ab621170cb76146f92442dd13247c0d38abdf17a43ca1183cf2a4b"
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
+      "sha256": "2c1d9a2c4dcfea085f102f48bcd42a477ee98ee227b4fe33c14edd991a600fe9"
+    },
+    {
+      "path": "ca_roots.der",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ca_roots.der",
+      "sha256": "555c4a6f14761111120c875b866748a1bd916b9cb566c77277d16e00ebcc51b1"
     }
-  ],
-  "notes": [
-    "Donma korumasi ve basarisiz OTA icin otomatik geri donus eklendi",
-    "Alt menuye HAVA tusu ve dort kutulu gunluk tahmin ekrani eklendi",
-    "Tahminler gercek tarihlerle 16 gune kadar gezilebilir",
-    "Hava verisindeki bytearray donusum hatasi giderildi",
-    "Parcali HTTP yanitlarinin boyut satiri guvenli bicimde cozuluyor",
-    "Ruzgar gust max min ve gunes ciftleri esit boyutta gosteriliyor",
-    "Guncel sicaklik ve cizgili saatte mini hava ozeti eklendi",
-    "Cizgili saatin hava bolumu boslugu dolduran tek panel oldu",
-    "Panel asagi uzanan dort yatay hava bolumune ayrildi",
-    "Isik ayarina GP26 tabanli otomatik parlaklik ac kapa eklendi",
-    "Otomatik parlaklik yumusak gecis ve filtreli sensor okumasi kullanir",
-    "Bes saniyelik ortam isigi kalibrasyonu ve kalici ust sinir eklendi"
   ]
 }

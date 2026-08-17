@@ -85,6 +85,17 @@ PRESET_Q = [
      "gun, tarih ve TSI baslama saatiyle birlikte liste halinde ver."),
 ]
 
+# Bu modul clock_app'in isim alanindan calisir. Bagimliliklar acik yazilir ki
+# eksik bir isim calisma aninda NameError yerine hemen ve anlasilir sekilde
+# ortaya ciksin.
+_REQUIRED = (
+    "lcd", "touch", "time", "os", "gc", "json", "socket", "ssl",
+    "OPENAI_API_KEY", "tls_connect", "log_error", "to_screen_text",
+    "show_answer", "wrap_full", "_watchdog_touch", "WIDTH", "HEIGHT",
+    "BG", "FG", "GRAY", "WHITE", "BLACK", "RED", "GREEN", "TITLE_COL",
+)
+
+
 def start(app):
     global _app
     _app = app
@@ -92,6 +103,9 @@ def start(app):
     for name, value in app.__dict__.items():
         if name not in here:
             here[name] = value
+    missing = [n for n in _REQUIRED if n not in here]
+    if missing:
+        raise RuntimeError("sor_feature eksik bagimlilik: " + ", ".join(missing))
     return _open_sor_impl()
 
 
@@ -156,7 +170,8 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
             try:
                 status, answer, stream_error = gpt_stream.post(
                     "api.openai.com", "/v1/responses", api_key, payload,
-                    timeout, on_delta, _gpt_wait_step)
+                    timeout, on_delta, _gpt_wait_step,
+                    tls_connect=tls_connect)
             except Exception as exc:
                 stream_error = "BAGLANTI HATASI: " + str(exc)
             gc.collect()

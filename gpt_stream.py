@@ -223,25 +223,26 @@ class _Lines:
             self.pending.extend(part)
 
 
-def post(host, path, key, body_text, timeout=45, on_delta=None, wait=None):
+def post(host, path, key, body_text, timeout=45, on_delta=None, wait=None,
+         tls_connect=None):
+    """tls_connect: clock_app.tls_connect -- dogrulanmis TLS baglantisi kurar.
+
+    Bu modul bagimsiz oldugu icin kok sertifikalara erisemez; baglantiyi
+    disaridan almak zorunda. Verilmezse baglanti kurulmaz (kapali tarafa
+    duser), cunku dogrulamasiz baglanti API anahtarini riske atar.
+    """
     body = body_text.encode("utf-8")
     sock = None
     secure = None
     parts = []
     error = None
+    if tls_connect is None:
+        return 0, None, "GUVENLI BAGLANTI SAGLANAMADI"
     try:
         gc.collect()
-        addr = socket.getaddrinfo(host, 443)[0][-1]
-        sock = socket.socket()
-        try:
-            sock.settimeout(timeout)
-        except Exception:
-            pass
-        sock.connect(addr)
-        try:
-            secure = ssl.wrap_socket(sock, server_hostname=host)
-        except TypeError:
-            secure = ssl.wrap_socket(sock)
+        # Dogrulanmis TLS: API anahtari Authorization basliginda gidiyor,
+        # dogrulanmamis bir baglantida araya giren biri anahtari calabilirdi.
+        secure, sock = tls_connect(host, timeout)
         request = (
             "POST " + path + " HTTP/1.1\r\nHost: " + host +
             "\r\nAuthorization: Bearer " + key +

@@ -1,8 +1,22 @@
 _ALLOWED_FILES = (
-    "main.py", "clock_app.py", "gpt_stream.py", "sor_feature.py",
-    "ota_feature.py", "ota_release.txt",
+    "main.py", "clock_app.mpy", "gpt_stream.py", "sor_feature.py",
+    "ota_feature.py", "ota_release.txt", "ca_roots.der",
 )
 _OTA_URL_FILE = "ota_url.txt"
+
+# Bu modul clock_app'in isim alanindan calisir. Eskiden tum isimler
+# sessizce kopyalaniyordu; neye bagimli oldugu hicbir yerde yazmiyordu ve
+# eksik bir isim ancak calisma aninda NameError olarak ortaya cikiyordu.
+# Asagidaki liste bagimliliklari acik hale getirir ve eksigi hemen bildirir.
+_REQUIRED = (
+    "lcd", "touch", "time", "os", "gc", "json", "math", "socket", "ssl",
+    "hashlib", "show_status_screen", "to_screen_text", "is_online",
+    "release_answer_buffers", "_wait_touch_release", "_watchdog_touch",
+    "tls_connect", "https_get", "log_error", "machine_reset",
+    "OTA_RELEASE_FILE", "OTA_MANIFEST_URL", "OTA_MAX_BYTES", "APP_VERSION",
+    "WIDTH", "BG", "FG", "GREEN", "RED", "GRAY", "DARKGRAY", "WHITE",
+    "BLACK", "CYAN", "AMBER", "TITLE_COL", "_PI",
+)
 
 
 def _bind(app):
@@ -10,6 +24,9 @@ def _bind(app):
     for name, value in app.__dict__.items():
         if name not in here:
             here[name] = value
+    missing = [n for n in _REQUIRED if n not in here]
+    if missing:
+        raise RuntimeError("ota_feature eksik bagimlilik: " + ", ".join(missing))
 
 
 def _parse_url(url):
@@ -77,7 +94,7 @@ def _manifest():
                 return None, "OTA DOSYA BILGISI HATALI"
             seen[name] = True
             files.append({"path": name, "url": url, "sha256": digest})
-        if not files or "clock_app.py" not in seen:
+        if not files or "clock_app.mpy" not in seen:
             return None, "OTA DOSYALARI EKSIK"
         if not isinstance(notes, list):
             notes = [str(notes)]
@@ -204,19 +221,14 @@ def _download(url, temp_path, expected_sha, progress=None):
             os.remove(temp_path)
         except Exception:
             pass
-        addr = socket.getaddrinfo(host, 443)[0][-1]
-        raw = socket.socket()
-        try:
-            raw.settimeout(30)
-        except Exception:
-            pass
-        raw.connect(addr)
+        # Dogrulanmis TLS. Eskiden sertifika hic denetlenmiyordu; SHA-256
+        # kontrolu de koruma saglamiyordu, cunku beklenen ozetler ayni
+        # dogrulanmamis kanaldan gelen manifest'in icindeydi. Araya giren
+        # biri kendi manifest'ini ve ona uyan dosyalari sunup cihaza
+        # istedigi kodu calistirabiliyordu.
+        secure, raw = tls_connect(host, 30)
         if progress is not None:
             progress()
-        try:
-            secure = ssl.wrap_socket(raw, server_hostname=host)
-        except TypeError:
-            secure = ssl.wrap_socket(raw)
         request = ("GET " + path + " HTTP/1.1\r\nHost: " + host +
                    "\r\nUser-Agent: masa-saati/" + APP_VERSION +
                    "\r\nAccept: application/octet-stream\r\n"
@@ -314,39 +326,11 @@ def _download(url, temp_path, expected_sha, progress=None):
         gc.collect()
 
 
-def _preserve_api_key(temp_path):
-    source = None
-    target = None
-    ready = temp_path + ".ready"
-    try:
-        source = open(temp_path, "r")
-        target = open(ready, "w")
-        replaced = False
-        for line in source:
-            if line.startswith("OPENAI_API_KEY ="):
-                target.write("OPENAI_API_KEY = " +
-                             repr(OPENAI_API_KEY.strip()) + "\n")
-                replaced = True
-            else:
-                target.write(line)
-        source.close()
-        source = None
-        target.close()
-        target = None
-        if not replaced:
-            return False, "API ANAHTARI KORUNAMADI"
-        os.remove(temp_path)
-        os.rename(ready, temp_path)
-        return True, None
-    except Exception as exc:
-        return False, "API ANAHTARI: " + str(exc)
-    finally:
-        for handle in (source, target):
-            if handle is not None:
-                try:
-                    handle.close()
-                except Exception:
-                    pass
+# _preserve_api_key kaldirildi. Anahtar artik kaynak kodda degil, cihazdaki
+# openai_key.txt dosyasinda duruyor; OTA o dosyaya dokunmadigi icin anahtari
+# indirilen kaynaga yeniden enjekte etmeye gerek yok. Eski yontem ayrica
+# kirilgandi: yeni surumde "OPENAI_API_KEY =" satirinin bicimi degisirse
+# guncelleme komple iptal oluyordu.
 
 
 def _install(files, release_id):
@@ -425,12 +409,6 @@ def run_ota_update():
             show_status_screen(to_screen_text(err)[:48], RED)
             time.sleep_ms(2200)
             return
-        if item["path"] == "clock_app.py":
-            ok, err = _preserve_api_key(temp)
-            if not ok:
-                show_status_screen(to_screen_text(err)[:48], RED)
-                time.sleep_ms(2200)
-                return
     _ota_anim_tick(True)
     ok, err = _install(files, manifest["release_id"])
     if not ok:
