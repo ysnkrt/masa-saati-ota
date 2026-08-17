@@ -1,11 +1,6 @@
 {
   "version": "1.0.33",
   "release_id": "20260817-kapasitif-kalibrasyon",
-  "notes": [
-    "Kapasitif hazirlik + iki uclu isik kalibrasyonu",
-    "Oto isik titremesi giderildi",
-    "Genel testte acilis suresi"
-  ],
   "files": [
     {
       "path": "main.py",
@@ -15,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "7ce3f0a42fb8cc2a82bdc41cada023e43ad6c03901b1195f59d8d850386e9c4b"
+      "sha256": "73e0ac49253a49eafea13a3ca002ab971a5adfe209e78e47ae8fe72476e02438"
     },
     {
       "path": "gpt_stream.py",
@@ -42,5 +37,10 @@
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ca_roots.der",
       "sha256": "555c4a6f14761111120c875b866748a1bd916b9cb566c77277d16e00ebcc51b1"
     }
+  ],
+  "notes": [
+    "Iki uclu isik kalibrasyonu",
+    "Oto isik titremesi giderildi",
+    "Acilis suresi olcumu"
   ]
 }
