@@ -1,6 +1,6 @@
 {
-  "version": "1.0.33",
-  "release_id": "20260817-kapasitif-kalibrasyon",
+  "version": "1.0.34",
+  "release_id": "20260818-kose-saati-ve-hiz",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "73e0ac49253a49eafea13a3ca002ab971a5adfe209e78e47ae8fe72476e02438"
+      "sha256": "3888551913ffb2dac2598de16a24f66bb9abcecb8f6152d4c565c665f3b224ee"
     },
     {
       "path": "gpt_stream.py",
@@ -20,7 +20,7 @@
     {
       "path": "sor_feature.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/sor_feature.py",
-      "sha256": "062147a845b299521c420dcef84d53315c281f9cca4e5d3ce3e50cd42270c12b"
+      "sha256": "0100b783d8a7574c440211b55058a60efd1bfe4fc5e5f82f0816db740a62eb79"
     },
     {
       "path": "ota_feature.py",
@@ -30,7 +30,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "2c1d9a2c4dcfea085f102f48bcd42a477ee98ee227b4fe33c14edd991a600fe9"
+      "sha256": "3d7b62adcc97d62cea3a338fe873c36068bef5e885a26766739fb97cd38e56f4"
     },
     {
       "path": "ca_roots.der",
@@ -39,8 +39,8 @@
     }
   ],
   "notes": [
-    "Iki uclu isik kalibrasyonu",
-    "Oto isik titremesi giderildi",
-    "Acilis suresi olcumu"
+    "Kose saati tum ekranlarda",
+    "Analog yuz 16 kat hizlandi",
+    "Bellek parcalanmasi giderildi"
   ]
 }

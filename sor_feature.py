@@ -91,7 +91,8 @@ PRESET_Q = [
 _REQUIRED = (
     "lcd", "touch", "time", "os", "gc", "json", "socket", "ssl",
     "OPENAI_API_KEY", "tls_connect", "log_error", "to_screen_text",
-    "show_answer", "wrap_full", "_watchdog_touch", "WIDTH", "HEIGHT",
+    "show_answer", "wrap_full", "_watchdog_touch", "_mini_saat",
+    "WIDTH", "HEIGHT",
     "BG", "FG", "GRAY", "WHITE", "BLACK", "RED", "GREEN", "TITLE_COL",
 )
 
@@ -778,6 +779,18 @@ def _sor_pill_layout():
         x += pw + _SOR_GAP_X
     return pills
 
+# Kose saati IKI SEKMEDE DE ayni yerde. Mevcut duzeni hic degistirmeyen
+# tek ortak bosluk burasi:
+#   klavye     : 'z' satirinin solu -- tuslar x=48'den basliyor, GERI
+#                tusu sagdaki bosluga oturuyor, sol 48 piksel bos.
+#   hazir soru : son kutucuk satiri y=138'de bitiyor, alt serit 214'te
+#                basliyor; arasi tamamen bos.
+# Hazir soru ekraninda GERI alt ortada (148, 214) oldugu icin saat
+# gercekten onun sol ustune dusuyor.
+_SAAT_X = 9
+_SAAT_Y = 187
+
+
 def _sor_tabs_draw(active):
 
 
@@ -809,6 +822,7 @@ def _sor_hazir_draw():
     lcd.fill_rect(0, _SOR_HAZIR_GERI_Y, WIDTH, _SOR_HAZIR_GERI_H, DARKGRAY)
     lcd.hline(0, _SOR_HAZIR_GERI_Y, WIDTH, GRAY)
     lcd.text("GERI", (WIDTH - 24) // 2, _SOR_HAZIR_GERI_Y + 9, WHITE, 1)
+    _mini_saat(True, _SAAT_X, _SAAT_Y)
 
 def _sor_in_pos(idx):
     return _SOR_IN_X + (idx % IN_CPL) * IN_CW, _SOR_IN_Y + (idx // IN_CPL) * IN_CH
@@ -847,10 +861,12 @@ def _run_sor_keyboard():
     _sor_tabs_draw(0)
     _kb_draw(keys)
     _sor_in_draw_all(text)
+    _mini_saat(True, _SAAT_X, _SAAT_Y)
     last = 0
     while True:
         p = touch.read_fast()
         if p is None:
+            _mini_saat(x=_SAAT_X, y=_SAAT_Y)
             time.sleep_ms(20)
             continue
         now = time.ticks_ms()
@@ -934,6 +950,7 @@ def run_sor():
         while next_view is None:
             p = touch.read_fast()
             if p is None:
+                _mini_saat(x=_SAAT_X, y=_SAAT_Y)
                 time.sleep_ms(20)
                 continue
             now = time.ticks_ms()
