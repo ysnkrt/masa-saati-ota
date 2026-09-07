@@ -1,6 +1,6 @@
 {
-  "version": "1.0.39",
-  "release_id": "20260907-yuvarlak-rakam",
+  "version": "1.0.40",
+  "release_id": "20260907-yazi-stili",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "ba60c1b858f28ed5b5899366f9e49e6e9d0632e3ab258676488ba2a342cab012"
+      "sha256": "ccdedfbe2599033c63e3723cbe939ba8b7b7227193d8d538a185e505adf46678"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "9580152822bb2e3ed916ef2261da0bb3c77be4fee4ecb2aae42c8e8d738245f6"
+      "sha256": "d59b870876be15d420f54b45e0d9a246e50e0051253227fffc86d3b39b6d5652"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,8 @@
     }
   ],
   "notes": [
-    "BUYUK SAAT: SF Rounded rakamlar",
-    "Kenar yumusatmali, 101x126"
+    "YAZI STILI ayar sekmesi",
+    "Saat rakami: yuvarlak veya koseli",
+    "Yazilar: yuvarlak veya koseli"
   ]
 }
