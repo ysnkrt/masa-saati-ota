@@ -1,6 +1,6 @@
 {
-  "version": "1.0.48",
-  "release_id": "20260907-grafik-cokme",
+  "version": "1.0.49",
+  "release_id": "20260907-sade-hava",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "6506adca35eb0bce030ef37852857952414cfbf7a2981cedeadfbe4753357c9d"
+      "sha256": "39db1a18d67a192d1978531db4da810405ed18ebbc438612dd0f6a23afa7d49d"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "c98293696ae2e2fade71ca2877f51b986247d27bbd7e0b5642aa085bc7c9e278"
+      "sha256": "eb3f52068a93abce0fa6a0feed2cab75f4eb9591d773ed995da0de895742d82d"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,6 @@
     }
   ],
   "notes": [
-    "Grafikte kayan sayi cokmesi giderildi",
-    "p_rect artik tamsayiya cevirir"
+    "Sicaklik grafigi ve saatlik gorunum kaldirildi"
   ]
 }
