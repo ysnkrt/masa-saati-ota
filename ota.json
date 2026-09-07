@@ -1,6 +1,6 @@
 {
-  "version": "1.0.35",
-  "release_id": "20260907-yeni-arayuz",
+  "version": "1.0.36",
+  "release_id": "20260907-gpt-sekme-model",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "a91567a443923d395ac5e369c0d5c71ef89b39c29d4ad58dad1cf99d39d48534"
+      "sha256": "b70e8b1a97060999fc76bde625ee9b0c7e22986be0e56ea13145d9267d7c03c8"
     },
     {
       "path": "gpt_stream.py",
@@ -20,7 +20,7 @@
     {
       "path": "sor_feature.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/sor_feature.py",
-      "sha256": "c2450e92b35226be66c25db53a5d576c89cc462e22b0bea55ae167603f8a0614"
+      "sha256": "243b3976f3ceaad6dcaf88895c080a72b011f80b62c4a0f922e80cd5b92336e0"
     },
     {
       "path": "ses_feature.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "1b73d42a4413e4210d622314bf56d43fd491eb55dab5ede3d841f88f69cd4bed"
+      "sha256": "12f859fbd69977b34d2e14124459297551b934ae3319366b3cc14282ef0021df"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,7 @@
     }
   ],
   "notes": [
-    "480x320 yeni arayuz",
-    "Pano, hava, klavye, cevap",
-    "Ayarlar: bolum ve ayrinti"
+    "GPT sekmeleri hep gorunur",
+    "Model ayarlardan secilebilir"
   ]
 }

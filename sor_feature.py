@@ -166,7 +166,9 @@ def openai_chat(messages, model, web_search, timeout, max_tok=None,
         else:
             request_input.append(message)
     body = {
-        "model": WEB_SEARCH_MODEL if web_search else model,
+        # Model artik ayarlardan seciliyor; web aramasinda da ayni
+        # model kullaniliyor.
+        "model": model,
         "input": request_input,
         "max_output_tokens": min(mt, WEB_MAX_TOKENS) if web_search else mt,
     }
@@ -725,7 +727,7 @@ def ask_question(q, web_search=None, search_context="medium", on_delta=None):
     return openai_chat(
         [{"role": "system", "content": sp},
          {"role": "user", "content": q}],
-        QA_MODEL, web_search, 75 if web_search else 35, max_tok=tok,
+        gpt_model(), web_search, 75 if web_search else 35, max_tok=tok,
         reasoning="none",
         search_context=search_context, on_delta=on_delta)
 
@@ -838,16 +840,8 @@ def _hz_kutu(i):
 
 
 def _hz_sekmeler(aktif):
-    lcd.p_rect(0, 0, PANEL_EN, HZ_BASLIK_H, BG)
-    lcd.p_hline(0, HZ_BASLIK_H - 1, PANEL_EN, DARKGRAY)
-    bw = (PANEL_EN - 30) // 2
-    for i, ad in enumerate(("GPT", "HAZIR")):
-        bx = 10 + i * (bw + 10)
-        acik = (i == aktif)
-        lcd.p_rect(bx, 4, bw, HZ_BASLIK_H - 9, FG if acik else HZ_KART)
-        lcd.p_frame(bx, 4, bw, HZ_BASLIK_H - 9, GRAY if acik else DARKGRAY)
-        lcd.p_text(ad, bx + (bw - len(ad) * 12) // 2, 9,
-                   BG if acik else GRAY, 2)
+    # Klavye ekraniyla AYNI serit: sekmeler iki ekranda da ayni yerde.
+    kb_sekme_ciz(("GPT", "HAZIR"), aktif)
 
 
 def _sor_hazir_draw():
@@ -873,11 +867,11 @@ def _sor_hazir_draw():
 def _hz_hit(px, py):
     """('sekme', no) | ('kart', no) | ('geri', 0) | None"""
     if py < HZ_BASLIK_H:
-        bw = (PANEL_EN - 30) // 2
-        for i in range(2):
-            bx = 10 + i * (bw + 10)
-            if bx <= px <= bx + bw:
-                return ("sekme", i)
+        vur = kb_sekme_hit(px, py)
+        if vur == -1:
+            return ("geri", 0)
+        if vur is not None:
+            return ("sekme", vur)
         return None
     if py >= HZ_ALT_Y:
         return ("geri", 0)
@@ -906,8 +900,8 @@ def _run_sor_keyboard():
     Eskiden bu modulun kendi klavyesi vardi; WiFi ve sehir ekranlarinin
     klavyeleriyle gorunusu tutmuyordu. Artik tek uygulama var.
     """
-    bilgi = "%s   HAZIR SORULAR" % QA_MODEL.upper()
-    return kb_oku("GPT", bilgi, "", False, "SOR", 64, "__switch__")
+    return kb_oku("GPT", "", "", False, "SOR", 64, "__switch__",
+                  ("GPT", "HAZIR"), 0)
 
 
 def run_sor():
