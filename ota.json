@@ -1,6 +1,6 @@
 {
-  "version": "1.0.45",
-  "release_id": "20260907-saatlik-hava",
+  "version": "1.0.46",
+  "release_id": "20260907-serit-grafik-zamanlama",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "61f6144c5659d4875434641600f2c7c86e129c5541519b7868a21f5eab00abaf"
+      "sha256": "6b485e33eafcb5d8d6e61aff2a6484b76dca170464e964d5e37c85886f3d8e71"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "bc80ec08cead30f6e83276a099be543bbc53bbcd5dc4a036f7bebf57a048f3c4"
+      "sha256": "2e87f251d273432e67935e46aa894a3c3583d7ad48c55865540ff88cad8e600e"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,8 @@
     }
   ],
   "notes": [
-    "Saatlik hava tahmini",
-    "Arka plan uzerinde rakam kutulari duzeltildi"
+    "Doviz/altin seridi",
+    "Saatlik secim ve 24 saat grafigi",
+    "Ekran kisma/kapatma zamanlamasi"
   ]
 }
