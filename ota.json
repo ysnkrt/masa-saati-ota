@@ -1,6 +1,6 @@
 {
-  "version": "1.0.38",
-  "release_id": "20260907-ntp-tekrar",
+  "version": "1.0.39",
+  "release_id": "20260907-yuvarlak-rakam",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "8354ab8a355ed538ddb74d957aa1330a2382adabb5b7b52d6b344ae826a99017"
+      "sha256": "ba60c1b858f28ed5b5899366f9e49e6e9d0632e3ab258676488ba2a342cab012"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "9a6228b7679bf4a9a4b9bcc71dc2a6d14f4735cc9935dd8beee4deafe686f519"
+      "sha256": "9580152822bb2e3ed916ef2261da0bb3c77be4fee4ecb2aae42c8e8d738245f6"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "NTP tutmazsa 30 sn'de bir tekrar dener",
-    "Basarisiz NTP artik kaydediliyor"
+    "BUYUK SAAT: SF Rounded rakamlar",
+    "Kenar yumusatmali, 101x126"
   ]
 }
