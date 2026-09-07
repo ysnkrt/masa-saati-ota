@@ -1,6 +1,6 @@
 {
-  "version": "1.0.41",
-  "release_id": "20260907-stil-tum-yuzler",
+  "version": "1.0.42",
+  "release_id": "20260907-turkce-klavye",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "73fee46f7760357096f0b0fc42a42c14bba264f5dfa05e3b048cfcea74bf73fd"
+      "sha256": "e1d153dd55bc06c1b623641699778c1dd12f0c4218ca16af3f6a2ae9a3ef7a1d"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "ab40d7ec19e2bf8df70f34b881e1d741c23319bf76a8f0ac826fdde67b40534c"
+      "sha256": "0183550f2158be3bcf3c239dc118c278261c0bec44ae0ca474826250ca73317b"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Stil ayari butun saat yuzlerinde",
-    "Yuvarlak yazi dikey ezilme duzeltildi"
+    "Klavyede Turkce harfler",
+    "Buyuk saatte tarih ve saniye asagi alindi"
   ]
 }
