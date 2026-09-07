@@ -1,6 +1,6 @@
 {
-  "version": "1.0.36",
-  "release_id": "20260907-gpt-sekme-model",
+  "version": "1.0.37",
+  "release_id": "20260907-buyuk-saat",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "b70e8b1a97060999fc76bde625ee9b0c7e22986be0e56ea13145d9267d7c03c8"
+      "sha256": "88aaeb84d30658ad407317e17596e9f206cd2c1e6db357b63c85f4acd2c58e64"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "12f859fbd69977b34d2e14124459297551b934ae3319366b3cc14282ef0021df"
+      "sha256": "25b0addde1ec9d8535c1bb63d3ecccfe090494ec7c9969059d28f787370d089f"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,8 @@
     }
   ],
   "notes": [
-    "GPT sekmeleri hep gorunur",
-    "Model ayarlardan secilebilir"
+    "Ikinci saat yuzu: BUYUK SAAT",
+    "Rakamlar 94x150, azami boy",
+    "Yuz: ayarlardan veya uzun basisla"
   ]
 }
