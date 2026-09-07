@@ -1,6 +1,6 @@
 {
-  "version": "1.0.43",
-  "release_id": "20260907-ekran-yonu",
+  "version": "1.0.44",
+  "release_id": "20260907-buyuk-saat-temiz",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "6ffe66484ee0e7876eb5ee9739afe959cc75e24bae01c045a3c7afbc89ee5837"
+      "sha256": "e2da762571fb5fef871506f2c43f3fc0d3626d1b0d9139847f7081dd68502655"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "499437c291e8c1e9ba55ae745d6d969b60504d2278965827a4d3ede0fb0b2a3e"
+      "sha256": "325ef9a27feff53a2380981d775195e2a485f1d4dcf64e7ba992d5cdf7eb9bb4"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Ekran 180 derece ters cevrildi",
-    "Ayarlar > EKRAN > EKRAN YONU ile geri alinir"
+    "Buyuk saatte hava/namaz cizilmiyor",
+    "Olu analog yuz kodu kaldirildi"
   ]
 }
