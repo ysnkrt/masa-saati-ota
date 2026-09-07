@@ -1,6 +1,6 @@
 {
-  "version": "1.0.40",
-  "release_id": "20260907-yazi-stili",
+  "version": "1.0.41",
+  "release_id": "20260907-stil-tum-yuzler",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "ccdedfbe2599033c63e3723cbe939ba8b7b7227193d8d538a185e505adf46678"
+      "sha256": "73fee46f7760357096f0b0fc42a42c14bba264f5dfa05e3b048cfcea74bf73fd"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "d59b870876be15d420f54b45e0d9a246e50e0051253227fffc86d3b39b6d5652"
+      "sha256": "ab40d7ec19e2bf8df70f34b881e1d741c23319bf76a8f0ac826fdde67b40534c"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,7 @@
     }
   ],
   "notes": [
-    "YAZI STILI ayar sekmesi",
-    "Saat rakami: yuvarlak veya koseli",
-    "Yazilar: yuvarlak veya koseli"
+    "Stil ayari butun saat yuzlerinde",
+    "Yuvarlak yazi dikey ezilme duzeltildi"
   ]
 }
