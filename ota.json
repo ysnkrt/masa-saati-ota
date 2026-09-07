@@ -1,6 +1,6 @@
 {
-  "version": "1.0.44",
-  "release_id": "20260907-buyuk-saat-temiz",
+  "version": "1.0.45",
+  "release_id": "20260907-saatlik-hava",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "e2da762571fb5fef871506f2c43f3fc0d3626d1b0d9139847f7081dd68502655"
+      "sha256": "61f6144c5659d4875434641600f2c7c86e129c5541519b7868a21f5eab00abaf"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "325ef9a27feff53a2380981d775195e2a485f1d4dcf64e7ba992d5cdf7eb9bb4"
+      "sha256": "bc80ec08cead30f6e83276a099be543bbc53bbcd5dc4a036f7bebf57a048f3c4"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Buyuk saatte hava/namaz cizilmiyor",
-    "Olu analog yuz kodu kaldirildi"
+    "Saatlik hava tahmini",
+    "Arka plan uzerinde rakam kutulari duzeltildi"
   ]
 }
