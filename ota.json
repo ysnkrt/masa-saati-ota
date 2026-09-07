@@ -1,16 +1,16 @@
 {
-  "version": "1.0.34",
-  "release_id": "20260818-kose-saati-ve-hiz",
+  "version": "1.0.35",
+  "release_id": "20260907-yeni-arayuz",
   "files": [
     {
       "path": "main.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/main.py",
-      "sha256": "39364fc31170659142e1f4e1f1482aee142da58fea78cd4f0e86a168823aa031"
+      "sha256": "668508b96bbf84139c982d4adeeb40a62c86e1eec2fadeb14e7671eadad1df7e"
     },
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "3888551913ffb2dac2598de16a24f66bb9abcecb8f6152d4c565c665f3b224ee"
+      "sha256": "a91567a443923d395ac5e369c0d5c71ef89b39c29d4ad58dad1cf99d39d48534"
     },
     {
       "path": "gpt_stream.py",
@@ -20,17 +20,22 @@
     {
       "path": "sor_feature.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/sor_feature.py",
-      "sha256": "0100b783d8a7574c440211b55058a60efd1bfe4fc5e5f82f0816db740a62eb79"
+      "sha256": "c2450e92b35226be66c25db53a5d576c89cc462e22b0bea55ae167603f8a0614"
+    },
+    {
+      "path": "ses_feature.py",
+      "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ses_feature.py",
+      "sha256": "77998a93cb7501bf1b851cfd538b8d4e2c49fc071981705758f556e65607d51a"
     },
     {
       "path": "ota_feature.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_feature.py",
-      "sha256": "06797669e499830ed423cabd14a906311768cb9862106bba2f0e9bdaf6134d56"
+      "sha256": "4ed294c2ea45ccd28be9b6b3fd53537b348de1c6dd009dd3d4b9b80ee90966b7"
     },
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "3d7b62adcc97d62cea3a338fe873c36068bef5e885a26766739fb97cd38e56f4"
+      "sha256": "1b73d42a4413e4210d622314bf56d43fd491eb55dab5ede3d841f88f69cd4bed"
     },
     {
       "path": "ca_roots.der",
@@ -39,8 +44,8 @@
     }
   ],
   "notes": [
-    "Kose saati tum ekranlarda",
-    "Analog yuz 16 kat hizlandi",
-    "Bellek parcalanmasi giderildi"
+    "480x320 yeni arayuz",
+    "Pano, hava, klavye, cevap",
+    "Ayarlar: bolum ve ayrinti"
   ]
 }

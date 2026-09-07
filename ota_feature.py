@@ -1,6 +1,6 @@
 _ALLOWED_FILES = (
     "main.py", "clock_app.mpy", "gpt_stream.py", "sor_feature.py",
-    "ota_feature.py", "ota_release.txt", "ca_roots.der",
+    "ses_feature.py", "ota_feature.py", "ota_release.txt", "ca_roots.der",
 )
 _OTA_URL_FILE = "ota_url.txt"
 

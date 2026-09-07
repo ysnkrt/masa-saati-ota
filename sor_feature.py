@@ -1,6 +1,14 @@
-QA_MODEL = "gpt-5.4"
+# Modeller olculdu (3'er deneme, Responses API, ayni istem):
+#   gpt-5.4        normal 3.11 s / web 4.0-4.8 s   iyi
+#   gpt-5.4-mini   normal 1.33 s / web 2.2-2.8 s   iyi   <- secildi
+#   gpt-5.4-nano   normal 1.83 s                   bir cevapta cumleyi bozdu
+#   gpt-5-mini     normal 4.67 s                   BOS (status: incomplete)
+#   gpt-5-nano     normal 5.32 s                   BOS (status: incomplete)
+# gpt-5-mini/nano akil yurutme modelleri: jeton butcesini dusunmeye
+# harcayip gorunur cikti uretmiyorlar, uygulamada bos ekran demek.
+QA_MODEL = "gpt-5.4-mini"
 
-WEB_SEARCH_MODEL = "gpt-5.4"
+WEB_SEARCH_MODEL = "gpt-5.4-mini"
 
 WEB_MAX_TOKENS = 500
 
@@ -85,6 +93,18 @@ PRESET_Q = [
      "gun, tarih ve TSI baslama saatiyle birlikte liste halinde ver."),
 ]
 
+# Hazir soru kartlarinin kisa basligi ve renk seridi. PRESET_Q ile AYNI
+# SIRADA; kartta kalin baslik olarak bu, altinda PRESET_Q'daki etiket
+# (yani sorulacak sey) gosteriliyor.
+PRESET_KART = (
+    ("HAVA DURUMU", "CYAN"),
+    ("DOVIZ", "GREEN"),
+    ("ALTIN", "AMBER"),
+    ("SON DAKIKA", "RED"),
+    ("BUGUN", "LGRAY"),
+    ("MACLAR", "GREEN"),
+)
+
 # Bu modul clock_app'in isim alanindan calisir. Bagimliliklar acik yazilir ki
 # eksik bir isim calisma aninda NameError yerine hemen ve anlasilir sekilde
 # ortaya ciksin.
@@ -92,6 +112,7 @@ _REQUIRED = (
     "lcd", "touch", "time", "os", "gc", "json", "socket", "ssl",
     "OPENAI_API_KEY", "tls_connect", "log_error", "to_screen_text",
     "show_answer", "wrap_full", "_watchdog_touch", "_mini_saat",
+    "set_answer_header", "set_answer_text_color",
     "WIDTH", "HEIGHT",
     "BG", "FG", "GRAY", "WHITE", "BLACK", "RED", "GREEN", "TITLE_COL",
 )
@@ -108,6 +129,25 @@ def start(app):
     if missing:
         raise RuntimeError("sor_feature eksik bagimlilik: " + ", ".join(missing))
     return _open_sor_impl()
+
+
+def sor_metni(app, soru):
+    """Hazir bir metni dogrudan GPT'ye sorar.
+
+    Ust seritteki SESLI SORU tusu icin: SOR ekranini hic acmadan, ses
+    ekranindan gelen metni normal soru hattina verir. Boylece web arama
+    yonlendirmesi (hava, doviz, haber) aynen isler.
+    """
+    global _app
+    _app = app
+    here = globals()
+    for name, value in app.__dict__.items():
+        if name not in here:
+            here[name] = value
+    eksik = [n for n in _REQUIRED if n not in here]
+    if eksik:
+        raise RuntimeError("sor_feature eksik bagimlilik: " + ", ".join(eksik))
+    return _ask_and_show(soru)
 
 
 def openai_chat(messages, model, web_search, timeout, max_tok=None,
@@ -689,12 +729,18 @@ def ask_question(q, web_search=None, search_context="medium", on_delta=None):
         reasoning="none",
         search_context=search_context, on_delta=on_delta)
 
-def _ask_and_show(q):
+def _ask_and_show(q, baslik=None):
 
+    # baslik: hazir soru tuslarinin kisa adi. Verilmezse sorunun kendisi
+    # kullanilir -- hazir sorularin tam metni baslik icin cok uzun.
+    ust = to_screen_text(baslik if baslik else q)
     release_answer_buffers()
     gc.collect()
     use_web = question_needs_web(q)
     cached_answer = _live_cache_get(q) if use_web else None
+    # Baslikta soru durur: uzun cevabi kaydirirken ne sordugun kaybolmasin.
+    set_answer_header(ust, False)
+    set_answer_text_color(FG)
     draw_answer_frame()
     if use_web and cached_answer is None:
         _gpt_wait_start()
@@ -721,11 +767,18 @@ def _ask_and_show(q):
     gc.collect()
     apply_ans_size(ans_size_idx)
     if err is not None:
+        # Hata cevapla ayni gorunmesin: kirmizi baslik ve kirmizi metin.
+        set_answer_header(ust, True)
+        set_answer_text_color(RED)
         txt = to_screen_text(err)
     else:
+        set_answer_text_color(FG)
         txt = to_screen_text(answer)
-    lines = wrap_full(
-        txt, (WIDTH - 8) // SIZE_PROFILES[ans_size_idx][2])
+    # ANS_CHARS cizicinin GERCEKTEN sigdirdigi karakter sayisi (panel
+    # genisliginden turuyor). Burasi eskiden mantiksal WIDTH ile yeniden
+    # hesapliyordu; satirlar 34 karakterde sariliyor ama cizici 39
+    # sigdiriyordu, yani ekranin sagi bos kaliyordu.
+    lines = wrap_full(txt, ANS_CHARS)
     if not lines:
         lines = [""]
     action = show_answer(lines)
@@ -748,36 +801,7 @@ def _half_ring(cx, cy, r, color, side):
             x -= 1
             err -= 2 * x + 1
 
-def _draw_pill(x, y, w, h, fill_col, border_col, txt, txt_col):
 
-
-    r = h // 2
-    lcd.fill_rect(x + r, y, w - 2 * r, h, fill_col)
-    _fast_disc(x + r, y + r, r, fill_col)
-    _fast_disc(x + w - r, y + r, r, fill_col)
-    _half_ring(x + r, y + r, r, border_col, -1)
-    _half_ring(x + w - r, y + r, r, border_col, 1)
-    lcd.hline(x + r, y, w - 2 * r, border_col)
-    lcd.hline(x + r, y + h - 1, w - 2 * r, border_col)
-    tx = x + (w - len(txt) * 6) // 2
-    ty = y + (h - 7) // 2
-    lcd.text(txt, tx, ty, txt_col, 1)
-
-def _sor_pill_layout():
-
-
-    pills = []
-    x = _SOR_MARGIN_X
-    y = _SOR_PILL_Y0
-    max_x = WIDTH - _SOR_MARGIN_X
-    for label, question in PRESET_Q:
-        pw = len(label) * 6 + _SOR_PILL_PAD * 2
-        if x != _SOR_MARGIN_X and x + pw > max_x:
-            x = _SOR_MARGIN_X
-            y += _SOR_PILL_H + _SOR_GAP_Y
-        pills.append((x, y, pw, _SOR_PILL_H, label, question))
-        x += pw + _SOR_GAP_X
-    return pills
 
 # Kose saati IKI SEKMEDE DE ayni yerde. Mevcut duzeni hic degistirmeyen
 # tek ortak bosluk burasi:
@@ -787,42 +811,82 @@ def _sor_pill_layout():
 #                basliyor; arasi tamamen bos.
 # Hazir soru ekraninda GERI alt ortada (148, 214) oldugu icin saat
 # gercekten onun sol ustune dusuyor.
-_SAAT_X = 9
+_SAAT_X = 3
 _SAAT_Y = 187
 
 
-def _sor_tabs_draw(active):
 
 
-    labels = ["GPT", "HAZIR SORU"]
-    bw = WIDTH // 2 - 6
-    for slot in range(2):
-        idx = 1 - slot
-        bx = 3 + slot * (WIDTH // 2)
-        on = (idx == active)
-        bg = FG if on else TAB_UNSEL
-        fg = BG if on else WHITE
-        _draw_round_rect(bx, _SOR_TABS_Y0, bw, _SOR_TABS_H, 9, bg, GRAY)
-        lbl = labels[idx]
-        lcd.text(lbl, bx + (bw - len(lbl) * 12) // 2,
-                  _SOR_TABS_Y0 + (_SOR_TABS_H - 14) // 2, fg, 2)
-
-def _sor_hit_tab(x, y):
+HZ_BASLIK_H = 30
+HZ_KART_Y0 = 40
+HZ_ALT_Y = 274
+HZ_SUT = 2
+HZ_SAT = 3
+HZ_KART = 0x0841
 
 
-    if y < _SOR_TABS_Y0 or y > _SOR_TABS_Y0 + _SOR_TABS_H:
-        return None
-    return 1 if x < WIDTH // 2 else 0
+def _hz_renk(ad):
+    return {"CYAN": TITLE_COL, "GREEN": GREEN, "AMBER": AMBER,
+            "RED": RED, "LGRAY": LGRAY}.get(ad, GRAY)
+
+
+def _hz_kutu(i):
+    w = (PANEL_EN - 24) // HZ_SUT
+    h = (HZ_ALT_Y - HZ_KART_Y0 - 10 - (HZ_SAT - 1) * 8) // HZ_SAT
+    return (8 + (i % HZ_SUT) * (w + 8),
+            HZ_KART_Y0 + (i // HZ_SUT) * (h + 8), w, h)
+
+
+def _hz_sekmeler(aktif):
+    lcd.p_rect(0, 0, PANEL_EN, HZ_BASLIK_H, BG)
+    lcd.p_hline(0, HZ_BASLIK_H - 1, PANEL_EN, DARKGRAY)
+    bw = (PANEL_EN - 30) // 2
+    for i, ad in enumerate(("GPT", "HAZIR")):
+        bx = 10 + i * (bw + 10)
+        acik = (i == aktif)
+        lcd.p_rect(bx, 4, bw, HZ_BASLIK_H - 9, FG if acik else HZ_KART)
+        lcd.p_frame(bx, 4, bw, HZ_BASLIK_H - 9, GRAY if acik else DARKGRAY)
+        lcd.p_text(ad, bx + (bw - len(ad) * 12) // 2, 9,
+                   BG if acik else GRAY, 2)
+
 
 def _sor_hazir_draw():
-    lcd.fill_rect(0, 0, WIDTH, HEIGHT, BG)
-    _sor_tabs_draw(1)
-    for (x, y, w, h, label, question) in _sor_pill_layout():
-        _draw_pill(x, y, w, h, DARKGRAY, GRAY, label, WHITE)
-    lcd.fill_rect(0, _SOR_HAZIR_GERI_Y, WIDTH, _SOR_HAZIR_GERI_H, DARKGRAY)
-    lcd.hline(0, _SOR_HAZIR_GERI_Y, WIDTH, GRAY)
-    lcd.text("GERI", (WIDTH - 24) // 2, _SOR_HAZIR_GERI_Y + 9, WHITE, 1)
-    _mini_saat(True, _SAAT_X, _SAAT_Y)
+    lcd.p_rect(0, 0, PANEL_EN, PANEL_BOY, BG)
+    _hz_sekmeler(1)
+    for i, (etiket, _soru) in enumerate(PRESET_Q):
+        if i >= HZ_SUT * HZ_SAT:
+            break
+        x, y, w, h = _hz_kutu(i)
+        ad, renk_ad = PRESET_KART[i] if i < len(PRESET_KART) else (etiket, "")
+        renk = _hz_renk(renk_ad)
+        lcd.p_rect(x, y, w, h, HZ_KART)
+        lcd.p_frame(x, y, w, h, DARKGRAY)
+        lcd.p_rect(x, y, 4, h, renk)
+        lcd.p_text(ad, x + 14, y + 12, renk, 2)
+        lcd.p_text(etiket[:32], x + 14, y + 36, GRAY, 1)
+    alt_h = PANEL_BOY - HZ_ALT_Y
+    lcd.p_rect(0, HZ_ALT_Y, PANEL_EN, alt_h, BG)
+    lcd.p_hline(0, HZ_ALT_Y, PANEL_EN, DARKGRAY)
+    lcd.p_text("GERI", (PANEL_EN - 4 * 12) // 2, HZ_ALT_Y + 14, FG, 2)
+
+
+def _hz_hit(px, py):
+    """('sekme', no) | ('kart', no) | ('geri', 0) | None"""
+    if py < HZ_BASLIK_H:
+        bw = (PANEL_EN - 30) // 2
+        for i in range(2):
+            bx = 10 + i * (bw + 10)
+            if bx <= px <= bx + bw:
+                return ("sekme", i)
+        return None
+    if py >= HZ_ALT_Y:
+        return ("geri", 0)
+    for i in range(min(len(PRESET_Q), HZ_SUT * HZ_SAT)):
+        x, y, w, h = _hz_kutu(i)
+        if x <= px < x + w and y <= py < y + h:
+            return ("kart", i)
+    return None
+
 
 def _sor_in_pos(idx):
     return _SOR_IN_X + (idx % IN_CPL) * IN_CW, _SOR_IN_Y + (idx // IN_CPL) * IN_CH
@@ -833,96 +897,18 @@ def _sor_in_char_at(idx, ch):
         return
     lcd.text(ch, x, y, FG, 1)
 
-def _sor_in_erase_at(idx):
-    x, y = _sor_in_pos(idx)
-    if y > KB_TOP - 12:
-        return
-    lcd.fill_rect(x, y, IN_CW, IN_CH, BG)
-
-def _sor_in_draw_all(text):
-    for i in range(len(text)):
-        _sor_in_char_at(i, text[i])
-
-def _sor_kb_build(mode):
 
 
-    keys = _kb_build(mode)
-    keys.append({"label": "GERI", "x": _SOR_KB_GERI_X, "y": _SOR_KB_GERI_Y,
-                 "w": _SOR_KB_GERI_W, "h": KEY_H, "kind": "geri"})
-    return keys
 
 def _run_sor_keyboard():
+    """GPT soru girisi -- clock_app'in paylasilan klavyesini kullanir.
 
+    Eskiden bu modulun kendi klavyesi vardi; WiFi ve sehir ekranlarinin
+    klavyeleriyle gorunusu tutmuyordu. Artik tek uygulama var.
+    """
+    bilgi = "%s   HAZIR SORULAR" % QA_MODEL.upper()
+    return kb_oku("GPT", bilgi, "", False, "SOR", 64, "__switch__")
 
-    text = ""
-    mode = "low"
-    keys = _sor_kb_build(mode)
-    lcd.fill_rect(0, 0, WIDTH, HEIGHT, BG)
-    _sor_tabs_draw(0)
-    _kb_draw(keys)
-    _sor_in_draw_all(text)
-    _mini_saat(True, _SAAT_X, _SAAT_Y)
-    last = 0
-    while True:
-        p = touch.read_fast()
-        if p is None:
-            _mini_saat(x=_SAAT_X, y=_SAAT_Y)
-            time.sleep_ms(20)
-            continue
-        now = time.ticks_ms()
-        if time.ticks_diff(now, last) < 90:
-            continue
-        last = now
-        x, y = p
-        tab = _sor_hit_tab(x, y)
-        if tab is not None:
-            if tab == 1:
-                _wait_touch_release()
-                return "__switch__"
-            continue
-        if y < _SOR_CONTENT_Y0:
-            continue
-        k = None
-        for kk in keys:
-            if kk["x"] <= x <= kk["x"] + kk["w"] and kk["y"] <= y <= kk["y"] + kk["h"]:
-                k = kk
-                break
-        if k is None:
-            continue
-        _kb_key_draw(k, True)
-        time.sleep_ms(30)
-        _kb_key_draw(k, False)
-        kind = k["kind"]
-        if kind == "geri":
-            _wait_touch_release()
-            return None
-        elif kind == "char":
-            if len(text) < 64:
-                idx = len(text)
-                text += k["val"]
-                _sor_in_char_at(idx, k["val"])
-        elif kind == "space":
-            if len(text) < 64:
-                text += " "
-        elif kind == "back":
-            if text:
-                idx = len(text) - 1
-                text = text[:-1]
-                _sor_in_erase_at(idx)
-        elif kind == "case":
-            mode = "up" if mode == "low" else "low"
-            keys = _sor_kb_build(mode)
-            _kb_draw(keys)
-        elif kind == "sym":
-            mode = "sym"
-            keys = _sor_kb_build(mode)
-            _kb_draw(keys)
-        elif kind == "toletters":
-            mode = "low"
-            keys = _sor_kb_build(mode)
-            _kb_draw(keys)
-        elif kind == "send":
-            return text
 
 def run_sor():
 
@@ -948,32 +934,34 @@ def run_sor():
         last = 0
         next_view = None
         while next_view is None:
+            _watchdog_touch()
             p = touch.read_fast()
             if p is None:
-                _mini_saat(x=_SAAT_X, y=_SAAT_Y)
                 time.sleep_ms(20)
                 continue
             now = time.ticks_ms()
             if time.ticks_diff(now, last) < TOUCH_DEBOUNCE_MS:
                 continue
             last = now
-            x, y = p
-            if y >= _SOR_HAZIR_GERI_Y:
+            px = p[0] * PANEL_EN // WIDTH
+            py = p[1] * PANEL_BOY // HEIGHT
+            vur = _hz_hit(px, py)
+            if vur is None:
+                continue
+            tur, no = vur
+            if tur == "geri":
                 _wait_touch_release()
                 return
-            tab = _sor_hit_tab(x, y)
-            if tab is not None:
-                if tab == 0:
+            if tur == "sekme":
+                if no == 0:
                     _wait_touch_release()
                     next_view = 0
                 continue
-            for (px, py, pw, ph, label, question) in _sor_pill_layout():
-                if px <= x <= px + pw and py <= y <= py + ph:
-                    _wait_touch_release()
-                    q_text = question() if callable(question) else question
-                    _ask_and_show(q_text)
-                    next_view = 1
-                    break
+            _wait_touch_release()
+            etiket, soru = PRESET_Q[no]
+            q_text = soru() if callable(soru) else soru
+            _ask_and_show(q_text, etiket)
+            next_view = 1
         view = next_view
 
 def _open_sor_impl():

@@ -10,16 +10,27 @@ _OTA_PENDING = "ota_pending.txt"
 _OTA_BOOTING = "ota_booting.txt"
 _OTA_FILES = (
     "main.py", "clock_app.mpy", "gpt_stream.py", "sor_feature.py",
-    "ota_feature.py", "ota_release.txt", "ca_roots.der",
+    "ses_feature.py", "ota_feature.py", "ota_release.txt", "ca_roots.der",
 )
 
-# Acilis hata sayaci. Uygulama calismaya baslamadan ONCE artirilir ve
-# clock_app bir sure sorunsuz calisinca siler. Boylece hem istisna atan
-# hem de sessizce kilitlenen kod yakalanir: kilitlenen kod sayaci asla
-# silemez, kullanici cihazi kapatip actikca sayac artar ve sinira gelince
-# uygulama hic baslatilmaz -- REPL acik kalir, USB'den mudahale edilir.
+# Acilis hata sayaci. clock_app bir sure sorunsuz calisinca siliniyor;
+# sinira gelirse uygulama hic baslatilmaz -- REPL acik kalir, USB'den
+# mudahale edilir.
+#
+# SAYAC NE ZAMAN ARTAR: yalnizca onceki calisma KENDILIGINDEN bitmisse.
+# Yani watchdog resetinden sonra (kod kilitlendi) veya clock_app istisna
+# atarsa. Eskiden her acilista artiyordu ve bu YANLIS ALARM uretiyordu:
+# saat tam acilip ana dongude 5 saniye durana kadar ~31 saniye geciyor,
+# bu sure dolmadan cihazi uc kez kapatip acmak -- ki masa saatinde son
+# derece dogal -- guvenli modu tetikliyordu. Ekran siyah kaliyor,
+# uygulama hic baslamiyordu. Fisi cekmek bir kod hatasi degildir.
+#
+# reset_cause() RP2'de machine.reset()'i de watchdog olarak raporlar,
+# yani WDT ile yazilimsal reset ayrilamaz; ama GUC ACILISI (PWRON)
+# ayrilabilir ve tek gereken de o.
 _BOOT_FAIL_FILE = "acilis_hata.txt"
 _BOOT_FAIL_LIMIT = 3
+_PWRON_RESET = 1
 
 
 def _exists(path):
@@ -105,7 +116,15 @@ if _fails >= _BOOT_FAIL_LIMIT:
     print(" Normale donmek icin: os.remove('%s')" % _BOOT_FAIL_FILE)
     print("=" * 46)
 else:
-    _boot_fail_bump(_fails + 1)
+    _guc_acilisi = False
+    if machine is not None:
+        try:
+            _guc_acilisi = (machine.reset_cause() ==
+                            getattr(machine, "PWRON_RESET", _PWRON_RESET))
+        except Exception:
+            _guc_acilisi = False
+    if not _guc_acilisi:
+        _boot_fail_bump(_fails + 1)
     _ota_trial_boot = _prepare_ota_boot()
 
     try:
@@ -132,6 +151,7 @@ else:
     except KeyboardInterrupt:
         raise
     except Exception as exc:
+        _boot_fail_bump(_boot_fail_count() + 1)
         try:
             f = open("last_error.txt", "w")
             f.write(repr(exc) + "\n")
