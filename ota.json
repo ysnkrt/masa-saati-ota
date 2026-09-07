@@ -1,6 +1,6 @@
 {
-  "version": "1.0.42",
-  "release_id": "20260907-turkce-klavye",
+  "version": "1.0.43",
+  "release_id": "20260907-ekran-yonu",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "e1d153dd55bc06c1b623641699778c1dd12f0c4218ca16af3f6a2ae9a3ef7a1d"
+      "sha256": "6ffe66484ee0e7876eb5ee9739afe959cc75e24bae01c045a3c7afbc89ee5837"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "0183550f2158be3bcf3c239dc118c278261c0bec44ae0ca474826250ca73317b"
+      "sha256": "499437c291e8c1e9ba55ae745d6d969b60504d2278965827a4d3ede0fb0b2a3e"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Klavyede Turkce harfler",
-    "Buyuk saatte tarih ve saniye asagi alindi"
+    "Ekran 180 derece ters cevrildi",
+    "Ayarlar > EKRAN > EKRAN YONU ile geri alinir"
   ]
 }
