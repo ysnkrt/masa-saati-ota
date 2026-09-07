@@ -1,6 +1,6 @@
 {
-  "version": "1.0.46",
-  "release_id": "20260907-serit-grafik-zamanlama",
+  "version": "1.0.47",
+  "release_id": "20260907-dokunma-duzeltme",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "6b485e33eafcb5d8d6e61aff2a6484b76dca170464e964d5e37c85886f3d8e71"
+      "sha256": "5765d14de140d4650cbbdd0b09e7219a4ba1e6e6c147e70d258839fccc711663"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "2e87f251d273432e67935e46aa894a3c3583d7ad48c55865540ff88cad8e600e"
+      "sha256": "40cdfbb0d7f4ebbac8a012f0567ab22995b12ade30761a71deae235c7b597096"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,7 @@
     }
   ],
   "notes": [
-    "Doviz/altin seridi",
-    "Saatlik secim ve 24 saat grafigi",
-    "Ekran kisma/kapatma zamanlamasi"
+    "Ekrana dokununca cokme giderildi",
+    "Yayin oncesi statik kontrol eklendi"
   ]
 }
