@@ -1,6 +1,6 @@
 {
-  "version": "1.0.47",
-  "release_id": "20260907-dokunma-duzeltme",
+  "version": "1.0.48",
+  "release_id": "20260907-grafik-cokme",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "5765d14de140d4650cbbdd0b09e7219a4ba1e6e6c147e70d258839fccc711663"
+      "sha256": "6506adca35eb0bce030ef37852857952414cfbf7a2981cedeadfbe4753357c9d"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "40cdfbb0d7f4ebbac8a012f0567ab22995b12ade30761a71deae235c7b597096"
+      "sha256": "c98293696ae2e2fade71ca2877f51b986247d27bbd7e0b5642aa085bc7c9e278"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Ekrana dokununca cokme giderildi",
-    "Yayin oncesi statik kontrol eklendi"
+    "Grafikte kayan sayi cokmesi giderildi",
+    "p_rect artik tamsayiya cevirir"
   ]
 }
