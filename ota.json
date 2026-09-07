@@ -1,6 +1,6 @@
 {
-  "version": "1.0.37",
-  "release_id": "20260907-buyuk-saat",
+  "version": "1.0.38",
+  "release_id": "20260907-ntp-tekrar",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "88aaeb84d30658ad407317e17596e9f206cd2c1e6db357b63c85f4acd2c58e64"
+      "sha256": "8354ab8a355ed538ddb74d957aa1330a2382adabb5b7b52d6b344ae826a99017"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "25b0addde1ec9d8535c1bb63d3ecccfe090494ec7c9969059d28f787370d089f"
+      "sha256": "9a6228b7679bf4a9a4b9bcc71dc2a6d14f4735cc9935dd8beee4deafe686f519"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,7 @@
     }
   ],
   "notes": [
-    "Ikinci saat yuzu: BUYUK SAAT",
-    "Rakamlar 94x150, azami boy",
-    "Yuz: ayarlardan veya uzun basisla"
+    "NTP tutmazsa 30 sn'de bir tekrar dener",
+    "Basarisiz NTP artik kaydediliyor"
   ]
 }
