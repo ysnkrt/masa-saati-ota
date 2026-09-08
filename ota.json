@@ -1,6 +1,6 @@
 {
-  "version": "1.0.59",
-  "release_id": "20260907-sessiz-hatalar",
+  "version": "1.0.60",
+  "release_id": "20260907-saat-tara-surgu",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "20da10f9c7d532ebd11d7d4dc0fd9855ad0997e8751b004ad0305d1eec8bb31e"
+      "sha256": "7c2998eb8a0e4347896006367259c73e84af18247504479931ae7c7caedbf5a6"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "2e51e7bb5e49c43d66e1fc258eb1a76b79463b13556d0209c5ff578c1673488b"
+      "sha256": "e3a0991e12dea2c9f1283265ae946d0a68b5a52e352153f83485561201c4743d"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,8 @@
     }
   ],
   "notes": [
-    "Sessizce yutulan bes ar\u0131za artik kaydediliyor"
+    "Cevap ekraninda saat GERI tusuna binmiyor",
+    "WiFi ekranina TARA tusu",
+    "Surguyu sonuna cekince isik kapaniyor"
   ]
 }
