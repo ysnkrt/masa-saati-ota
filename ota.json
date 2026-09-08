@@ -1,6 +1,6 @@
 {
-  "version": "1.0.57",
-  "release_id": "20260907-temizlik",
+  "version": "1.0.58",
+  "release_id": "20260907-gun-dokunma-temizlik",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "d1d25ff94151330872739c0e3ad68028441cdc7fa53ef2edb3e59c7aa698ee77"
+      "sha256": "d7b2eaf0ec3d3f6fe3a2b2d0b29692a405717da9ef95afba1b99c89e3c91199b"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "dddcd0b60d17b38ab511c354e18b5eb5eee4a26e64eece5502059358212822ab"
+      "sha256": "7ef014cbba77b03c70364d01b707674558691c3c5e9ba3c38213a48966f8c21c"
     },
     {
       "path": "ca_roots.der",
@@ -45,6 +45,7 @@
   ],
   "notes": [
     "Hava ekraninda gune dokunma geri geldi",
-    "122 olu fonksiyon kaldirildi"
+    "122 olu fonksiyon kaldirildi",
+    "Doviz yarim yanitta bozulmuyor"
   ]
 }
