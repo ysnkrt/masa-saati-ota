@@ -1,6 +1,6 @@
 {
-  "version": "1.0.65",
-  "release_id": "20260907-parlaklik-tabani",
+  "version": "1.0.66",
+  "release_id": "20260907-kaydirma-kalkti",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "9c3f48bc0b18b6a0ef9b00267dd2ecf77295b76508b4b677ae88b97685e8dada"
+      "sha256": "ed40b352324c97a22de315a5d68f1329636761a62be7c8a0f693d3c61d7a2569"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "6b118b920989644efc4f970434603b5766371d09e63f2c25aec5f90a1d0f166d"
+      "sha256": "b6796b5bfc3f0c72a2708db3e407d087e5918037b0698a86be890746f9757bc4"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,6 @@
     }
   ],
   "notes": [
-    "Kaydedilmis dusuk parlaklik ekrani karartmiyor"
+    "Gizli kaydirma hareketi kaldirildi, tek denetim surgu"
   ]
 }
