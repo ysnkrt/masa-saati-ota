@@ -1,6 +1,6 @@
 {
-  "version": "1.0.53",
-  "release_id": "20260907-oto-kisma-kalkti",
+  "version": "1.0.54",
+  "release_id": "20260907-surukle-parlaklik",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "54388527ca491b8d8770b24959e129f4a3af3022d5d8b5e3c8fae1686123dcb5"
+      "sha256": "6ac55405988f9888f9b852f5c45428beceb0977d2cf0a46bf8c745ab4744a7ab"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "77d5b5f0271cc697af55c4c97b03f5292de78782296405c087c9cc7d62776c91"
+      "sha256": "540f10cffd282a4cf725dc8c435d1308a3186db028e4c2d07ea69e2389774883"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,6 @@
     }
   ],
   "notes": [
-    "Otomatik kisma/kapatma kaldirildi",
-    "Namaz ayari kalkti, hep acik",
-    "Parlaklik gostergesi yalnizca kendi alanini onarir"
+    "Parlaklik parmakla surukleyerek ayarlaniyor"
   ]
 }
