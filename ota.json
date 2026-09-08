@@ -1,6 +1,6 @@
 {
-  "version": "1.0.64",
-  "release_id": "20260907-surgu-iz",
+  "version": "1.0.65",
+  "release_id": "20260907-parlaklik-tabani",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "baead7e971cc98566d3bb17ff0c2e15ac991268fa46dac4a1d09bc02eac17765"
+      "sha256": "9c3f48bc0b18b6a0ef9b00267dd2ecf77295b76508b4b677ae88b97685e8dada"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "7c5ea23b1c5572a37b00e74c56b94c9b10be0ca58857a2d875395dfb9e5cd5b6"
+      "sha256": "6b118b920989644efc4f970434603b5766371d09e63f2c25aec5f90a1d0f166d"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,6 @@
     }
   ],
   "notes": [
-    "Tutamak iz birakmiyor",
-    "En dusukte ekran gorunur kaliyor"
+    "Kaydedilmis dusuk parlaklik ekrani karartmiyor"
   ]
 }
