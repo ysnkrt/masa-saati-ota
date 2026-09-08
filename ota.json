@@ -1,6 +1,6 @@
 {
-  "version": "1.0.62",
-  "release_id": "20260907-surekli-surgu",
+  "version": "1.0.63",
+  "release_id": "20260907-surgu-son",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "c59bd5136d6143f007d831113ff698ae6d0022ad0d0b7d531c2e3b6d0db847a5"
+      "sha256": "21cae5a15bc712f339e39bbd257f465aa7cc7d7dda1c4b46e91b4553c14f3cc7"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "dd9036c60778e50fc0302efcda5b55ed3f8dbdd4e177fb308c97fa29be8d9e0e"
+      "sha256": "02677e4a880a3c8dd27426b1985752d121a434c237410818e474f14dd39e45e8"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,7 @@
     }
   ],
   "notes": [
-    "Iki saat yuzunde de surekli gorunen isik surgusu"
+    "Iki saat yuzunde surekli isik surgusu",
+    "Doviz gecici bozuk yanitta sessiz"
   ]
 }
