@@ -1,6 +1,6 @@
 {
-  "version": "1.0.56",
-  "release_id": "20260907-cevap-yazi-stili",
+  "version": "1.0.57",
+  "release_id": "20260907-temizlik",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "d5b64b237ae42b0d5fe288046749f7aa20d85d0ede2eb4d8d41568a169b2ff6f"
+      "sha256": "d1d25ff94151330872739c0e3ad68028441cdc7fa53ef2edb3e59c7aa698ee77"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "f9aa64de1a4a6aa93f88a533570ba31219614fe108dee256cfb594cc888184ca"
+      "sha256": "dddcd0b60d17b38ab511c354e18b5eb5eee4a26e64eece5502059358212822ab"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,7 @@
     }
   ],
   "notes": [
-    "Cevap metni secilen yazi stilinde"
+    "Hava ekraninda gune dokunma geri geldi",
+    "122 olu fonksiyon kaldirildi"
   ]
 }
