@@ -1,6 +1,6 @@
 {
-  "version": "1.0.66",
-  "release_id": "20260907-kaydirma-kalkti",
+  "version": "1.0.67",
+  "release_id": "20260908-uc-yeni-stil",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "ed40b352324c97a22de315a5d68f1329636761a62be7c8a0f693d3c61d7a2569"
+      "sha256": "decc17bc651009dca065f1d91a3880ce46e3c439f03293e6c84f4bc3c61f60ae"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "b6796b5bfc3f0c72a2708db3e407d087e5918037b0698a86be890746f9757bc4"
+      "sha256": "5dc74b4f7d26c0230f8724eae3e2bbaa16cf9bbc51f69f784dc8884d9da2d0da"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,8 @@
     }
   ],
   "notes": [
-    "Gizli kaydirma hareketi kaldirildi, tek denetim surgu"
+    "Saatte CIZGI, OYUK ve KLASIK stilleri",
+    "Surgu ayarlardan kapatilabilir",
+    "Panoda surgu hava kartiyla ayni genislikte"
   ]
 }
