@@ -1,6 +1,6 @@
 {
-  "version": "1.0.55",
-  "release_id": "20260907-anim-serit",
+  "version": "1.0.56",
+  "release_id": "20260907-cevap-yazi-stili",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "8da0e8024640f3abc41ca565769828b5e8d46716e67ebb6565bded2166246cf6"
+      "sha256": "d5b64b237ae42b0d5fe288046749f7aa20d85d0ede2eb4d8d41568a169b2ff6f"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "18f87cc7ab32cd518e42c7627ec748f1f29d32898888dfc25b1cf97fa57747d1"
+      "sha256": "f9aa64de1a4a6aa93f88a533570ba31219614fe108dee256cfb594cc888184ca"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,6 @@
     }
   ],
   "notes": [
-    "GPT bekleme animasyonu akici",
-    "Doviz seridi acilista geliyor",
-    "Serit 7 saniyede doviz ve sehir arasinda donuyor"
+    "Cevap metni secilen yazi stilinde"
   ]
 }
