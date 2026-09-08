@@ -1,6 +1,6 @@
 {
-  "version": "1.0.50",
-  "release_id": "20260907-kucuk-harf",
+  "version": "1.0.51",
+  "release_id": "20260907-genel-bolum",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "32949557e717caaae69bded4e3cec05cfe024babee8a9ac915366c4cbed521bf"
+      "sha256": "c81a38d1ac659bf0e9c417044f8e618f51da86846a254ae2b6c98d61f5246858"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "f1356605bfa4f0621b833b3f2902a2e5d4a1e3ea29081fa4381cc50579224588"
+      "sha256": "a810e214294a3ff301b7329780b95c259d3db2360e2dcde1780d20c032ba3dc9"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,8 @@
     }
   ],
   "notes": [
-    "Klavyede kucuk harf kipi"
+    "Serit bolumu GENEL oldu, zamanlama oraya tasindi",
+    "Zamanlama saati klavyeden yaziliyor",
+    "Kisma parlakligi ayarlanabilir"
   ]
 }
