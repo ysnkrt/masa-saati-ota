@@ -1,6 +1,6 @@
 {
-  "version": "1.0.61",
-  "release_id": "20260907-gorunur-surgu",
+  "version": "1.0.62",
+  "release_id": "20260907-surekli-surgu",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "5d540ab866a7a43a2002ebd033cfd4c807899a8dc167357e9025eceda3223fd2"
+      "sha256": "c59bd5136d6143f007d831113ff698ae6d0022ad0d0b7d531c2e3b6d0db847a5"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "453f1f96c0bcc1fcf8f4c2c43c6a9e2ba8b3ba3fcad0ad7c59ae7a1e2d162ba0"
+      "sha256": "dd9036c60778e50fc0302efcda5b55ed3f8dbdd4e177fb308c97fa29be8d9e0e"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,6 @@
     }
   ],
   "notes": [
-    "Gorunur isik surgusu: ust seritteki simgeye bas"
+    "Iki saat yuzunde de surekli gorunen isik surgusu"
   ]
 }
