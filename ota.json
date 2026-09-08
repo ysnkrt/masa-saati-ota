@@ -1,6 +1,6 @@
 {
-  "version": "1.0.63",
-  "release_id": "20260907-surgu-son",
+  "version": "1.0.64",
+  "release_id": "20260907-surgu-iz",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "21cae5a15bc712f339e39bbd257f465aa7cc7d7dda1c4b46e91b4553c14f3cc7"
+      "sha256": "baead7e971cc98566d3bb17ff0c2e15ac991268fa46dac4a1d09bc02eac17765"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "02677e4a880a3c8dd27426b1985752d121a434c237410818e474f14dd39e45e8"
+      "sha256": "7c5ea23b1c5572a37b00e74c56b94c9b10be0ca58857a2d875395dfb9e5cd5b6"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Iki saat yuzunde surekli isik surgusu",
-    "Doviz gecici bozuk yanitta sessiz"
+    "Tutamak iz birakmiyor",
+    "En dusukte ekran gorunur kaliyor"
   ]
 }
