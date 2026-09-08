@@ -1,6 +1,6 @@
 {
-  "version": "1.0.49",
-  "release_id": "20260907-sade-hava",
+  "version": "1.0.50",
+  "release_id": "20260908-kucuk-harf",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "39db1a18d67a192d1978531db4da810405ed18ebbc438612dd0f6a23afa7d49d"
+      "sha256": "32949557e717caaae69bded4e3cec05cfe024babee8a9ac915366c4cbed521bf"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "eb3f52068a93abce0fa6a0feed2cab75f4eb9591d773ed995da0de895742d82d"
+      "sha256": "53413d5cb3c3f5b70fb3401dea3f072cb2ae0378912652c43f4ad06419a979bb"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,7 @@
     }
   ],
   "notes": [
-    "Sicaklik grafigi ve saatlik gorunum kaldirildi"
+    "Klavyede buyuk/kucuk harf",
+    "Zamanlama yanlislikla acilmasin"
   ]
 }
