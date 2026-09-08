@@ -1,6 +1,6 @@
 {
   "version": "1.0.50",
-  "release_id": "20260908-kucuk-harf",
+  "release_id": "20260907-kucuk-harf",
   "files": [
     {
       "path": "main.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "53413d5cb3c3f5b70fb3401dea3f072cb2ae0378912652c43f4ad06419a979bb"
+      "sha256": "f1356605bfa4f0621b833b3f2902a2e5d4a1e3ea29081fa4381cc50579224588"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,6 @@
     }
   ],
   "notes": [
-    "Klavyede buyuk/kucuk harf",
-    "Zamanlama yanlislikla acilmasin"
+    "Klavyede kucuk harf kipi"
   ]
 }
