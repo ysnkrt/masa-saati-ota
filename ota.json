@@ -1,6 +1,6 @@
 {
-  "version": "1.0.67",
-  "release_id": "20260908-uc-yeni-stil",
+  "version": "1.0.68",
+  "release_id": "20260908-oyuk-duzelt",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "decc17bc651009dca065f1d91a3880ce46e3c439f03293e6c84f4bc3c61f60ae"
+      "sha256": "2931fe9e0ae17d44a8e2a68260b1118e32d4f2a68519a4c10f393478609a011f"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "5dc74b4f7d26c0230f8724eae3e2bbaa16cf9bbc51f69f784dc8884d9da2d0da"
+      "sha256": "403db6005f652cf17929e1814e461e5a4be224f295257ca281e74a50bb7bc7f7"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,6 @@
     }
   ],
   "notes": [
-    "Saatte CIZGI, OYUK ve KLASIK stilleri",
-    "Surgu ayarlardan kapatilabilir",
-    "Panoda surgu hava kartiyla ayni genislikte"
+    "OYUK saat stili duzeltildi: kavisli rakamlarda (5,8 gibi) cift kontur/oyuk gorunumu yerine dolu govde + ince oluk cizgisi"
   ]
 }
