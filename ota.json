@@ -1,6 +1,6 @@
 {
-  "version": "1.0.58",
-  "release_id": "20260907-gun-dokunma-temizlik",
+  "version": "1.0.59",
+  "release_id": "20260907-sessiz-hatalar",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "d7b2eaf0ec3d3f6fe3a2b2d0b29692a405717da9ef95afba1b99c89e3c91199b"
+      "sha256": "20da10f9c7d532ebd11d7d4dc0fd9855ad0997e8751b004ad0305d1eec8bb31e"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "7ef014cbba77b03c70364d01b707674558691c3c5e9ba3c38213a48966f8c21c"
+      "sha256": "2e51e7bb5e49c43d66e1fc258eb1a76b79463b13556d0209c5ff578c1673488b"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,6 @@
     }
   ],
   "notes": [
-    "Hava ekraninda gune dokunma geri geldi",
-    "122 olu fonksiyon kaldirildi",
-    "Doviz yarim yanitta bozulmuyor"
+    "Sessizce yutulan bes ar\u0131za artik kaydediliyor"
   ]
 }
