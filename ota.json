@@ -1,6 +1,6 @@
 {
-  "version": "1.0.54",
-  "release_id": "20260907-surukle-parlaklik",
+  "version": "1.0.55",
+  "release_id": "20260907-anim-serit",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "6ac55405988f9888f9b852f5c45428beceb0977d2cf0a46bf8c745ab4744a7ab"
+      "sha256": "8da0e8024640f3abc41ca565769828b5e8d46716e67ebb6565bded2166246cf6"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "540f10cffd282a4cf725dc8c435d1308a3186db028e4c2d07ea69e2389774883"
+      "sha256": "18f87cc7ab32cd518e42c7627ec748f1f29d32898888dfc25b1cf97fa57747d1"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,8 @@
     }
   ],
   "notes": [
-    "Parlaklik parmakla surukleyerek ayarlaniyor"
+    "GPT bekleme animasyonu akici",
+    "Doviz seridi acilista geliyor",
+    "Serit 7 saniyede doviz ve sehir arasinda donuyor"
   ]
 }
