@@ -1,6 +1,6 @@
 {
-  "version": "1.0.51",
-  "release_id": "20260907-genel-bolum",
+  "version": "1.0.52",
+  "release_id": "20260907-hizli-parlaklik",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "c81a38d1ac659bf0e9c417044f8e618f51da86846a254ae2b6c98d61f5246858"
+      "sha256": "a62c76a571328bc0a7a076c079597c4b8e928fcd2e983cc82652039795aa4cbc"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "a810e214294a3ff301b7329780b95c259d3db2360e2dcde1780d20c032ba3dc9"
+      "sha256": "890cb6c087226ff5e2ea29b5e04bc44dbed6930eebecb4fef2662bbcaf2dfd72"
     },
     {
       "path": "ca_roots.der",
@@ -44,8 +44,6 @@
     }
   ],
   "notes": [
-    "Serit bolumu GENEL oldu, zamanlama oraya tasindi",
-    "Zamanlama saati klavyeden yaziliyor",
-    "Kisma parlakligi ayarlanabilir"
+    "Saat ekraninda dikey kaydirma parlakligi degistirir"
   ]
 }
