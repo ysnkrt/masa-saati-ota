@@ -1,6 +1,6 @@
 {
-  "version": "1.0.68",
-  "release_id": "20260908-oyuk-duzelt",
+  "version": "1.0.76",
+  "release_id": "20260919-surgu-hiz-saniye-orta",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "2931fe9e0ae17d44a8e2a68260b1118e32d4f2a68519a4c10f393478609a011f"
+      "sha256": "368917df9683a57bcb6751f4909e4a826963d6669eabbc5553205eb8e0734774"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "403db6005f652cf17929e1814e461e5a4be224f295257ca281e74a50bb7bc7f7"
+      "sha256": "7515fbf3de5dc592c9ae57b384a98150438f5bd53d07f48c43fcc9af9cafc0b1"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,8 @@
     }
   ],
   "notes": [
-    "OYUK saat stili duzeltildi: kavisli rakamlarda (5,8 gibi) cift kontur/oyuk gorunumu yerine dolu govde + ince oluk cizgisi"
+    "Rails rakamlari ve panoda secilen saat stili",
+    "Kompakt ve hizlandirilmis isik surgusu",
+    "Iki ekranda ortalanmis saniye cubuklari"
   ]
 }
