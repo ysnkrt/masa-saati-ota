@@ -149,6 +149,135 @@ def _tampon_ayir(hedef):
     return bloklar
 
 
+# ---- SUREKLI DINLEME (halka tampon) ----
+# Cihaz sessizken bile dinler; ses esigi asilinca kayit "baslamis"
+# sayilir ve esikten ONCEKI birkac blok da elde oldugu icin cumlenin
+# basi kacmaz.
+#
+# YER AZALINCA NE OLUR: yeni blok AYIRMAK yerine en eski blok GERI
+# DONUSTURULUR (listenin basindan alinip sonuna eklenir). Silip yeniden
+# ayirmak ayni iste yigini parcalar; parcalanan yiginda TLS el sikismasi
+# buyuk bitisik blok bulamiyor -- bu cihazda daha once tam olarak bu
+# yuzden hava/namaz/GPT calismamisti.
+#
+# Bellek tavani BOS_TABAN ile korunuyor: halka ne kadar uzarsa uzasin
+# yiginda her zaman o kadar bos alan kaliyor.
+ON_TAMPON_MS = 1000       # esikten once tutulacak ses
+SESSIZLIK_MS = 900        # konusma bitti sayilacak sessizlik
+
+
+def _blok_tepe(blok, n, dc):
+    """Blogun tepe genligi. Her 8. ornek yeterli -- olculdu, tam
+    tarama kayit dongusunu yavaslatiyordu."""
+    tepe = 0
+    for k in range(2, n, 16):
+        v = (blok[k + 1] << 8) | blok[k]
+        if v > 32767:
+            v -= 65536
+        v -= dc
+        if v < 0:
+            v = -v
+        if v > tepe:
+            tepe = v
+    return tepe
+
+
+def dinle_surekli(azami_sn=None, dur_kontrol=None):
+    """Ses gelene kadar dinler, konusma bitince kaydi dondurur.
+
+    (bloklar, uzunluk, tepe) doner; ses gelmezse (None, 0, 0).
+    dur_kontrol() True donerse dinleme iptal edilir.
+
+    Halka tamponun uzunlugu SABIT DEGIL: bos RAM BOS_TABAN'in altina
+    inene kadar uzar, sonra en eski blogu geri donustururek sabit kalir.
+    """
+    from machine import I2S, Pin
+    release_answer_buffers()
+    gc.collect()
+    if azami_sn is None:
+        azami_sn = KAYIT_SN
+    azami_blok = ORNEK_HIZ * 2 * azami_sn // BLOK_BOYU
+    if azami_blok < 2:
+        azami_blok = 2
+    on_blok = ORNEK_HIZ * 2 * ON_TAMPON_MS // 1000 // BLOK_BOYU
+    if on_blok < 1:
+        on_blok = 1
+    ses = None
+    try:
+        ses = I2S(0, sck=Pin(SCK_PIN), ws=Pin(WS_PIN), sd=Pin(SD_PIN),
+                  mode=I2S.RX, bits=32, format=I2S.MONO,
+                  rate=ORNEK_HIZ, ibuf=I2S_TAMPON)
+        ham = bytearray(4096)
+        # Acilis gurultusu atilir, sonra DC ve ortam tabani olculur --
+        # kaydet() ile ayni yontem, sebepleri orada anlatildi.
+        atilacak = ORNEK_HIZ * 300 // 1000 * 4
+        while atilacak > 0:
+            atilacak -= ses.readinto(ham)
+        olcum = ORNEK_HIZ * 150 // 1000 * 4
+        dc_top = 0
+        dc_say = 0
+        n = 0
+        while olcum > 0:
+            n = ses.readinto(ham)
+            olcum -= n
+            for k in range(2, n, 16):
+                v = (ham[k + 1] << 8) | ham[k]
+                if v > 32767:
+                    v -= 65536
+                dc_top += v
+                dc_say += 1
+        dc = dc_top // dc_say if dc_say else 0
+        taban = _blok_tepe(ham, n, dc)
+        esik = taban * 3
+        if esik < SES_ESIGI:
+            esik = SES_ESIGI
+
+        halka = []
+        konusma = False
+        sessiz_ms = 0
+        tepe_genel = 0
+        blok_ms = BLOK_BOYU * 1000 // (ORNEK_HIZ * 2)
+        while True:
+            if dur_kontrol is not None and dur_kontrol():
+                return (None, 0, 0)
+            # Blok bul: once yer varsa yeni ayir, yoksa EN ESKIYI geri
+            # donustur. Konusma basladiysa hicbir sey atilmaz.
+            if len(halka) < azami_blok and gc.mem_free() >= BOS_TABAN + BLOK_BOYU:
+                blok = bytearray(BLOK_BOYU)
+            elif konusma:
+                break                      # yer bitti, eldekiyle yetin
+            else:
+                blok = halka.pop(0)
+            n = ses.readinto(blok)
+            halka.append(blok)
+            t = _blok_tepe(blok, n, dc)
+            if t > tepe_genel:
+                tepe_genel = t
+            if t > esik:
+                konusma = True
+                sessiz_ms = 0
+            elif konusma:
+                sessiz_ms += blok_ms
+                if sessiz_ms >= SESSIZLIK_MS:
+                    break
+            elif len(halka) > on_blok:
+                # Henuz konusma yok: yalnizca on tamponu tut.
+                halka.pop(0)
+        if not konusma:
+            return (None, 0, 0)
+        uzunluk = 0
+        for b in halka:
+            uzunluk += len(b)
+        return (halka, uzunluk, tepe_genel)
+    finally:
+        if ses is not None:
+            try:
+                ses.deinit()
+            except Exception:
+                pass
+        gc.collect()
+
+
 def kaydet(basili=False):
     """Mikrofondan kayit alir. (bloklar, bas, son, tepe) doner.
 

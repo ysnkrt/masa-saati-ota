@@ -1,6 +1,6 @@
 {
-  "version": "1.0.83",
-  "release_id": "20260923-derece-glif",
+  "version": "1.0.84",
+  "release_id": "20260923-surekli-dinleme",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "33a2e9422990eacc43754ee7d25c86cd3a61719b3ad5fc62777b4920445f776b"
+      "sha256": "194e325f9061e3671c852d6b02bcbb34c1b6bcf9504bae58e29aca02395728f8"
     },
     {
       "path": "gpt_stream.py",
@@ -25,7 +25,7 @@
     {
       "path": "ses_feature.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ses_feature.py",
-      "sha256": "77998a93cb7501bf1b851cfd538b8d4e2c49fc071981705758f556e65607d51a"
+      "sha256": "7193f96d6700689ded82005f92b331b02540731d3fe639e55e0f1b0e20141b5b"
     },
     {
       "path": "ota_feature.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "fa67429fe9d62093b22b1ad0fa26d0698058d7e5d874ad8c78e4ec57eab44b5d"
+      "sha256": "13e823dfd09baee0b98b746692c5d3f494db534df120015bc343dddd4de9a635"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,6 @@
     }
   ],
   "notes": [
-    "Derece isareti yazi tipinin kendi glifi"
+    "Surekli dinleme icin halka tampon (mikrofon baglaninca kullanilacak)"
   ]
 }
