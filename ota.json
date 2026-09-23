@@ -1,6 +1,6 @@
 {
-  "version": "1.0.84",
-  "release_id": "20260923-surekli-dinleme",
+  "version": "1.0.85",
+  "release_id": "20260923-yarim-yanit",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "194e325f9061e3671c852d6b02bcbb34c1b6bcf9504bae58e29aca02395728f8"
+      "sha256": "045dca80649783f630d258034ad3bf552a57b2eafe7cb9505f13a460cedafcb6"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "13e823dfd09baee0b98b746692c5d3f494db534df120015bc343dddd4de9a635"
+      "sha256": "c3b445ced9232a6a19a3ff86ba9323f6073886e8c3edcc6f5b6038123f14b197"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,6 @@
     }
   ],
   "notes": [
-    "Surekli dinleme icin halka tampon (mikrofon baglaninca kullanilacak)"
+    "https_get yarim govde hatasi giderildi (Content-Length takibi)"
   ]
 }
