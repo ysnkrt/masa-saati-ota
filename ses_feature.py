@@ -149,6 +149,66 @@ def _tampon_ayir(hedef):
     return bloklar
 
 
+# ---- UYANDIRMA SOZU ----
+# Anahtar kelimeyi CIHAZ tanimiyor: konusma zaten yaziya dokuluyor,
+# biz de cikan metinde ariyoruz. Bedava, cunku transkripsiyon nasilsa
+# yapiliyor.
+#
+# ZORLUK: model "GPT"yi her seferinde ayni yazmiyor. Turkce konusmada
+# "jipiti", "gipiti", "ci pi ti" gibi cikabiliyor, harfler arasina
+# bosluk girebiliyor, noktalama eklenebiliyor. Bu yuzden metin once
+# sadelestiriliyor, sonra bilinen yazimlar araniyor.
+UYANDIRMA_ONEK = ("hey", "hay", "hei")
+UYANDIRMA_AD = ("gpt", "jipiti", "gipiti", "cipiti", "jibiti",
+                "gepete", "cpt", "gbt")
+_SADE_ESLEM = {
+    "\u00e7": "c", "\u011f": "g", "\u0131": "i", "\u0130": "i",
+    "\u00f6": "o", "\u015f": "s", "\u00fc": "u",
+}
+
+
+def _sadelestir(metin):
+    """Kucuk harf, Turkce harfler sadelesir, noktalama bosluk olur."""
+    cikti = []
+    for ch in metin.lower():
+        ch = _SADE_ESLEM.get(ch, ch)
+        if ("a" <= ch <= "z") or ("0" <= ch <= "9"):
+            cikti.append(ch)
+        else:
+            cikti.append(" ")
+    return " ".join("".join(cikti).split())
+
+
+def uyandirma_bul(metin):
+    """Metinde uyandirma sozu var mi.
+
+    (bulundu, kalan_soru) doner. Kalan, uyandirma sozunden SONRAKI
+    kisimdir; bos degilse dogrudan soru olarak kullanilabilir, yani
+    "hey gpt mars kac uydusu var" tek seferde calisir.
+    """
+    if not metin:
+        return (False, "")
+    sade = _sadelestir(metin)
+    if not sade:
+        return (False, "")
+    kelimeler = sade.split(" ")
+    n = len(kelimeler)
+    for i in range(n):
+        if kelimeler[i] not in UYANDIRMA_ONEK:
+            continue
+        # Onekten sonraki en fazla dort kelime birlestirilerek denenir:
+        # model "g p t" ya da "ci pi ti" diye ayirmis olabilir.
+        birlesik = ""
+        for j in range(i + 1, min(i + 5, n)):
+            birlesik += kelimeler[j]
+            if birlesik in UYANDIRMA_AD:
+                kalan = " ".join(kelimeler[j + 1:]).strip()
+                return (True, kalan)
+            if len(birlesik) > 8:
+                break
+    return (False, "")
+
+
 # ---- SUREKLI DINLEME (halka tampon) ----
 # Cihaz sessizken bile dinler; ses esigi asilinca kayit "baslamis"
 # sayilir ve esikten ONCEKI birkac blok da elde oldugu icin cumlenin
@@ -275,6 +335,46 @@ def dinle_surekli(azami_sn=None, dur_kontrol=None):
                 ses.deinit()
             except Exception:
                 pass
+        gc.collect()
+
+
+def dinle_ve_uyandir(dur_kontrol=None):
+    """Bir dinleme turu: dinle, yaziya dok, uyandirma sozu ara.
+
+    (durum, metin) doner:
+      ("yok",   "")      ses gelmedi ya da iptal edildi
+      ("ses",   metin)   konusma yaziya dokuldu, uyandirma sozu YOK
+      ("uyandi", soru)   uyandirma sozu duyuldu; soru bos olabilir
+
+    TLS baglantisi kayittan ONCE aciliyor -- el sikismasi 1-2 saniye
+    suruyor ve konusma bittikten sonra yapilinca kullanici bekliyordu;
+    bu sira daha once olculup secilmisti.
+    """
+    baglanti = None
+    try:
+        baglanti = baglan()
+    except Exception:
+        baglanti = None
+    bloklar = None
+    try:
+        bloklar, uzunluk, _tepe = dinle_surekli(dur_kontrol=dur_kontrol)
+        if not bloklar:
+            return ("yok", "")
+        metin = yaziya_dok(baglanti, bloklar, 0, uzunluk)
+        baglanti = None
+        if not metin:
+            return ("yok", "")
+        bulundu, kalan = uyandirma_bul(metin)
+        if bulundu:
+            return ("uyandi", kalan)
+        return ("ses", metin)
+    finally:
+        if baglanti is not None:
+            try:
+                _kapat(baglanti)
+            except Exception:
+                pass
+        bloklar = None
         gc.collect()
 
 
