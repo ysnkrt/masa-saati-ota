@@ -1,6 +1,6 @@
 {
-  "version": "1.0.82",
-  "release_id": "20260923-derece-daire",
+  "version": "1.0.83",
+  "release_id": "20260923-derece-glif",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "6df4aa0fc4e98d5d945582d5caec38a6f82fb2555b16e4d8e5435fb4df4928a9"
+      "sha256": "33a2e9422990eacc43754ee7d25c86cd3a61719b3ad5fc62777b4920445f776b"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "32173d84e97a0ac0c0573415f02f5f840729a23739e32f0db87fc863f85d493f"
+      "sha256": "fa67429fe9d62093b22b1ad0fa26d0698058d7e5d874ad8c78e4ec57eab44b5d"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,6 @@
     }
   ],
   "notes": [
-    "Derece isareti kare halka yerine daire"
+    "Derece isareti yazi tipinin kendi glifi"
   ]
 }
