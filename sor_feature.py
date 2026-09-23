@@ -783,7 +783,9 @@ def _ask_and_show(q, baslik=None):
     lines = wrap_full(txt, ANS_CHARS)
     if not lines:
         lines = [""]
-    action = show_answer(lines)
+    # Cerceve soru gonderilirken cizildi; animasyon stop ile temizlendi.
+    # Baslik ve alt tuslari yeniden silmeden yalnizca cevabi bas.
+    action = show_answer(lines, frame_ready=True)
     release_answer_buffers()
     return action
 
