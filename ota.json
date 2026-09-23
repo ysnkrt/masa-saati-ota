@@ -1,6 +1,6 @@
 {
-  "version": "1.0.81",
-  "release_id": "20260923-buyuk-yuvarlak-sayi",
+  "version": "1.0.82",
+  "release_id": "20260923-derece-daire",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "581bd14a13da306c9c94ae4546166680cae1131e5ff83e6f28381edbafbf59ac"
+      "sha256": "6df4aa0fc4e98d5d945582d5caec38a6f82fb2555b16e4d8e5435fb4df4928a9"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "91b273cde03b54d2a0db907cdb6fcf7d4eea1cc77bfeab1fbd65c89bf561bd1a"
+      "sha256": "32173d84e97a0ac0c0573415f02f5f840729a23739e32f0db87fc863f85d493f"
     },
     {
       "path": "ca_roots.der",
@@ -44,6 +44,6 @@
     }
   ],
   "notes": [
-    "Buyuk sayilar da yuvarlak olabiliyor (4,5,6,8 punto)"
+    "Derece isareti kare halka yerine daire"
   ]
 }
