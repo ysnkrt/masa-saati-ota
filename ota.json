@@ -1,6 +1,6 @@
 {
-  "version": "1.0.79",
-  "release_id": "20260923-pano-hava",
+  "version": "1.0.80",
+  "release_id": "20260923-sayi-stili",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "11fea9d257222bdcf7933f8a561c8f06f4d49b2bd74dcb6444419e624d2bd318"
+      "sha256": "5b8205716a47f738d762c9500ea667d350c791b55b4ba11c17624d438cfddbb2"
     },
     {
       "path": "gpt_stream.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "210a08f0eb15a3f1a37a6cf62fc9b1614ce20dc160468a8128f9db1023436bc4"
+      "sha256": "2a713d58900697130de35a9130374fb5349d98f3a50eab90e9b0705bba76127a"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,8 @@
     }
   ],
   "notes": [
-    "Panodaki hava karti hava ekranindaki panelin duzenine getirildi",
-    "Dakika degisiminde yalnizca degisen rakam ve geri sayim ciziliyor"
+    "Yazi stiline SAYILAR secenegi (yuvarlak/koseli)",
+    "Panodaki SIMDI etiketi kaldirildi",
+    "Isik surgusu kapaliyken hava karti ortalaniyor"
   ]
 }
