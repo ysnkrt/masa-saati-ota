@@ -1,6 +1,6 @@
 {
-  "version": "1.0.86",
-  "release_id": "20260923-uyandirma-sozu",
+  "version": "1.0.87",
+  "release_id": "20260924-hizli-ekran",
   "files": [
     {
       "path": "main.py",
@@ -10,7 +10,7 @@
     {
       "path": "clock_app.mpy",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/clock_app.mpy",
-      "sha256": "e6eb640bda5682ad39dcd0b2cc508b36e7389415a9d8233663e918756e418c1a"
+      "sha256": "a3d06f68c2a53c26a959d14451618d7cf7025e954f2be111fc1245d307f0d041"
     },
     {
       "path": "gpt_stream.py",
@@ -25,7 +25,7 @@
     {
       "path": "ses_feature.py",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ses_feature.py",
-      "sha256": "9ae335771fa9c49839279b22d5859622dc4ef841063f13a7650484435ab7bb9a"
+      "sha256": "a22768165adfb8b21f5a23e0f8e05d2e475a010f2bfeea5aa769b3fcd1fdfa17"
     },
     {
       "path": "ota_feature.py",
@@ -35,7 +35,7 @@
     {
       "path": "ota_release.txt",
       "url": "https://raw.githubusercontent.com/ysnkrt/masa-saati-ota/main/ota_release.txt",
-      "sha256": "a2085cc368c4cf1b937fda3fb127f4c542cfda16667cb2deb754726a93db30d5"
+      "sha256": "afc623dc00fff5183df6997036fed076e3258683e56576ee5b3d2f98eb14fdf7"
     },
     {
       "path": "ca_roots.der",
@@ -44,7 +44,7 @@
     }
   ],
   "notes": [
-    "Uyandirma sozu tanima: hey gpt / jipiti / g p t",
-    "Dinle-yaziya dok-uyandir zinciri (mikrofon bekliyor)"
+    "Pano ve buyuk saat ekrani 4-6 kat daha hizli aciliyor",
+    "Yazi cizimi hizlandi"
   ]
 }

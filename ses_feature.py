@@ -338,6 +338,113 @@ def dinle_surekli(azami_sn=None, dur_kontrol=None):
         gc.collect()
 
 
+class Dinleyici:
+    """Ana donguyu kilitlemeden dinler.
+
+    dinle_surekli() tek cagride konusma bitene kadar blokluyor; saat
+    ekranindan cagrilinca saati dondururdu. Bu sinif ayni isi ADIM ADIM
+    yapar: her adim() bir blok okur (~64 ms ses) ve hemen doner, ana
+    dongu arada saati cizmeye devam eder.
+    """
+
+    def __init__(self, azami_sn=None):
+        self.ses = None
+        self.halka = []
+        self.dc = 0
+        self.esik = SES_ESIGI
+        self.konusma = False
+        self.sessiz_ms = 0
+        self.tepe = 0
+        azami = azami_sn if azami_sn else KAYIT_SN
+        self.azami_blok = max(2, ORNEK_HIZ * 2 * azami // BLOK_BOYU)
+        self.on_blok = max(1, ORNEK_HIZ * 2 * ON_TAMPON_MS // 1000 // BLOK_BOYU)
+        self.blok_ms = BLOK_BOYU * 1000 // (ORNEK_HIZ * 2)
+
+    def basla(self):
+        """I2S kurar, ortam gurultusunu olcer. ~450 ms surer (tek sefer)."""
+        from machine import I2S, Pin
+        gc.collect()
+        self.ses = I2S(0, sck=Pin(SCK_PIN), ws=Pin(WS_PIN), sd=Pin(SD_PIN),
+                       mode=I2S.RX, bits=32, format=I2S.MONO,
+                       rate=ORNEK_HIZ, ibuf=I2S_TAMPON)
+        ham = bytearray(4096)
+        atilacak = ORNEK_HIZ * 300 // 1000 * 4
+        while atilacak > 0:
+            atilacak -= self.ses.readinto(ham)
+        olcum = ORNEK_HIZ * 150 // 1000 * 4
+        top = 0
+        say = 0
+        n = 0
+        while olcum > 0:
+            n = self.ses.readinto(ham)
+            olcum -= n
+            for k in range(2, n, 16):
+                v = (ham[k + 1] << 8) | ham[k]
+                if v > 32767:
+                    v -= 65536
+                top += v
+                say += 1
+        self.dc = top // say if say else 0
+        taban = _blok_tepe(ham, n, self.dc)
+        self.esik = taban * 3
+        if self.esik < SES_ESIGI:
+            self.esik = SES_ESIGI
+        return taban
+
+    def adim(self):
+        """Bir blok oku. "bos" | "dinliyor" | "bitti" doner."""
+        if self.ses is None:
+            return "bos"
+        if len(self.halka) < self.azami_blok and \
+                gc.mem_free() >= BOS_TABAN + BLOK_BOYU:
+            blok = bytearray(BLOK_BOYU)
+        elif self.konusma:
+            return "bitti"                 # yer bitti, eldekiyle yetin
+        else:
+            blok = self.halka.pop(0)
+        n = self.ses.readinto(blok)
+        self.halka.append(blok)
+        t = _blok_tepe(blok, n, self.dc)
+        if t > self.tepe:
+            self.tepe = t
+        if t > self.esik:
+            self.konusma = True
+            self.sessiz_ms = 0
+            return "dinliyor"
+        if self.konusma:
+            self.sessiz_ms += self.blok_ms
+            if self.sessiz_ms >= SESSIZLIK_MS:
+                return "bitti"
+            return "dinliyor"
+        if len(self.halka) > self.on_blok:
+            self.halka.pop(0)
+        return "bos"
+
+    def kayit(self):
+        uzunluk = 0
+        for b in self.halka:
+            uzunluk += len(b)
+        return (self.halka, uzunluk)
+
+    def sifirla(self):
+        """Kaydi birak, dinlemeye bastan basla (I2S acik kalir)."""
+        self.halka = []
+        self.konusma = False
+        self.sessiz_ms = 0
+        self.tepe = 0
+        gc.collect()
+
+    def bitir(self):
+        if self.ses is not None:
+            try:
+                self.ses.deinit()
+            except Exception:
+                pass
+            self.ses = None
+        self.halka = []
+        gc.collect()
+
+
 def dinle_ve_uyandir(dur_kontrol=None):
     """Bir dinleme turu: dinle, yaziya dok, uyandirma sozu ara.
 
